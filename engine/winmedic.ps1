@@ -171,8 +171,8 @@ function Invoke-Probe {
 }
 
 function Invoke-Plan {
-    $src = if ($From) { $From } else { Get-StatePath 'findings.json' }
-    if (-not (Test-Path -LiteralPath $src)) {
+    $src = if ($From) { $From } else { Resolve-FindingsPath }
+    if (-not $src -or -not (Test-Path -LiteralPath $src)) {
         Write-Log ('找不到 findings：' + $src + '（先运行 probe）') -Level ERROR
         return $script:EXIT.USAGE
     }
@@ -202,6 +202,9 @@ function Invoke-Apply {
     }
     if (-not $Yes) {
         Write-Log 'apply 需要显式 --yes 才执行' -Level ERROR
+        return $script:EXIT.USAGE
+    }    if (-not $Ids -or $Ids.Count -eq 0) {
+        Write-Log '未指定 --ids，拒绝执行（避免误清空）' -Level ERROR
         return $script:EXIT.USAGE
     }
     if (-not (Test-IsAdmin)) {
@@ -255,6 +258,7 @@ function Invoke-Apply {
         $r = Invoke-CdriveAction -Item $it -Action $act -RunId $runId -Purge:$Purge
         $ver = Invoke-ActionVerify -Action $act
         $recResult = if ($r.alreadyAbsent) { 'skipped' } else { 'ok' }
+        $rec = @{
             itemId = $it.id; actionId = $it.actionId; target = $it.target; kind = $act.kind
             mode = $r.mode; ok = $r.ok; error = $r.error; quarantinePath = $r.quarantinePath
             exitCode = $r.exitCode; outputSha256 = $r.outputSha256

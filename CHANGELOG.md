@@ -5,6 +5,21 @@
 
 ## [Unreleased]
 
+## [1.10.0] - 2026-10-24
+
+### Added
+- `scripts/regress.ps1` 回归脚本：静态解析 → catalog 校验 → 单元测试 → **CLI 契约与安全负向测试**（退出码断言 + 输出卫生）
+- CI 增加 `CLI contract regression` 步骤（跳过单元测试以免重复）
+
+### Fixed
+- `plan` 在 `probe` 改用 `<set>-findings.json` 后仍只找 `findings.json`，导致找不到采集结果（回归首轮抓到）
+- 上一版 H14 补丁误删 `$rec = @{`，导致 `winmedic.ps1` 语法错误、所有子命令 exit 1（回归第二轮抓到）
+- `apply` 缺 `--ids` 时先撞权限检查返回 3；改为**参数校验先于权限校验**，返回 2
+
+### Notes
+- 这三处都是回归脚本上线后立刻抓到的真实缺陷，其中一处会让整个 CLI 无法启动——说明 CLI 层断言不可省
+
+
 ## [1.9.0] - 2026-10-24
 
 ### Added
