@@ -15,11 +15,11 @@
 [CmdletBinding()]
 param(
     [Parameter(Position = 0)]
-    [ValidateSet('doctor', 'probe', 'plan', 'apply', 'verify', 'restore', 'journal', 'profile', 'report', 'explain', 'version', 'help')]
+    [ValidateSet('doctor', 'probe', 'plan', 'apply', 'verify', 'restore', 'journal', 'profile', 'report', 'explain', 'summary', 'diff', 'version', 'help')]
     [string]$Command = 'help',
     [Parameter(Position = 1)]
     [string]$SubCommand,
-    [string]$Set = 'storage',
+    [string]$Set = '',
     [string]$From,
     [string]$PlanPath,
     [string[]]$Ids,
@@ -31,6 +31,7 @@ param(
     [switch]$Purge,
     [string]$Exclude,
     [string]$Action,
+    [string]$To,
     [switch]$AcceptRisk,
     [switch]$Remove,
     [switch]$Json
@@ -48,6 +49,7 @@ if (-not $script:WinMedicRoot) { $script:WinMedicRoot = (Resolve-Path (Join-Path
 . (Join-Path $PSScriptRoot 'lib\Verify.ps1')
 . (Join-Path $PSScriptRoot 'lib\Action.ps1')
 . (Join-Path $PSScriptRoot 'lib\Report.ps1')
+. (Join-Path $PSScriptRoot 'lib\Summary.ps1')
 . (Join-Path $PSScriptRoot 'lib\Scan.ps1')
 . (Join-Path $PSScriptRoot 'probes\storage.ps1')
 . (Join-Path $PSScriptRoot 'probes\boot.ps1')
@@ -87,7 +89,7 @@ function Invoke-Doctor {
 }
 
 function Invoke-Probe {
-    $set = $Set.ToLower()
+    $set = if ($Set) { $Set.ToLower() } else { 'storage' }
     $probes = @()
     $probes += (Get-HostProbe)
 
@@ -400,15 +402,18 @@ function Invoke-Profile {
 }
 
 function Resolve-FindingsPath {
+    <#  $Set 明确指定时优先该探针集；否则取最新的一次采集。  #>
     $state = Get-StatePath
-    $candidates = @(
-        (Join-Path $state ($Set + '-findings.json')),
-        (Join-Path $state 'findings.json')
-    )
-    foreach ($c in $candidates) { if (Test-Path -LiteralPath $c) { return $c } }
+    if ($Set) {
+        $specific = Join-Path $state ($Set + '-findings.json')
+        if (Test-Path -LiteralPath $specific) { return $specific }
+    }
+    $legacy = Join-Path $state 'findings.json'
+    if (-not $Set -and (Test-Path -LiteralPath $legacy)) { }
     $newest = Get-ChildItem -LiteralPath $state -Filter '*-findings.json' -File -ErrorAction SilentlyContinue |
         Sort-Object LastWriteTime -Descending | Select-Object -First 1
     if ($newest) { return $newest.FullName }
+    if (Test-Path -LiteralPath $legacy) { return $legacy }
     return $null
 }
 
@@ -481,6 +486,36 @@ function Invoke-Explain {
     return $script:EXIT.OK
 }
 
+function Invoke-Summary {
+    $fp = Resolve-FindingsPath
+    if (-not $fp) { Write-Log '找不到 findings，请先运行 probe' -Level ERROR; return $script:EXIT.USAGE }
+    $findings = Get-Content -LiteralPath $fp -Raw -Encoding UTF8 | ConvertFrom-Json
+    if ($Json) { Write-JsonResult -Object (Get-SummaryLines -Findings $findings) | Out-Null; return $script:EXIT.OK }
+    Write-Host (Format-WinMedicSummary -Findings $findings)
+    Write-Host ''
+    Write-Host ('  数据源: ' + $fp)
+    return $script:EXIT.OK
+}
+
+function Invoke-Diff {
+    if (-not $From -or -not $To) {
+        Write-Log 'diff 需要 --from <基线 findings.json> --to <对比 findings.json>' -Level ERROR
+        return $script:EXIT.USAGE
+    }
+    foreach ($f in @($From, $To)) {
+        if (-not (Test-Path -LiteralPath $f)) { Write-Log ('找不到文件: ' + $f) -Level ERROR; return $script:EXIT.USAGE }
+    }
+    $b = Get-Content -LiteralPath $From -Raw -Encoding UTF8 | ConvertFrom-Json
+    $a = Get-Content -LiteralPath $To -Raw -Encoding UTF8 | ConvertFrom-Json
+    $txt = Format-FindingsDiff -Before $b -After $a
+    if ($Json) {
+        Write-JsonResult -Object @{ before = (Get-DiffMetrics -Findings $b); after = (Get-DiffMetrics -Findings $a) } | Out-Null
+        return $script:EXIT.OK
+    }
+    Write-Host $txt
+    return $script:EXIT.OK
+}
+
 function Show-Help {
     Write-Host 'WinMedic 引擎'
     Write-Host '  doctor                     环境自检'
@@ -493,6 +528,8 @@ function Show-Help {
     Write-Host '  profile [--exclude <模式> [--remove]]   查看/维护保留项'
     Write-Host '  report [--journal <runId>] [--out f.md] 生成五段式交付报告'
     Write-Host '  explain [--action <id>]                查看动作证据与回滚方式'
+    Write-Host '  summary                                一屏体检摘要'
+    Write-Host '  diff --from a.json --to b.json         两次采集对比'
     Write-Host '  apply --action <id> --yes              执行 standalone 动作（仅 Tier 1）'
     Write-Host '  version'
     return $script:EXIT.OK
@@ -509,6 +546,8 @@ switch ($Command) {
     'profile' { $code = Invoke-Profile }
     'report'  { $code = Invoke-Report }
     'explain' { $code = Invoke-Explain }
+    'summary' { $code = Invoke-Summary }
+    'diff'    { $code = Invoke-Diff }
     'version' { Write-Host ('winmedic ' + (Get-Content (Join-Path $script:WinMedicRoot 'VERSION') -Raw).Trim()); $code = $script:EXIT.OK }
     default   { $code = Show-Help }
 }

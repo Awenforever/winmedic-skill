@@ -108,7 +108,10 @@ if (-not $SkipCli) {
         @{ name = 'explain 单条'; args = @('explain', '--action', 'storage.hiberfil-off'); expect = 0 },
         @{ name = 'explain 未知动作 -> 2'; args = @('explain', '--action', 'no.such'); expect = 2 },
         @{ name = 'apply 非 standalone 动作 -> 2'; args = @('apply', '--action', 'storage.hiberfil-off', '--yes'); expect = 2 },
-        @{ name = 'apply 未知动作 -> 2'; args = @('apply', '--action', 'no.such', '--yes'); expect = 2 }
+        @{ name = 'apply 未知动作 -> 2'; args = @('apply', '--action', 'no.such', '--yes'); expect = 2 },
+        @{ name = 'summary'; args = @('summary'); expect = 0 },
+        @{ name = 'diff 缺参数 -> 2'; args = @('diff', '--from', 'a.json'); expect = 2 },
+        @{ name = 'diff 文件不存在 -> 2'; args = @('diff', '--from', 'a.json', '--to', 'b.json'); expect = 2 }
     )
 
     foreach ($c in $cases) {
