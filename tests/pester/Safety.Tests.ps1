@@ -38,6 +38,16 @@ Describe '前置检查' {
         $r.Ok | Should -BeFalse
         $r.Detail | Should -Match '未知'
     }
+    It '提交余量检查返回结构化结果' {
+        $r = Test-Precondition -Spec 'commit-headroom:5'
+        $r.Name | Should -Be 'commit-headroom:5'
+        $r.ContainsKey('Ok') | Should -BeTrue
+        $r.Detail | Should -Match '提交余量'
+    }
+    It '过高的余量要求会判失败' {
+        $r = Test-Precondition -Spec 'commit-headroom:99'
+        $r.Ok | Should -BeFalse
+    }
     It '进程检查对不存在进程返回通过' {
         $r = Test-Precondition -Spec 'process-not-running:winmedic_no_such_proc_xyz'
         $r.Ok | Should -BeTrue

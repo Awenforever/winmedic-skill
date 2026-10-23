@@ -86,6 +86,17 @@ function Invoke-CdriveAction {
         [Parameter(Mandatory)][string]$RunId,
         [switch]$Purge
     )
+    if ($Action.kind -eq 'quarantine') {
+        # 策略检查优先于状态检查：跨卷一律拒绝，即使目标已不存在
+        $stateDrive = Get-VolumeOfPath -Path (Get-CdriveRoot)
+        $targetDrive = Get-VolumeOfPath -Path $Item.target
+        if ($stateDrive -and $targetDrive -and ($stateDrive -ne $targetDrive)) {
+            return @{ ok = $false; mode = 'refused'; quarantinePath = ''; exitCode = 0; outputSha256 = ''; error = ('跨卷移动被拒绝（目标 ' + $targetDrive + '，隔离区 ' + $stateDrive + '）'); freeBefore = 0; freeAfter = 0 }
+        }
+        if (-not (Test-Path -LiteralPath $Item.target)) {
+            return @{ ok = $true; mode = 'absent'; quarantinePath = ''; exitCode = 0; outputSha256 = ''; error = ''; alreadyAbsent = $true; freeBefore = 0; freeAfter = 0 }
+        }
+    }
     $before = (Get-PSDrive C -ErrorAction SilentlyContinue).Free
     $result = @{ ok = $false; mode = ''; quarantinePath = ''; exitCode = 0; outputSha256 = ''; error = '' }
 

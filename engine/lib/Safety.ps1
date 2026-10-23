@@ -52,6 +52,19 @@ function Test-Precondition {
         return @{ Name = 'admin'; Ok = $ok; Detail = $detail }
     }
 
+    if ($Spec -like 'commit-headroom:*') {
+        $needPct = 10
+        $raw = $Spec.Substring('commit-headroom:'.Length)
+        [void][int]::TryParse($raw, [ref]$needPct)
+        $ci = Get-CommitInfo
+        if (-not $ci -or $ci.CommitLimit -le 0) {
+            return @{ Name = $Spec; Ok = $false; Detail = '无法读取提交上限' }
+        }
+        $headroomPct = [math]::Round((($ci.CommitLimit - $ci.CommittedBytes) / $ci.CommitLimit) * 100, 1)
+        $ok = ($headroomPct -ge $needPct)
+        return @{ Name = $Spec; Ok = $ok; Detail = ('提交余量 ' + $headroomPct + '%，要求 >= ' + $needPct + '%') }
+    }
+
     if ($Spec -like 'services-stopped:*') {
         $names = $Spec.Substring('services-stopped:'.Length).Split(',')
         $bad = @()

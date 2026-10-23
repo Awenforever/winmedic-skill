@@ -254,7 +254,7 @@ function Invoke-Apply {
         Write-Log ('执行 ' + $it.id + ' ' + $it.actionId + ' -> ' + $it.target)
         $r = Invoke-CdriveAction -Item $it -Action $act -RunId $runId -Purge:$Purge
         $ver = Invoke-ActionVerify -Action $act
-        $rec = @{
+        $recResult = if ($r.alreadyAbsent) { 'skipped' } else { 'ok' }
             itemId = $it.id; actionId = $it.actionId; target = $it.target; kind = $act.kind
             mode = $r.mode; ok = $r.ok; error = $r.error; quarantinePath = $r.quarantinePath
             exitCode = $r.exitCode; outputSha256 = $r.outputSha256
@@ -262,7 +262,8 @@ function Invoke-Apply {
             verifyAllOk = $ver.allOk; pendingReboot = $ver.pendingReboot; verify = $ver.results
         }
         Write-JournalRecord -RunId $runId -Record $rec
-        if ($r.ok) { Write-Log ($it.id + ' 完成') -Level OK } else { Write-Log ($it.id + ' 失败: ' + $r.error) -Level ERROR; $fail++ }
+        if ($r.alreadyAbsent) { Write-Log ($it.id + ' 目标已不存在，跳过') -Level WARN }
+        elseif ($r.ok) { Write-Log ($it.id + ' 完成') -Level OK } else { Write-Log ($it.id + ' 失败: ' + $r.error) -Level ERROR; $fail++ }
     }
 
     Write-Host ''
