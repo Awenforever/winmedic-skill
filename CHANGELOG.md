@@ -5,6 +5,21 @@
 
 ## [Unreleased]
 
+## [1.5.0] - 2026-10-23
+
+### Added
+- 恢复分诊域（只读）：`probe --set recovery`
+- `probe.restore-points` / `probe.shadow-copies` / `probe.winre` / `probe.recovery-readiness`
+- 恢复能力总评 ready / weak / poor：没有还原点、没有卷影副本、WinRE 未启用时逐项计风险
+- playbook：`windows-data-recovery-triage`、`boot-failure-triage`
+
+### Notes
+- 实测本机结论为 `poor`（无还原点、无卷影副本）——正是长期清理的典型后遗症，可作为清理前的安全提醒
+
+### Tests
+- 新增 6 个用例，总计 84 个 Pester + 6 个路由用例
+
+
 ## [1.4.0] - 2026-10-23
 
 ### Added

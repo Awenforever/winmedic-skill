@@ -180,6 +180,30 @@
       "domain": "security",
       "cost": "medium",
       "returns": "SecurityPosture"
+    },
+    {
+      "id": "probe.restore-points",
+      "domain": "recovery",
+      "cost": "fast",
+      "returns": "RestorePoints"
+    },
+    {
+      "id": "probe.shadow-copies",
+      "domain": "recovery",
+      "cost": "fast",
+      "returns": "ShadowCopies"
+    },
+    {
+      "id": "probe.winre",
+      "domain": "recovery",
+      "cost": "fast",
+      "returns": "WinRE"
+    },
+    {
+      "id": "probe.recovery-readiness",
+      "domain": "recovery",
+      "cost": "fast",
+      "returns": "RecoveryReadiness"
     }
   ]
 }
