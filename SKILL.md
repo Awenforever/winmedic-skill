@@ -1,8 +1,8 @@
 ---
 name: winmedic
 description: Windows 电脑维修：诊断、清理、迁移、修复。覆盖磁盘空间、开机与性能、应用生命周期、更新与驱动、网络、安全态势、恢复分诊。只读优先，破坏性动作走隔离区并支持回滚，每条建议附证据。
-whenToUse: 用户说 C 盘爆满/变红、电脑卡顿、开机慢、软件卸不干净、想把微信或应用到 D 盘、大目录治理、更新失败、驱动异常、断网、蓝屏、误删文件、新机验收等需要「检查或改动本机 Windows」的请求。
-version: 1.13.0
+whenToUse: 用户说 C 盘爆满/变红、电脑卡顿、开机慢、软件卸不干净、想把微信或应用到 D 盘、大目录治理、更新失败、驱动异常、断网、蓝屏、误删文件、新机验收等需要「检查或改动本机 Windows」的请求。 English keywords: disk full, low disk space, slow boot, startup bloat, uninstall leftovers, migrate app or data to another drive, Windows Update failure, driver or device problem, no internet, proxy/VPN issue, printer offline, backup check, recover deleted files, new PC intake.
+version: 1.14.0
 ---
 
 # WinMedic

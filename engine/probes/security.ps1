@@ -66,6 +66,13 @@ function Get-FirewallProbe {
     return @{ id = 'probe.firewall'; ok = ($profiles.Count -gt 0); data = @{ profiles = $profiles; allEnabled = $allOn }; candidates = @() }
 }
 
+function Test-BitLockerSupported {
+    <#  纯函数：家庭版（Home）不支持 BitLocker，不应据此判风险。  #>
+    param([string]$Edition = '')
+    if (-not $Edition) { return $true }
+    return ($Edition -notmatch 'Home|家庭')
+}
+
 function Get-BitLockerProbe {
     param()
     $vols = @()
@@ -82,7 +89,15 @@ function Get-BitLockerProbe {
     $systemVol = $vols | Where-Object { $_.mount -eq 'C:' } | Select-Object -First 1
     $protected = $null
     if ($systemVol) { $protected = ($systemVol.protection -eq 'On') }
-    return @{ id = 'probe.bitlocker'; ok = ($vols.Count -gt 0); data = @{ volumes = $vols; systemProtected = $protected }; candidates = @() }
+    $edition = ''
+    try { $edition = [string](Get-CimInstance Win32_OperatingSystem -ErrorAction Stop).Caption } catch { }
+    $supported = Test-BitLockerSupported -Edition $edition
+    $note = ''
+    if (-not $supported) {
+        $protected = $null
+        $note = '当前为家庭版，不支持 BitLocker，该项不计入风险'
+    }
+    return @{ id = 'probe.bitlocker'; ok = ($vols.Count -gt 0); data = @{ volumes = $vols; systemProtected = $protected; edition = $edition; supported = $supported; note = $note }; candidates = @() }
 }
 
 function Get-HardeningProbe {

@@ -39,6 +39,13 @@ function Invoke-Engine {
     return @{ code = $LASTEXITCODE; text = $out; seconds = [math]::Round($sw.Elapsed.TotalSeconds, 1) }
 }
 
+function Invoke-EngineDirect {
+    <#  在同一会话内直接调用脚本，验证 --set / --ids 这类双横线写法（-File 模式会掩盖该问题）  #>
+    param([string[]]$EngineArgs)
+    $out = & $engine @EngineArgs *>&1 | Out-String
+    return @{ code = $LASTEXITCODE; text = $out }
+}
+
 function Test-OutputHygiene {
     <#  禁止 emoji 与替代字符；禁止常见乱码迹象。  #>
     param([string]$Text)
@@ -131,6 +138,21 @@ if (-not $SkipCli) {
         Add-Result 'cli' '非管理员 apply -> 3' ($r.code -eq 3) ('exit=' + $r.code)
     } else {
         Add-Result 'cli' '非管理员 apply -> 3' $true '当前为管理员会话，跳过该断言'
+    }
+
+    # 直接调用（--风格参数）
+    $directCases = @(
+        @{ name = '直接: probe --set storage'; args = @('probe', '--set', 'storage'); expect = 0 },
+        @{ name = '直接: probe --set nope -> 2'; args = @('probe', '--set', 'nope'); expect = 2 },
+        @{ name = '直接: plan --bogus -> 2'; args = @('plan', '--bogus'); expect = 2 },
+        @{ name = '直接: explain --action'; args = @('explain', '--action', 'storage.hiberfil-off'); expect = 0 },
+        @{ name = '直接: journal show'; args = @('journal', 'show'); expect = 0 },
+        @{ name = '直接: apply --ids 缺 --yes -> 2'; args = @('apply', '--ids', 'R1'); expect = 2 }
+    )
+    foreach ($c in $directCases) {
+        $r = Invoke-EngineDirect -EngineArgs $c.args
+        $ok = ($r.code -eq $c.expect)
+        Add-Result 'cli' $c.name $ok ('exit=' + $r.code + '（期望 ' + $c.expect + '）')
     }
 
     # 未知批次

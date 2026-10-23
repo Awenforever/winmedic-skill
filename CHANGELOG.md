@@ -5,6 +5,19 @@
 
 ## [Unreleased]
 
+## [1.14.0] - 2026-10-24
+
+### Added
+- 英文文档：`README.en.md`、`docs/en/QUICKSTART.md`、`docs/en/README.md`（含中英术语对照）
+- `SKILL.md` 的 `whenToUse` 增加英文关键词，英文请求也能正确路由
+- 回归新增「直接调用」用例组（6 项）：专测 `--set` / `--ids` 等双横线写法，共 34 项
+- `docs/FIELD-NOTES.md` 增加机器 E（Augenstern）真机回归记录
+
+### Fixed
+- **双横线参数在直接调用时失效**：`[Parameter(Position=1)]` 让 `SubCommand` 抢先吃掉 `--set`；现改为不占位，并新增 `Resolve-RestArguments` 归一化 `--xxx` 与 `--accept-risk`（真机回归发现）
+- **家庭版 BitLocker 误报**：新增 `Test-BitLockerSupported`，Home/家庭版不再判为「未保护」（真机回归发现）
+
+
 ## [1.13.0] - 2026-10-24
 
 ### Added

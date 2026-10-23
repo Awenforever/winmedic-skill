@@ -17,7 +17,6 @@ param(
     [Parameter(Position = 0)]
     [ValidateSet('doctor', 'probe', 'plan', 'apply', 'verify', 'restore', 'journal', 'profile', 'report', 'explain', 'summary', 'diff', 'version', 'help')]
     [string]$Command = 'help',
-    [Parameter(Position = 1)]
     [string]$SubCommand,
     [string]$Set = '',
     [string]$From,
@@ -34,7 +33,9 @@ param(
     [string]$To,
     [switch]$AcceptRisk,
     [switch]$Remove,
-    [switch]$Json
+    [switch]$Json,
+    [Parameter(ValueFromRemainingArguments = $true)]
+    [string[]]$Rest
 )
 
 $ErrorActionPreference = 'Stop'
@@ -60,6 +61,80 @@ if (-not $script:WinMedicRoot) { $script:WinMedicRoot = (Resolve-Path (Join-Path
 . (Join-Path $PSScriptRoot 'probes\recovery.ps1')
 . (Join-Path $PSScriptRoot 'probes\printers.ps1')
 . (Join-Path $PSScriptRoot 'probes\backup.ps1')
+
+# 兼容 --set / --ids 这类双横线写法（-File 模式本就支持，直接调用时需要手动归一）
+function Resolve-RestArguments {
+    param([string[]]$Tokens)
+    if (-not $Tokens -or $Tokens.Count -eq 0) { return }
+    $i = 0
+    while ($i -lt $Tokens.Count) {
+        $tok = [string]$Tokens[$i]
+        if ($tok.StartsWith('--')) {
+            $key = $tok.Substring(2).ToLowerInvariant()
+            $val = $null
+            if (($i + 1) -lt $Tokens.Count) {
+                $next = [string]$Tokens[$i + 1]
+                if (-not $next.StartsWith('--')) { $val = $next; $i++ }
+            }
+            switch ($key) {
+                'set'     { if ($val) { $script:SetArg = $val } }
+                'from'    { $script:FromArg = $val }
+                'to'      { $script:ToArg = $val }
+                'plan'    { $script:PlanArg = $val }
+                'ids'     { if ($val) { $script:IdsArg = @($val -split ',') } }
+                'journal' { $script:JournalArg = $val }
+                'out'     { $script:OutArg = $val }
+                'action'  { $script:ActionArg = $val }
+                'exclude' { $script:ExcludeArg = $val }
+                'sub'     { $script:SubArg = $val }
+                default   { Write-Log ('未知参数: ' + $tok) -Level ERROR; exit $script:EXIT.USAGE }
+            }
+        } elseif ($tok -match '^-(yes|purge|json|remove|accept-risk)$') {
+            switch ($Matches[1].ToLowerInvariant()) {
+                'yes'         { $script:YesFlag = $true }
+                'purge'       { $script:PurgeFlag = $true }
+                'json'        { $script:JsonFlag = $true }
+                'remove'      { $script:RemoveFlag = $true }
+                'accept-risk' { $script:AcceptRiskFlag = $true }
+            }
+        } else {
+            if (-not $script:SubArg) { $script:SubArg = $tok }
+        }
+        $i++
+    }
+}
+
+$script:SetArg = $Set
+$script:FromArg = $From
+$script:ToArg = $To
+$script:PlanArg = $PlanPath
+$script:IdsArg = $Ids
+$script:JournalArg = $Journal
+$script:OutArg = $Out
+$script:ActionArg = $Action
+$script:ExcludeArg = $Exclude
+$script:SubArg = $SubCommand
+$script:YesFlag = [bool]$Yes
+$script:PurgeFlag = [bool]$Purge
+$script:JsonFlag = [bool]$Json
+$script:RemoveFlag = [bool]$Remove
+$script:AcceptRiskFlag = [bool]$AcceptRisk
+Resolve-RestArguments -Tokens $Rest
+$Set = $script:SetArg
+$From = $script:FromArg
+$To = $script:ToArg
+$PlanPath = $script:PlanArg
+$Ids = $script:IdsArg
+$Journal = $script:JournalArg
+$Out = $script:OutArg
+$Action = $script:ActionArg
+$Exclude = $script:ExcludeArg
+$SubCommand = $script:SubArg
+$Yes = $script:YesFlag
+$Purge = $script:PurgeFlag
+$Json = $script:JsonFlag
+$Remove = $script:RemoveFlag
+$AcceptRisk = $script:AcceptRiskFlag
 
 function Get-StatePath {
     param([string]$Name)

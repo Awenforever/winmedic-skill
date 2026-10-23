@@ -41,6 +41,21 @@ Describe '安全裁决' {
     }
 }
 
+Describe 'BitLocker 版本适配' {
+    It '专业版视为支持' {
+        Test-BitLockerSupported -Edition 'Microsoft Windows 11 Pro' | Should -BeTrue
+    }
+    It '中文家庭版视为不支持' {
+        Test-BitLockerSupported -Edition 'Microsoft Windows 11 家庭版 中文版' | Should -BeFalse
+    }
+    It '英文 Home 视为不支持' {
+        Test-BitLockerSupported -Edition 'Windows 11 Home' | Should -BeFalse
+    }
+    It '未知版本时按支持处理（不误报）' {
+        Test-BitLockerSupported -Edition '' | Should -BeTrue
+    }
+}
+
 Describe '安全探针' {
     It '总体探针返回裁决与四类细节' {
         $r = Get-SecurityPostureProbe
