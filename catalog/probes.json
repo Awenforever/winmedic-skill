@@ -1,0 +1,71 @@
+{
+  "schemaVersion": 1,
+  "probes": [
+    {
+      "id": "probe.system-files",
+      "domain": "storage",
+      "cost": "fast",
+      "returns": "SystemFiles"
+    },
+    {
+      "id": "probe.recycle-bin",
+      "domain": "storage",
+      "cost": "fast",
+      "returns": "RecycleBin"
+    },
+    {
+      "id": "probe.update-leftovers",
+      "domain": "storage",
+      "cost": "fast",
+      "returns": "UpdateLeftovers"
+    },
+    {
+      "id": "probe.package-cache",
+      "domain": "storage",
+      "cost": "medium",
+      "returns": "PackageCache"
+    },
+    {
+      "id": "probe.browser-cache",
+      "domain": "storage",
+      "cost": "fast",
+      "returns": "BrowserCache"
+    },
+    {
+      "id": "probe.office-cache",
+      "domain": "storage",
+      "cost": "fast",
+      "returns": "OfficeCache"
+    },
+    {
+      "id": "probe.app-caches",
+      "domain": "storage",
+      "cost": "medium",
+      "returns": "AppCaches"
+    },
+    {
+      "id": "probe.winsxs",
+      "domain": "storage",
+      "cost": "slow",
+      "returns": "WinSxS"
+    },
+    {
+      "id": "probe.drive-space",
+      "domain": "storage",
+      "cost": "fast",
+      "returns": "DriveSpace"
+    },
+    {
+      "id": "probe.top-consumers",
+      "domain": "storage",
+      "cost": "slow",
+      "returns": "TopConsumers"
+    },
+    {
+      "id": "probe.host",
+      "domain": "core",
+      "cost": "fast",
+      "returns": "Host"
+    }
+  ]
+}

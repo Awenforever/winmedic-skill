@@ -1,0 +1,55 @@
+name: ci
+
+on:
+  push:
+    branches: [ main ]
+  pull_request:
+
+jobs:
+  validate:
+    runs-on: windows-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Show versions
+        shell: pwsh
+        run: |
+          $PSVersionTable | Out-String | Write-Host
+
+      - name: Validate catalog
+        shell: powershell
+        run: .\scripts\validate-catalog.ps1
+
+      - name: Install Pester
+        shell: powershell
+        run: |
+          Install-Module Pester -MinimumVersion 5.0.0 -Force -Scope CurrentUser -SkipPublisherCheck -ErrorAction Stop
+          Import-Module Pester -MinimumVersion 5.0.0
+
+      - name: Run engine tests
+        shell: powershell
+        run: |
+          $r = Invoke-Pester -Path .\tests\pester -PassThru -Output Detailed
+          if ($r.FailedCount -gt 0) { throw ('Pester failed: ' + $r.FailedCount) }
+
+      - name: Run routing tests
+        shell: powershell
+        run: |
+          $r = Invoke-Pester -Path .\tests\routing -PassThru -Output Detailed
+          if ($r.FailedCount -gt 0) { throw ('Routing failed: ' + $r.FailedCount) }
+
+      - name: Generate checksums
+        shell: powershell
+        run: |
+          $files = Get-ChildItem -Recurse -File -Include *.ps1,*.json,*.md,SKILL.md -Path engine,catalog,playbooks,SKILL.md,playbook-index.md -ErrorAction SilentlyContinue
+          $lines = foreach ($f in $files) {
+            $h = (Get-FileHash $f.FullName -Algorithm SHA256).Hash.ToLower()
+            ($h + '  ' + ($f.FullName.Replace((Get-Location).Path + '\','') -replace '\\','/'))
+          }
+          $lines | Sort-Object | Set-Content -Path checksums\SHA256SUMS -Encoding ascii
+
+      - name: Upload checksums
+        uses: actions/upload-artifact@v4
+        with:
+          name: checksums
+          path: checksums/SHA256SUMS

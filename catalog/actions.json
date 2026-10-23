@@ -1,0 +1,242 @@
+{
+  "schemaVersion": 1,
+  "actions": [
+    {
+      "id": "storage.recycle-bin-empty",
+      "domain": "storage",
+      "kind": "quarantine",
+      "tier": 1,
+      "risk": "none",
+      "evidence": "ev.recycle-bin",
+      "reversible": "full",
+      "requires": [],
+      "targetsProbe": "probe.recycle-bin",
+      "verify": [
+        {
+          "kind": "path_size_lt",
+          "path": "C:\\$Recycle.Bin",
+          "bytes": 104857600
+        }
+      ]
+    },
+    {
+      "id": "storage.hiberfil-off",
+      "domain": "storage",
+      "kind": "command",
+      "tier": 1,
+      "risk": "none",
+      "command": "powercfg /h off",
+      "evidence": "ev.hiberfil",
+      "reversible": "full",
+      "rollback": "powercfg /h on",
+      "requires": [
+        "admin"
+      ],
+      "targetsProbe": "probe.system-files",
+      "cautions": [
+        "若快速启动开启，会同时关闭快速启动"
+      ],
+      "verify": [
+        {
+          "kind": "system_file_absent",
+          "path": "C:\\hiberfil.sys"
+        }
+      ]
+    },
+    {
+      "id": "storage.getcurrent-remove",
+      "domain": "storage",
+      "kind": "quarantine",
+      "tier": 1,
+      "risk": "none",
+      "evidence": "ev.getcurrent",
+      "reversible": "full",
+      "requires": [
+        "admin"
+      ],
+      "targetsProbe": "probe.update-leftovers",
+      "verify": [
+        {
+          "kind": "path_absent",
+          "path": "C:\\$GetCurrent"
+        }
+      ]
+    },
+    {
+      "id": "storage.winreagent-remove",
+      "domain": "storage",
+      "kind": "quarantine",
+      "tier": 1,
+      "risk": "none",
+      "evidence": "ev.winreagent",
+      "reversible": "full",
+      "requires": [
+        "admin"
+      ],
+      "targetsProbe": "probe.update-leftovers",
+      "verify": [
+        {
+          "kind": "path_absent",
+          "path": "C:\\$WinREAgent"
+        }
+      ]
+    },
+    {
+      "id": "storage.panther-remove",
+      "domain": "storage",
+      "kind": "quarantine",
+      "tier": 1,
+      "risk": "none",
+      "evidence": "ev.panther",
+      "reversible": "full",
+      "requires": [
+        "admin"
+      ],
+      "targetsProbe": "probe.update-leftovers",
+      "verify": [
+        {
+          "kind": "path_absent",
+          "path": "C:\\Windows\\Panther"
+        }
+      ]
+    },
+    {
+      "id": "storage.software-distribution-download",
+      "domain": "storage",
+      "kind": "quarantine",
+      "tier": 2,
+      "risk": "low",
+      "evidence": "ev.softwaredistribution",
+      "reversible": "full",
+      "requires": [
+        "admin",
+        "services-stopped:wuauserv,BITS,TrustedInstaller"
+      ],
+      "targetsProbe": "probe.update-leftovers",
+      "verify": [
+        {
+          "kind": "path_size_lt",
+          "path": "C:\\Windows\\SoftwareDistribution\\Download",
+          "bytes": 524288000
+        }
+      ]
+    },
+    {
+      "id": "storage.edge-cache",
+      "domain": "storage",
+      "kind": "quarantine",
+      "tier": 2,
+      "risk": "low",
+      "evidence": "ev.edge-cache",
+      "reversible": "full",
+      "requires": [
+        "admin",
+        "process-not-running:msedge"
+      ],
+      "targetsProbe": "probe.browser-cache",
+      "verify": [
+        {
+          "kind": "free_space_increased"
+        }
+      ]
+    },
+    {
+      "id": "storage.office-file-cache",
+      "domain": "storage",
+      "kind": "quarantine",
+      "tier": 2,
+      "risk": "low",
+      "evidence": "ev.office-cache",
+      "reversible": "full",
+      "requires": [
+        "admin",
+        "process-not-running:WINWORD,EXCEL,POWERPNT,OUTLOOK"
+      ],
+      "targetsProbe": "probe.office-cache",
+      "verify": [
+        {
+          "kind": "free_space_increased"
+        }
+      ]
+    },
+    {
+      "id": "storage.qqmusic-cache",
+      "domain": "storage",
+      "kind": "quarantine",
+      "tier": 2,
+      "risk": "low",
+      "evidence": "ev.qqmusic-cache",
+      "reversible": "full",
+      "requires": [
+        "admin"
+      ],
+      "targetsProbe": "probe.app-caches",
+      "verify": [
+        {
+          "kind": "free_space_increased"
+        }
+      ]
+    },
+    {
+      "id": "storage.logi-cache",
+      "domain": "storage",
+      "kind": "quarantine",
+      "tier": 2,
+      "risk": "low",
+      "evidence": "ev.logi-cache",
+      "reversible": "full",
+      "requires": [
+        "admin",
+        "process-not-running:logioptionsplus_agent,logioptionsplus_updater,logioptionsplus_appbroker,logioptionsplus_logivoice"
+      ],
+      "targetsProbe": "probe.app-caches",
+      "verify": [
+        {
+          "kind": "free_space_increased"
+        }
+      ]
+    },
+    {
+      "id": "storage.intel-driver-packages",
+      "domain": "storage",
+      "kind": "quarantine",
+      "tier": 2,
+      "risk": "low",
+      "evidence": "ev.intel-driver-packages",
+      "reversible": "full",
+      "requires": [
+        "admin"
+      ],
+      "targetsProbe": "probe.package-cache",
+      "verify": [
+        {
+          "kind": "free_space_increased"
+        }
+      ]
+    },
+    {
+      "id": "storage.winsxs-cleanup",
+      "domain": "storage",
+      "kind": "dism",
+      "tier": 3,
+      "risk": "medium",
+      "command": "DISM /Online /Cleanup-Image /StartComponentCleanup",
+      "evidence": "ev.winsxs",
+      "reversible": "none",
+      "requires": [
+        "admin"
+      ],
+      "targetsProbe": "probe.winsxs",
+      "cautions": [
+        "不可逆（组件被删）",
+        "清理后当场可用空间可能下降，重启后生效",
+        "不要用 /ResetBase"
+      ],
+      "verify": [
+        {
+          "kind": "pending_reboot_hint"
+        }
+      ]
+    }
+  ]
+}

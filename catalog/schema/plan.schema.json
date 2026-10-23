@@ -1,0 +1,74 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "title": "WinMedic plan",
+  "type": "object",
+  "required": [
+    "schemaVersion",
+    "generatedAt",
+    "items",
+    "excluded",
+    "planHash"
+  ],
+  "properties": {
+    "schemaVersion": {
+      "type": "integer",
+      "const": 1
+    },
+    "generatedAt": {
+      "type": "string"
+    },
+    "planHash": {
+      "type": "string",
+      "pattern": "^sha256:[0-9a-f]{64}$"
+    },
+    "items": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "required": [
+          "id",
+          "actionId",
+          "target",
+          "kind",
+          "size",
+          "tier",
+          "reversible",
+          "preconditions"
+        ],
+        "properties": {
+          "id": {
+            "type": "string",
+            "pattern": "^R[0-9]+$"
+          },
+          "actionId": {
+            "type": "string"
+          },
+          "target": {
+            "type": "string"
+          },
+          "kind": {
+            "type": "string"
+          },
+          "size": {
+            "type": "integer",
+            "minimum": 0
+          },
+          "tier": {
+            "type": "integer",
+            "minimum": 1,
+            "maximum": 4
+          },
+          "reversible": {
+            "type": "string"
+          },
+          "blocked": {
+            "type": "boolean"
+          }
+        }
+      }
+    },
+    "excluded": {
+      "type": "array"
+    }
+  }
+}

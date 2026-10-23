@@ -1,0 +1,34 @@
+# Playbook 路由表
+
+> 按**症状 + 平台 + 触发词**选最具体的一份。只加载命中的 playbook。
+
+| ID | Playbook | 触发示例 | 域 |
+|---|---|---|---|
+| PB-001 | [cleanup-protocol](playbooks/cleanup-protocol.md) | 任何清理/卸载/删缓存动作的前置协议 | cross |
+| PB-101 | [storage-disk-space-recovery](playbooks/storage-disk-space-recovery.md) | C 盘红了、磁盘满了、空间不足、只剩几 G | storage |
+| PB-102 | [storage-large-folder-management](playbooks/storage-large-folder-management.md) | 哪个文件夹这么大、大目录治理、想腾空间 | storage |
+| PB-103 | [storage-partition-audit](playbooks/storage-partition-audit.md) | 分区不合理、C 盘太小、能不能合盘 | storage |
+| PB-201 | [boot-slow-boot-triage](playbooks/boot-slow-boot-triage.md) | 开机特别慢、开机很久、开机卡住 | boot |
+| PB-202 | [boot-startup-bloat](playbooks/boot-startup-bloat.md) | 开机自启太多、启动项、开机弹一堆 | boot |
+| PB-203 | [boot-performance-forensics](playbooks/boot-performance-forensics.md) | 电脑卡、CPU 占用高、风扇狂转 | boot |
+| PB-301 | [apps-uninstall-residue](playbooks/apps-uninstall-residue.md) | 卸载残留、删不干净、卸载后还在 | apps |
+| PB-302 | [apps-migrate-to-another-drive](playbooks/apps-migrate-to-another-drive.md) | 把微信迁到 D 盘、软件搬到别的盘、下载目录搬家 | apps |
+| PB-303 | [apps-large-app-audit](playbooks/apps-large-app-audit.md) | 哪个软件占空间、装了太多软件 | apps |
+| PB-901 | [windows-new-device-intake](playbooks/windows-new-device-intake.md) | 新机验收、刚买的电脑、帮忙体检 | intake |
+
+## 路由规则
+
+1. **先匹配症状，再匹配平台**；本 Skill 当前只覆盖 Windows。
+2. 命中多个时，取**最具体**的（PB-101 优于 PB-102 泛化描述）。
+3. 「迁移」类请求 **不得** 路由到清理类 playbook（R3 难例）。
+4. 请求含破坏性措辞（全删、直接删、不用备份）→ 强制先走 PB-001。
+5. 无匹配时：先用 `winmedic.ps1 doctor` 与只读 probe 收集事实，再决定，不要瞎猜 playbook。
+
+## 域与探针集对应
+
+| 域 | probe --set |
+|---|---|
+| storage | `storage` |
+| boot | `boot` |
+| apps | `apps` |
+| intake | `intake` |

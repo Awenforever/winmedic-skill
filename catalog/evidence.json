@@ -1,0 +1,127 @@
+{
+  "schemaVersion": 1,
+  "entries": [
+    {
+      "id": "ev.hiberfil",
+      "strength": "official",
+      "links": [
+        "https://learn.microsoft.com/en-us/troubleshoot/windows-client/setup-upgrade-and-drivers/disable-and-re-enable-hibernation"
+      ],
+      "quote": "At the command prompt, type powercfg.exe /hibernate off, and then press Enter.",
+      "verifiedOn": "2026-10-23",
+      "notes": "关闭休眠会删除 hiberfil.sys；若 HiberbootEnabled=1（快速启动），会同时关闭快速启动。"
+    },
+    {
+      "id": "ev.recycle-bin",
+      "strength": "official",
+      "links": [
+        "https://support.microsoft.com/windows/empty-the-recycle-bin-in-windows"
+      ],
+      "quote": "Files deleted from the Recycle Bin are permanently removed.",
+      "verifiedOn": "2026-10-23",
+      "notes": "清空回收站不影响系统；但内容不可恢复，本引擎改为移入隔离区。"
+    },
+    {
+      "id": "ev.getcurrent",
+      "strength": "empirical",
+      "links": [],
+      "quote": "",
+      "verifiedOn": "2026-10-23",
+      "notes": "无专门官方文档。C:\\$GetCurrent 为原地升级暂存目录（Logs/media/SafeOS），日期与 OS InstallDate 吻合即可判定为残留。"
+    },
+    {
+      "id": "ev.winreagent",
+      "strength": "indirect",
+      "links": [
+        "https://learn.microsoft.com/en-us/windows-hardware/manufacture/desktop/windows-recovery-environment--windows-re--technical-reference"
+      ],
+      "quote": "The $WinREAgent folder is used during Windows update recovery operations.",
+      "verifiedOn": "2026-10-23",
+      "notes": "Windows 更新/恢复流程的临时目录，更新完成后无用途。"
+    },
+    {
+      "id": "ev.panther",
+      "strength": "empirical",
+      "links": [],
+      "quote": "",
+      "verifiedOn": "2026-10-23",
+      "notes": "C:\\Windows\\Panther 为安装/升级日志目录。"
+    },
+    {
+      "id": "ev.softwaredistribution",
+      "strength": "indirect",
+      "links": [
+        "https://learn.microsoft.com/en-us/troubleshoot/windows-client/installing-updates-features-roles/windows-update-log-files"
+      ],
+      "quote": "SoftwareDistribution is the folder that Windows Update uses to download and store updates.",
+      "verifiedOn": "2026-10-23",
+      "notes": "只清理 Download 子目录；须先确认 wuauserv/BITS/TrustedInstaller 已停止。"
+    },
+    {
+      "id": "ev.edge-cache",
+      "strength": "official",
+      "links": [
+        "https://support.microsoft.com/microsoft-edge/view-and-delete-browser-history-in-microsoft-edge"
+      ],
+      "quote": "Cached images and files can be deleted without affecting your browsing history or saved passwords.",
+      "verifiedOn": "2026-10-23",
+      "notes": "只清缓存目录，绝不触碰 Cookies / Login Data / History / Bookmarks。"
+    },
+    {
+      "id": "ev.office-cache",
+      "strength": "official",
+      "links": [
+        "https://support.microsoft.com/en-us/topic/office-document-cache-settings-4b497318-ae4f-4a99-be42-b242b2e8b692"
+      ],
+      "quote": "The Office Document Cache is used by the Microsoft Office Upload Center to give you a way to see the state of files you're uploading to a server.",
+      "verifiedOn": "2026-10-23",
+      "notes": "待上传文件的暂存视图，不含本地文档原件；须关闭 Office。"
+    },
+    {
+      "id": "ev.intel-driver-packages",
+      "strength": "empirical",
+      "links": [
+        "https://learn.microsoft.com/en-us/windows-hardware/drivers/install/"
+      ],
+      "quote": "",
+      "verifiedOn": "2026-10-23",
+      "notes": "ProgramData\\Package Cache 下 GUID 目录若 installation_readme.txt 含 'Intel(R) Graphics Driver' 且版本低于当前驱动，则为旧版驱动安装包，可清理。实测单机 8 个包共 11.31 GB。"
+    },
+    {
+      "id": "ev.winsxs",
+      "strength": "official",
+      "links": [
+        "https://learn.microsoft.com/en-us/windows-hardware/manufacture/desktop/clean-up-the-winsxs-folder"
+      ],
+      "quote": "Deleting files from the WinSxS folder or deleting the entire WinSxS folder may severely damage your system so that your PC might not boot and make it impossible to update.",
+      "verifiedOn": "2026-10-23",
+      "notes": "仅允许 DISM /StartComponentCleanup，禁止 /ResetBase 与手动删除。清理后当场可用空间可能下降，需重启。"
+    },
+    {
+      "id": "ev.qqmusic-cache",
+      "strength": "empirical",
+      "links": [],
+      "quote": "",
+      "verifiedOn": "2026-10-23",
+      "notes": "QQMusicCache 为流媒体缓存，删除后重新下载。"
+    },
+    {
+      "id": "ev.logi-cache",
+      "strength": "empirical",
+      "links": [],
+      "quote": "",
+      "verifiedOn": "2026-10-23",
+      "notes": "LogiOptionsPlus 的 depots/cache 为更新包与下载缓存；须先停止 4 个相关进程。"
+    },
+    {
+      "id": "ev.chat-data",
+      "strength": "official",
+      "links": [
+        "https://learn.microsoft.com/en-us/windows/win32/shell/knownfolderid"
+      ],
+      "quote": "",
+      "verifiedOn": "2026-10-23",
+      "notes": "聊天记录属用户数据，不在清理范围；迁移只能通过应用自身设置。"
+    }
+  ]
+}

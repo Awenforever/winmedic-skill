@@ -1,0 +1,96 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "title": "WinMedic actions catalog",
+  "type": "object",
+  "required": [
+    "schemaVersion",
+    "actions"
+  ],
+  "properties": {
+    "schemaVersion": {
+      "type": "integer",
+      "const": 1
+    },
+    "actions": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "required": [
+          "id",
+          "domain",
+          "kind",
+          "tier",
+          "risk",
+          "evidence",
+          "reversible",
+          "requires",
+          "verify"
+        ],
+        "properties": {
+          "id": {
+            "type": "string",
+            "pattern": "^[a-z]+\\.[a-z0-9.-]+$"
+          },
+          "domain": {
+            "type": "string"
+          },
+          "kind": {
+            "enum": [
+              "quarantine",
+              "command",
+              "dism"
+            ]
+          },
+          "tier": {
+            "type": "integer",
+            "minimum": 1,
+            "maximum": 4
+          },
+          "risk": {
+            "enum": [
+              "none",
+              "low",
+              "medium",
+              "high"
+            ]
+          },
+          "command": {
+            "type": "string"
+          },
+          "evidence": {
+            "type": "string"
+          },
+          "reversible": {
+            "enum": [
+              "full",
+              "partial",
+              "none"
+            ]
+          },
+          "rollback": {
+            "type": "string"
+          },
+          "requires": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            }
+          },
+          "cautions": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            }
+          },
+          "targetsProbe": {
+            "type": "string"
+          },
+          "verify": {
+            "type": "array",
+            "minItems": 1
+          }
+        }
+      }
+    }
+  }
+}

@@ -1,0 +1,16 @@
+# runtime state
+state/
+*.log
+
+# test artifacts
+tests/**/TestResults/
+*.trx
+
+# editor
+.vs/
+.vscode/
+*.user
+
+# local
+*.local.json
+vendor/
