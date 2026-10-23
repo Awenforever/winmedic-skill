@@ -114,6 +114,18 @@
       "domain": "apps",
       "cost": "slow",
       "returns": "AppResidue"
+    },
+    {
+      "id": "probe.windows-update",
+      "domain": "updates",
+      "cost": "fast",
+      "returns": "WindowsUpdate"
+    },
+    {
+      "id": "probe.drivers",
+      "domain": "updates",
+      "cost": "medium",
+      "returns": "Drivers"
     }
   ]
 }

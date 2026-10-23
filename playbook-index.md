@@ -8,6 +8,8 @@
 | PB-101 | [storage-disk-space-recovery](playbooks/storage-disk-space-recovery.md) | C 盘红了、磁盘满了、空间不足、只剩几 G | storage |
 | PB-102 | [storage-large-folder-management](playbooks/storage-large-folder-management.md) | 哪个文件夹这么大、大目录治理、想腾空间 | storage |
 | PB-103 | [storage-partition-audit](playbooks/storage-partition-audit.md) | 分区不合理、C 盘太小、能不能合盘 | storage |
+| PB-401 | [update-troubleshooting](playbooks/update-troubleshooting.md) | 更新失败、一直装不上、更新卡住、重启又回滚 | updates |
+| PB-402 | [windows-driver-device-triage](playbooks/windows-driver-device-triage.md) | 设备管理器有黄叹号、声卡/网卡失效、驱动装不上 | updates |
 | PB-201 | [boot-slow-boot-triage](playbooks/boot-slow-boot-triage.md) | 开机特别慢、开机很久、开机卡住 | boot |
 | PB-202 | [boot-startup-bloat](playbooks/boot-startup-bloat.md) | 开机自启太多、启动项、开机弹一堆 | boot |
 | PB-203 | [boot-performance-forensics](playbooks/boot-performance-forensics.md) | 电脑卡、CPU 占用高、风扇狂转 | boot |

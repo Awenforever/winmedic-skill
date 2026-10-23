@@ -5,6 +5,19 @@
 
 ## [Unreleased]
 
+## [1.2.0] - 2026-10-23
+
+### Added
+- 更新/驱动/设备域（只读）：`probe --set updates`
+- `probe.windows-update`：待重启判定（CBS / WU / PendingFileRename）、更新相关服务状态、近期补丁、失败事件（ID 20/25/31）
+- `probe.drivers`：问题设备枚举（ConfigManagerErrorCode）+ 中文解释 + 显卡驱动版本
+- playbook：`update-troubleshooting`、`windows-driver-device-triage`
+- `Get-DeviceErrorMeaning` / `Get-PendingRebootState` 纯函数，便于单测
+
+### Tests
+- 新增 9 个用例，总计 58 个 Pester + 6 个路由用例
+
+
 ## [1.1.0] - 2026-10-23
 
 ### Added
