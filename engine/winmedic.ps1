@@ -55,6 +55,7 @@ if (-not $script:WinMedicRoot) { $script:WinMedicRoot = (Resolve-Path (Join-Path
 . (Join-Path $PSScriptRoot 'probes\security.ps1')
 . (Join-Path $PSScriptRoot 'probes\recovery.ps1')
 . (Join-Path $PSScriptRoot 'probes\printers.ps1')
+. (Join-Path $PSScriptRoot 'probes\backup.ps1')
 
 function Get-StatePath {
     param([string]$Name)
@@ -126,12 +127,16 @@ function Invoke-Probe {
         $probes += @((Get-PrintersProbe))
     }
 
+    if ($set -eq 'backup' -or $set -eq 'all' -or $set -eq 'intake') {
+        $probes += @((Get-BackupStatusProbe))
+    }
+
     if ($set -eq 'intake') {
         $probes += (Get-DriveSpaceProbe)
     }
 
     if ($probes.Count -le 1) {
-        Write-Log ('未知探针集: ' + $Set + '（可用 storage / boot / apps / updates / network / security / recovery / printers / intake / all）') -Level ERROR
+        Write-Log ('未知探针集: ' + $Set + '（可用 storage / boot / apps / updates / network / security / recovery / printers / backup / intake / all）') -Level ERROR
         return $script:EXIT.USAGE
     }
 
@@ -406,7 +411,7 @@ function Invoke-Report {
 function Show-Help {
     Write-Host 'WinMedic 引擎'
     Write-Host '  doctor                     环境自检'
-    Write-Host '  probe --set storage|boot|apps|updates|network|security|recovery|printers|intake|all'
+    Write-Host '  probe --set storage|boot|apps|updates|network|security|recovery|printers|backup|intake|all'
     Write-Host '  plan  [--from findings.json] 生成方案'
     Write-Host '  apply --plan plan.json --ids R1,R2 --yes'
     Write-Host '  verify --journal <runId>   复核'

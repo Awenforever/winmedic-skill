@@ -5,6 +5,21 @@
 
 ## [Unreleased]
 
+## [1.8.0] - 2026-10-24
+
+### Added
+- 备份域（只读）：`probe --set backup`
+- `probe.backup-status`：文件历史记录、OneDrive 文件夹备份、系统映像、还原点、卷影副本
+- `Get-BackupVerdict`：none / weak / ok —— 只有系统级恢复手段不算「有备份」
+- playbook：`setup-backup`（3-2-1 原则 + 恢复验证）
+
+### Notes
+- 混淆「系统还原点」与「数据备份」是最常见的认知错误，playbook 与裁决逻辑都显式区分
+
+### Tests
+- 新增 6 个用例，总计 102 个 Pester + 6 个路由用例
+
+
 ## [1.7.0] - 2026-10-24
 
 ### Added

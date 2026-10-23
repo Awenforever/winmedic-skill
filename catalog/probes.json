@@ -210,6 +210,12 @@
       "domain": "printers",
       "cost": "fast",
       "returns": "Printers"
+    },
+    {
+      "id": "probe.backup-status",
+      "domain": "backup",
+      "cost": "medium",
+      "returns": "BackupStatus"
     }
   ]
 }

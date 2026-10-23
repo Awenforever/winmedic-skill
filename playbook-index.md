@@ -8,6 +8,7 @@
 | PB-101 | [storage-disk-space-recovery](playbooks/storage-disk-space-recovery.md) | C 盘红了、磁盘满了、空间不足、只剩几 G | storage |
 | PB-102 | [storage-large-folder-management](playbooks/storage-large-folder-management.md) | 哪个文件夹这么大、大目录治理、想腾空间 | storage |
 | PB-103 | [storage-partition-audit](playbooks/storage-partition-audit.md) | 分区不合理、C 盘太小、能不能合盘 | storage |
+| PB-802 | [setup-backup](playbooks/setup-backup.md) | 怎么备份、有没有备份、备份在哪、能不能恢复 | backup |
 | PB-801 | [printer-repair](playbooks/printer-repair.md) | 打印机离线、打印没反应、卡纸、队列卡住 | printers |
 | PB-701 | [windows-data-recovery-triage](playbooks/windows-data-recovery-triage.md) | 误删文件怎么找回、回收站清空了、以前的版本 | recovery |
 | PB-702 | [boot-failure-triage](playbooks/boot-failure-triage.md) | 蓝屏进不去系统、卡在转圈、自动修复失败 | recovery |
