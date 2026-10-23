@@ -15,7 +15,7 @@
 [CmdletBinding()]
 param(
     [Parameter(Position = 0)]
-    [ValidateSet('doctor', 'probe', 'plan', 'apply', 'verify', 'restore', 'journal', 'profile', 'version', 'help')]
+    [ValidateSet('doctor', 'probe', 'plan', 'apply', 'verify', 'restore', 'journal', 'profile', 'report', 'version', 'help')]
     [string]$Command = 'help',
     [Parameter(Position = 1)]
     [string]$SubCommand,
@@ -45,6 +45,7 @@ if (-not $script:WinMedicRoot) { $script:WinMedicRoot = (Resolve-Path (Join-Path
 . (Join-Path $PSScriptRoot 'lib\Plan.ps1')
 . (Join-Path $PSScriptRoot 'lib\Verify.ps1')
 . (Join-Path $PSScriptRoot 'lib\Action.ps1')
+. (Join-Path $PSScriptRoot 'lib\Report.ps1')
 . (Join-Path $PSScriptRoot 'lib\Scan.ps1')
 . (Join-Path $PSScriptRoot 'probes\storage.ps1')
 . (Join-Path $PSScriptRoot 'probes\boot.ps1')
@@ -355,6 +356,48 @@ function Invoke-Profile {
     return $script:EXIT.OK
 }
 
+function Resolve-FindingsPath {
+    $state = Get-StatePath
+    $candidates = @(
+        (Join-Path $state ($Set + '-findings.json')),
+        (Join-Path $state 'findings.json')
+    )
+    foreach ($c in $candidates) { if (Test-Path -LiteralPath $c) { return $c } }
+    $newest = Get-ChildItem -LiteralPath $state -Filter '*-findings.json' -File -ErrorAction SilentlyContinue |
+        Sort-Object LastWriteTime -Descending | Select-Object -First 1
+    if ($newest) { return $newest.FullName }
+    return $null
+}
+
+function Invoke-Report {
+    $fp = Resolve-FindingsPath
+    if (-not $fp) {
+        Write-Log '找不到 findings，请先运行 probe' -Level ERROR
+        return $script:EXIT.USAGE
+    }
+    $findings = Get-Content -LiteralPath $fp -Raw -Encoding UTF8 | ConvertFrom-Json
+    $plan = $null
+    $pp = Get-StatePath 'plan.json'
+    if (Test-Path -LiteralPath $pp) {
+        try { $plan = Get-Content -LiteralPath $pp -Raw -Encoding UTF8 | ConvertFrom-Json } catch { }
+    }
+    $records = @()
+    $rid = $Journal
+    if (-not $rid) {
+        $list = Get-JournalList
+        if ($list.Count -gt 0) { $rid = $list[0] }
+    }
+    if ($rid) { $records = @(Get-JournalRecords -RunId $rid) }
+    $md = Format-WinMedicReport -Findings $findings -Plan $plan -JournalRecords $records -RunId $rid
+    $outPath = if ($Out) { $Out } else { Get-StatePath ('report-' + (Get-CompactTimestamp) + '.md') }
+    [IO.File]::WriteAllText($outPath, $md, (New-Object Text.UTF8Encoding($false)))
+    if ($Json) { Write-JsonResult -Object @{ report = $outPath; runId = $rid; findings = $fp } | Out-Null; return $script:EXIT.OK }
+    Write-Host $md
+    Write-Host ''
+    Write-Log ('报告已写入: ' + $outPath) -Level OK
+    return $script:EXIT.OK
+}
+
 function Show-Help {
     Write-Host 'WinMedic 引擎'
     Write-Host '  doctor                     环境自检'
@@ -365,6 +408,7 @@ function Show-Help {
     Write-Host '  restore --journal <runId>  回滚'
     Write-Host '  journal list | journal show --journal <runId>'
     Write-Host '  profile [--exclude <模式> [--remove]]   查看/维护保留项'
+    Write-Host '  report [--journal <runId>] [--out f.md] 生成五段式交付报告'
     Write-Host '  version'
     return $script:EXIT.OK
 }
@@ -378,6 +422,7 @@ switch ($Command) {
     'restore' { $code = Invoke-Restore }
     'journal' { $code = Invoke-JournalCmd }
     'profile' { $code = Invoke-Profile }
+    'report'  { $code = Invoke-Report }
     'version' { Write-Host ('winmedic ' + (Get-Content (Join-Path $script:WinMedicRoot 'VERSION') -Raw).Trim()); $code = $script:EXIT.OK }
     default   { $code = Show-Help }
 }
