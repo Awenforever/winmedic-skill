@@ -96,6 +96,24 @@
       "domain": "boot",
       "cost": "fast",
       "returns": "ServicesAuto"
+    },
+    {
+      "id": "probe.installed-apps",
+      "domain": "apps",
+      "cost": "fast",
+      "returns": "InstalledApps"
+    },
+    {
+      "id": "probe.app-dirs",
+      "domain": "apps",
+      "cost": "slow",
+      "returns": "AppDirs"
+    },
+    {
+      "id": "probe.app-residue",
+      "domain": "apps",
+      "cost": "slow",
+      "returns": "AppResidue"
     }
   ]
 }

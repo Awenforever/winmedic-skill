@@ -5,6 +5,23 @@
 
 ## [Unreleased]
 
+## [1.0.0] - 2026-10-23
+
+### Added
+- 应用域（只读审计）：`probe --set apps`
+- `probe.installed-apps`：三个卸载注册表分支枚举 + 去重 + 识别「注册表指向的目录已不存在」
+- `probe.app-dirs`：ProgramData / LocalAppData\Programs / LocalAppData 的大目录扫描（带时间预算与截断标记）
+- `probe.app-residue`：疑似遗留目录 + 失效注册表条目，**只举证不删除**
+- 名称相似度 `Test-NameSimilar`：归一化包含 + 词元重叠 + 共同前缀，宁漏勿错
+
+### Design decisions
+- **应用域不提供自动删除残留的动作**。目录名与程序名的匹配天然存在误判（实测中 `day-pc` 这类用户自建目录会被列为嫌疑），自动删除的期望收益远低于误删代价。
+- 扫描带 90 秒时间预算，超时标记 `truncated`，不静默截断。
+
+### Tests
+- 新增 12 个应用域用例（归一化 3 + 相似度 4 + 残留识别 4 + 探针 1），总计 38 个 Pester 用例
+
+
 ## [0.5.0] - 2026-10-23
 
 ### Added

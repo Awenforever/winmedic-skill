@@ -45,6 +45,7 @@ if (-not $script:WinMedicRoot) { $script:WinMedicRoot = (Resolve-Path (Join-Path
 . (Join-Path $PSScriptRoot 'lib\Scan.ps1')
 . (Join-Path $PSScriptRoot 'probes\storage.ps1')
 . (Join-Path $PSScriptRoot 'probes\boot.ps1')
+. (Join-Path $PSScriptRoot 'probes\apps.ps1')
 
 function Get-StatePath {
     param([string]$Name)
@@ -91,12 +92,17 @@ function Invoke-Probe {
         $probes += @((Get-BootTimeProbe), (Get-StartupItemsProbe), (Get-PerfBaselineProbe), (Get-DiskHealthProbe), (Get-ServicesAutoProbe))
     }
 
+    if ($set -eq 'apps' -or $set -eq 'all') {
+        $budget = if ($set -eq 'all') { 45 } else { 90 }
+        $probes += @((Get-InstalledAppsProbe), (Get-AppResidueProbe -TimeBudgetSeconds $budget))
+    }
+
     if ($set -eq 'intake') {
         $probes += (Get-DriveSpaceProbe)
     }
 
     if ($probes.Count -le 1) {
-        Write-Log ('未知探针集: ' + $Set + '（可用 storage / boot / intake / all）') -Level ERROR
+        Write-Log ('未知探针集: ' + $Set + '（可用 storage / boot / apps / intake / all）') -Level ERROR
         return $script:EXIT.USAGE
     }
 
@@ -295,7 +301,7 @@ function Invoke-JournalCmd {
 function Show-Help {
     Write-Host 'WinMedic 引擎'
     Write-Host '  doctor                     环境自检'
-    Write-Host '  probe --set storage|boot|intake|all  只读采集'
+    Write-Host '  probe --set storage|boot|apps|intake|all  只读采集'
     Write-Host '  plan  [--from findings.json] 生成方案'
     Write-Host '  apply --plan plan.json --ids R1,R2 --yes'
     Write-Host '  verify --journal <runId>   复核'
