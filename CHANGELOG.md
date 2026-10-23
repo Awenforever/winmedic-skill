@@ -5,6 +5,18 @@
 
 ## [Unreleased]
 
+## [1.4.0] - 2026-10-23
+
+### Added
+- 安全态势域（只读，不修改任何安全配置）：`probe --set security`
+- `probe.defender`（实时保护/病毒库天数/篡改防护/排除项计数）、`probe.firewall`、`probe.bitlocker`、`probe.hardening`（SMB1/安全启动/管理员组/Guest）、`probe.security-posture`（总体裁决）
+- 纯函数 `Get-SignatureAgeDays` / `Get-SecurityVerdict`：未知项按「无法读取」处理，不误判为不安全
+- playbook：`endpoint-security-check`、`bitlocker-recovery-triage`
+
+### Tests
+- 新增 9 个用例，总计 78 个 Pester + 6 个路由用例
+
+
 ## [1.3.0] - 2026-10-23
 
 ### Added

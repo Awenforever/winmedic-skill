@@ -51,6 +51,7 @@ if (-not $script:WinMedicRoot) { $script:WinMedicRoot = (Resolve-Path (Join-Path
 . (Join-Path $PSScriptRoot 'probes\apps.ps1')
 . (Join-Path $PSScriptRoot 'probes\updates.ps1')
 . (Join-Path $PSScriptRoot 'probes\network.ps1')
+. (Join-Path $PSScriptRoot 'probes\security.ps1')
 
 function Get-StatePath {
     param([string]$Name)
@@ -110,12 +111,16 @@ function Invoke-Probe {
         $probes += @((Get-NetworkAdaptersProbe), (Get-DnsConfigProbe), (Get-ProxyConfigProbe), (Get-VpnAdaptersProbe))
     }
 
+    if ($set -eq 'security' -or $set -eq 'all' -or $set -eq 'intake') {
+        $probes += @((Get-SecurityPostureProbe))
+    }
+
     if ($set -eq 'intake') {
         $probes += (Get-DriveSpaceProbe)
     }
 
     if ($probes.Count -le 1) {
-        Write-Log ('未知探针集: ' + $Set + '（可用 storage / boot / apps / updates / network / intake / all）') -Level ERROR
+        Write-Log ('未知探针集: ' + $Set + '（可用 storage / boot / apps / updates / network / security / intake / all）') -Level ERROR
         return $script:EXIT.USAGE
     }
 

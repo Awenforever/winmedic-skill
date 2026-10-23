@@ -8,6 +8,8 @@
 | PB-101 | [storage-disk-space-recovery](playbooks/storage-disk-space-recovery.md) | C 盘红了、磁盘满了、空间不足、只剩几 G | storage |
 | PB-102 | [storage-large-folder-management](playbooks/storage-large-folder-management.md) | 哪个文件夹这么大、大目录治理、想腾空间 | storage |
 | PB-103 | [storage-partition-audit](playbooks/storage-partition-audit.md) | 分区不合理、C 盘太小、能不能合盘 | storage |
+| PB-601 | [endpoint-security-check](playbooks/endpoint-security-check.md) | 帮我看看电脑安全吗、是不是中毒了、防护开没开 | security |
+| PB-602 | [bitlocker-recovery-triage](playbooks/bitlocker-recovery-triage.md) | 开机要 BitLocker 恢复密钥、换主板后进不去 | security |
 | PB-501 | [network-diagnostics](playbooks/network-diagnostics.md) | 突然断网、能上微信打不开网页、DNS 解析失败 | network |
 | PB-502 | [vpn-proxy-troubleshooting](playbooks/vpn-proxy-troubleshooting.md) | 开了代理就上不了网、VPN 连上没网、git 拉不动 | network |
 | PB-401 | [update-troubleshooting](playbooks/update-troubleshooting.md) | 更新失败、一直装不上、更新卡住、重启又回滚 | updates |

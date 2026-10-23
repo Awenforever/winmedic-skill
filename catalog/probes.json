@@ -150,6 +150,36 @@
       "domain": "network",
       "cost": "fast",
       "returns": "VpnAdapters"
+    },
+    {
+      "id": "probe.defender",
+      "domain": "security",
+      "cost": "fast",
+      "returns": "Defender"
+    },
+    {
+      "id": "probe.firewall",
+      "domain": "security",
+      "cost": "fast",
+      "returns": "Firewall"
+    },
+    {
+      "id": "probe.bitlocker",
+      "domain": "security",
+      "cost": "fast",
+      "returns": "BitLocker"
+    },
+    {
+      "id": "probe.hardening",
+      "domain": "security",
+      "cost": "medium",
+      "returns": "Hardening"
+    },
+    {
+      "id": "probe.security-posture",
+      "domain": "security",
+      "cost": "medium",
+      "returns": "SecurityPosture"
     }
   ]
 }
