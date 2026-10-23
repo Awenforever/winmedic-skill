@@ -5,6 +5,16 @@
 
 ## [Unreleased]
 
+## [1.11.0] - 2026-10-24
+
+### Changed
+- 把 `restore` 的移动逻辑从派发器抽成 `Restore-JournalQuarantine`（Journal.ps1），使其可单测、可复用；派发器只负责编排与记账
+
+### Tests
+- 新增 4 个隔离区往返用例：移动→恢复、原位置冲突拒绝、隔离区文件丢失、同名冲突自动加后缀
+- 这补上了此前「apply→restore 因需管理员而未在 CLI 层覆盖」的缺口
+
+
 ## [1.10.0] - 2026-10-24
 
 ### Added

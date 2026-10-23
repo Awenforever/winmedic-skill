@@ -309,21 +309,13 @@ function Invoke-Restore {
     foreach ($r in $recs) {
         if ($Item -and $r.itemId -ne $Item) { continue }
         if ($r.mode -ne 'quarantine') { continue }
-        $q = $r.quarantinePath
-        if (-not $q -or -not (Test-Path -LiteralPath $q)) { continue }
-        $dest = $r.target
-        if (Test-Path -LiteralPath $dest) {
-            Write-Log ('目标已存在，跳过: ' + $dest) -Level WARN; $failed++; continue
-        }
-        $parent = Split-Path -Parent $dest
-        if ($parent -and -not (Test-Path -LiteralPath $parent)) { New-Item -ItemType Directory -Force -Path $parent | Out-Null }
-        try {
-            Move-Item -LiteralPath $q -Destination $dest -Force -ErrorAction Stop
-            Write-Log ('已恢复: ' + $dest) -Level OK
+        $res = Restore-JournalQuarantine -Record $r
+        if ($res.ok) {
+            Write-Log ('已恢复: ' + $res.target) -Level OK
             $restored++
-            Write-JournalRecord -RunId $Journal -Record @{ itemId = $r.itemId; actionId = $r.actionId; target = $dest; result = 'restored' }
-        } catch {
-            Write-Log ('恢复失败: ' + $dest + ' -> ' + $_.Exception.Message) -Level ERROR
+            Write-JournalRecord -RunId $Journal -Record @{ itemId = $r.itemId; actionId = $r.actionId; target = $res.target; result = 'restored' }
+        } else {
+            Write-Log ('恢复失败: ' + $res.target + ' -> ' + $res.detail) -Level ERROR
             $failed++
         }
     }

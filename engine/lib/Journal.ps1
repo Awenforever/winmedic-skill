@@ -58,3 +58,25 @@ function New-QuarantineDir {
     if (-not (Test-Path -LiteralPath $dir)) { New-Item -ItemType Directory -Force -Path $dir | Out-Null }
     return $dir
 }
+function Restore-JournalQuarantine {
+    <#
+      把一条隔离记录移回原位置。可单测，不依赖管理员权限。
+      返回 @{ ok; detail; target }
+    #>
+    param([Parameter(Mandatory)]$Record)
+    $q = [string]$Record.quarantinePath
+    $dest = [string]$Record.target
+    if (-not $q -or -not $dest) { return @{ ok = $false; detail = '记录缺少 quarantinePath 或 target'; target = $dest } }
+    if (-not (Test-Path -LiteralPath $q)) { return @{ ok = $false; detail = '隔离区文件已不存在'; target = $dest } }
+    if (Test-Path -LiteralPath $dest) { return @{ ok = $false; detail = '原位置已存在同名目标，拒绝覆盖'; target = $dest } }
+    $parent = Split-Path -Parent $dest
+    if ($parent -and -not (Test-Path -LiteralPath $parent)) {
+        try { New-Item -ItemType Directory -Force -Path $parent | Out-Null } catch { }
+    }
+    try {
+        Move-Item -LiteralPath $q -Destination $dest -Force -ErrorAction Stop
+        return @{ ok = $true; detail = '已恢复'; target = $dest }
+    } catch {
+        return @{ ok = $false; detail = $_.Exception.Message; target = $dest }
+    }
+}
