@@ -237,6 +237,30 @@
           "kind": "pending_reboot_hint"
         }
       ]
+    },
+    {
+      "id": "recovery.create-restore-point",
+      "domain": "recovery",
+      "kind": "command",
+      "tier": 1,
+      "risk": "none",
+      "command": "powershell -NoProfile -ExecutionPolicy Bypass -Command \"Checkpoint-Computer -Description winmedic -RestorePointType MODIFY_SETTINGS\"",
+      "evidence": "ev.restore-point",
+      "reversible": "partial",
+      "rollback": "Get-ComputerRestorePoint | ... 由用户决定删除",
+      "requires": [
+        "admin"
+      ],
+      "standalone": true,
+      "cautions": [
+        "系统保护未启用时会失败",
+        "可能耗时 1-3 分钟"
+      ],
+      "verify": [
+        {
+          "kind": "restore_point_exists"
+        }
+      ]
     }
   ]
 }

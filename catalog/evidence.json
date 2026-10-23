@@ -122,6 +122,16 @@
       "quote": "",
       "verifiedOn": "2026-10-23",
       "notes": "聊天记录属用户数据，不在清理范围；迁移只能通过应用自身设置。"
+    },
+    {
+      "id": "ev.restore-point",
+      "strength": "official",
+      "links": [
+        "https://learn.microsoft.com/en-us/powershell/module/microsoft.powershell.management/checkpoint-computer"
+      ],
+      "quote": "Creates a system restore point on the local computer.",
+      "verifiedOn": "2026-10-24",
+      "notes": "需系统保护已启用且为管理员；建立还原点通常耗时 1-3 分钟。仅对本机生效。"
     }
   ]
 }

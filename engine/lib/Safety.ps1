@@ -103,3 +103,29 @@ function Get-CommitInfo {
     if (-not $m) { return $null }
     return @{ CommitLimit = [int64]$m.CommitLimit; CommittedBytes = [int64]$m.CommittedBytes; AvailableMBytes = [int64]$m.AvailableMBytes }
 }
+function Test-RiskGate {
+    <#
+      纯函数：在「恢复能力不足」时决定是否放行。
+      规则：
+        - 没有 Tier 3+ 目标 -> 放行（Tier 1/2 可回滚或可重建）
+        - 有 Tier 3+ 且恢复等级 ready -> 放行
+        - 有 Tier 3+ 且等级 weak/poor/unknown -> 需显式接受风险
+      AcceptRisk 只对 Tier 3 生效；Tier 4 永远不放行。
+    #>
+    param([array]$Items = @(), [string]$RecoveryLevel = 'unknown', [switch]$AcceptRisk)
+    $tier4 = @($Items | Where-Object { [int]$_.tier -ge 4 })
+    if ($tier4.Count -gt 0) {
+        return @{ allow = $false; reason = '包含 Tier 4 红线目标，引擎拒绝执行' }
+    }
+    $tier3 = @($Items | Where-Object { [int]$_.tier -ge 3 })
+    if ($tier3.Count -eq 0) {
+        return @{ allow = $true; reason = '无可回滚风险项' }
+    }
+    if ($RecoveryLevel -eq 'ready') {
+        return @{ allow = $true; reason = '恢复能力就绪（有还原点或卷影副本）' }
+    }
+    if ($AcceptRisk) {
+        return @{ allow = $true; reason = ('恢复能力为 ' + $RecoveryLevel + '，用户已显式接受风险') }
+    }
+    return @{ allow = $false; reason = ('含不可回滚项，但恢复能力为 ' + $RecoveryLevel + '；请先建还原点，或加 --accept-risk 显式承担') }
+}

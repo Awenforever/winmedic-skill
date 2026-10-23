@@ -5,6 +5,17 @@
 
 ## [Unreleased]
 
+## [1.12.0] - 2026-10-24
+
+### Added
+- `explain [--action <id>]`：列出全部动作，或展示单条动作的完整依据（级别/可回滚/命令/注意事项/证据原文与链接/核对日期/验证规则）
+- **风险门** `Test-RiskGate`：目标含 Tier 3 且恢复能力非 ready 时拒绝执行（码 4），可用 `--accept-risk` 显式承担；Tier 4 永远拒绝
+- `recovery.create-restore-point`：唯一可 `--action` 单独执行的动作（Tier 1、加性、需管理员），配套 `restore_point_exists` 验证规则与官方证据
+
+### Tests
+- 新增 7 个单元用例（风险门 6 + 还原点验证 1）与 5 个 CLI 契约用例，回归共 25 项
+
+
 ## [1.11.0] - 2026-10-24
 
 ### Changed

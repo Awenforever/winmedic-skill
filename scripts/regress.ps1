@@ -103,7 +103,12 @@ if (-not $SkipCli) {
         @{ name = 'apply plan 不存在 -> 2'; args = @('apply', '--plan', 'nope.json', '--ids', 'R1', '--yes'); expect = 2 },
         @{ name = 'verify 缺 journal -> 2'; args = @('verify'); expect = 2 },
         @{ name = 'restore 缺 journal -> 2'; args = @('restore'); expect = 2 },
-        @{ name = 'report'; args = @('report', '--set', 'storage'); expect = 0 }
+        @{ name = 'report'; args = @('report', '--set', 'storage'); expect = 0 },
+        @{ name = 'explain 列表'; args = @('explain'); expect = 0 },
+        @{ name = 'explain 单条'; args = @('explain', '--action', 'storage.hiberfil-off'); expect = 0 },
+        @{ name = 'explain 未知动作 -> 2'; args = @('explain', '--action', 'no.such'); expect = 2 },
+        @{ name = 'apply 非 standalone 动作 -> 2'; args = @('apply', '--action', 'storage.hiberfil-off', '--yes'); expect = 2 },
+        @{ name = 'apply 未知动作 -> 2'; args = @('apply', '--action', 'no.such', '--yes'); expect = 2 }
     )
 
     foreach ($c in $cases) {

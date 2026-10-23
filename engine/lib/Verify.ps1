@@ -18,6 +18,13 @@ function Invoke-VerifyRule {
             $s = Get-PathSize -Path $Rule.path
             return @{ ok = ($s.Size -lt [int64]$Rule.bytes); detail = ('当前 ' + [math]::Round($s.Size / 1MB, 1) + ' MB，阈值 ' + [math]::Round($Rule.bytes / 1MB, 1) + ' MB') }
         }
+        'restore_point_exists' {
+            $n = 0
+            try { $n = @(Get-ComputerRestorePoint -ErrorAction Stop).Count } catch { $n = -1 }
+            if ($n -gt 0) { return @{ ok = $true; detail = ('还原点数量 ' + $n) } }
+            if ($n -eq 0) { return @{ ok = $false; detail = '执行后仍无还原点（系统保护可能未启用）' } }
+            return @{ ok = $false; detail = '无法读取还原点（需要管理员）' }
+        }
         'free_space_increased' {
             return @{ ok = $true; detail = '可用空间变化见报告' }
         }

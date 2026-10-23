@@ -15,7 +15,7 @@
 [CmdletBinding()]
 param(
     [Parameter(Position = 0)]
-    [ValidateSet('doctor', 'probe', 'plan', 'apply', 'verify', 'restore', 'journal', 'profile', 'report', 'version', 'help')]
+    [ValidateSet('doctor', 'probe', 'plan', 'apply', 'verify', 'restore', 'journal', 'profile', 'report', 'explain', 'version', 'help')]
     [string]$Command = 'help',
     [Parameter(Position = 1)]
     [string]$SubCommand,
@@ -30,6 +30,8 @@ param(
     [switch]$Yes,
     [switch]$Purge,
     [string]$Exclude,
+    [string]$Action,
+    [switch]$AcceptRisk,
     [switch]$Remove,
     [switch]$Json
 )
@@ -230,6 +232,40 @@ function Invoke-Apply {
         return $script:EXIT.USAGE
     }
 
+    # standalone 动作（仅 Tier 1，且 catalog 显式标注）
+    if ($Action) {
+        $act = $cat.Actions[$Action]
+        if (-not $act) { Write-Log ('未知动作: ' + $Action) -Level ERROR; return $script:EXIT.USAGE }
+        if (-not $act.standalone) { Write-Log ('该动作不是 standalone，必须通过 plan 执行: ' + $Action) -Level ERROR; return $script:EXIT.USAGE }
+        if ([int]$act.tier -ge 2) { Write-Log ('standalone 动作必须为 Tier 1: ' + $Action) -Level ERROR; return $script:EXIT.USAGE }
+        $rid0 = if ($RunId) { $RunId } else { New-RunId }
+        Write-Log ('执行 standalone 动作 ' + $act.id + '，runId=' + $rid0)
+        $pseudo = [pscustomobject]@{ id = 'S1'; target = '(standalone)'; actionId = $act.id }
+        $rr = Invoke-CdriveAction -Item $pseudo -Action $act -RunId $rid0
+        $vv = Invoke-ActionVerify -Action $act
+        Write-JournalRecord -RunId $rid0 -Record @{ itemId = 'S1'; actionId = $act.id; target = '(standalone)'; kind = $act.kind; mode = $rr.mode; ok = $rr.ok; error = $rr.error; exitCode = $rr.exitCode; outputSha256 = $rr.outputSha256; freeBefore = $rr.freeBefore; freeAfter = $rr.freeAfter; verifyAllOk = $vv.allOk; pendingReboot = $vv.pendingReboot; verify = $vv.results; result = 'ok' }
+        if ($rr.ok) { Write-Log ('完成: ' + $act.id) -Level OK } else { Write-Log ('失败: ' + $rr.error) -Level ERROR }
+        Write-Host ('  回滚: 该动作不可自动回滚，效果见 verify')
+        if ($rr.ok) { return $script:EXIT.OK } else { return $script:EXIT.PARTIAL }
+    }
+
+    # 风险门：恢复能力不足时拦截 Tier 3+
+    $recoveryLevel = 'unknown'
+    $fpNow = Resolve-FindingsPath
+    if ($fpNow) {
+        try {
+            $fNow = Get-Content -LiteralPath $fpNow -Raw -Encoding UTF8 | ConvertFrom-Json
+            $rpNow = @($fNow.probes | Where-Object { $_.id -eq 'probe.recovery-readiness' }) | Select-Object -First 1
+            if ($rpNow -and $rpNow.data) { $recoveryLevel = [string]$rpNow.data.level }
+        } catch { }
+    }
+    $gate = Test-RiskGate -Items $targetItems -RecoveryLevel $recoveryLevel -AcceptRisk:$AcceptRisk
+    if (-not $gate.allow) {
+        Write-Log ('风险门拒绝: ' + $gate.reason) -Level ERROR
+        return $script:EXIT.PRECONDITION
+    }
+    if ($gate.reason -ne '无可回滚风险项') { Write-Log ('风险门: ' + $gate.reason) -Level WARN }
+
     $runId = if ($RunId) { $RunId } else { New-RunId }
     Write-Log ('开始执行，runId=' + $runId + '，共 ' + $targetItems.Count + ' 项')
     $fail = 0
@@ -405,6 +441,46 @@ function Invoke-Report {
     return $script:EXIT.OK
 }
 
+function Invoke-Explain {
+    $cat = Import-CdriveCatalog
+    if (-not $Action) {
+        Write-Host '可用动作（id / 级别 / 类型 / 可回滚 / 证据）'
+        foreach ($a in ($cat.Actions.Values | Sort-Object { $_.domain }, { $_.id })) {
+            Write-Host ('  {0,-42} {1}  {2,-11} {3,-8} {4}' -f $a.id, $a.tier, $a.kind, $a.reversible, $a.evidence)
+        }
+        Write-Host ''
+        Write-Host '用 explain --action <id> 查看某条动作的完整依据。'
+        return $script:EXIT.OK
+    }
+    $act = $cat.Actions[$Action]
+    if (-not $act) { Write-Log ('未知动作: ' + $Action) -Level ERROR; return $script:EXIT.USAGE }
+    Write-Host ('动作: ' + $act.id)
+    Write-Host ('  域 / 级别 : ' + $act.domain + ' / Tier ' + $act.tier)
+    Write-Host ('  类型      : ' + $act.kind)
+    Write-Host ('  可回滚    : ' + $act.reversible)
+    if ($act.rollback) { Write-Host ('  回滚方式  : ' + $act.rollback) }
+    if ($act.command) { Write-Host ('  命令      : ' + $act.command) }
+    Write-Host ('  前置检查  : ' + ((@($act.requires)) -join ', '))
+    if (@($act.cautions).Count -gt 0) {
+        Write-Host '  注意事项  :'
+        foreach ($c in @($act.cautions)) { Write-Host ('    - ' + $c) }
+    }
+    $ev = $cat.Evidence[[string]$act.evidence]
+    Write-Host '  证据      :'
+    if ($ev) {
+        Write-Host ('    [' + $ev.strength + '] ' + $ev.id)
+        if ($ev.quote) { Write-Host ('    原文: ' + $ev.quote) }
+        foreach ($l in @($ev.links)) { if ($l) { Write-Host ('    链接: ' + $l) } }
+        Write-Host ('    核对于: ' + $ev.verifiedOn)
+        if ($ev.notes) { Write-Host ('    备注: ' + $ev.notes) }
+    } else {
+        Write-Host '    (缺失，属于 catalog 缺陷)'
+    }
+    Write-Host '  验证规则  :'
+    foreach ($v in @($act.verify)) { Write-Host ('    - ' + $v.kind) }
+    return $script:EXIT.OK
+}
+
 function Show-Help {
     Write-Host 'WinMedic 引擎'
     Write-Host '  doctor                     环境自检'
@@ -416,6 +492,8 @@ function Show-Help {
     Write-Host '  journal list | journal show --journal <runId>'
     Write-Host '  profile [--exclude <模式> [--remove]]   查看/维护保留项'
     Write-Host '  report [--journal <runId>] [--out f.md] 生成五段式交付报告'
+    Write-Host '  explain [--action <id>]                查看动作证据与回滚方式'
+    Write-Host '  apply --action <id> --yes              执行 standalone 动作（仅 Tier 1）'
     Write-Host '  version'
     return $script:EXIT.OK
 }
@@ -430,6 +508,7 @@ switch ($Command) {
     'journal' { $code = Invoke-JournalCmd }
     'profile' { $code = Invoke-Profile }
     'report'  { $code = Invoke-Report }
+    'explain' { $code = Invoke-Explain }
     'version' { Write-Host ('winmedic ' + (Get-Content (Join-Path $script:WinMedicRoot 'VERSION') -Raw).Trim()); $code = $script:EXIT.OK }
     default   { $code = Show-Help }
 }

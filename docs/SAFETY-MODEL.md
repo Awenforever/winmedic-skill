@@ -9,6 +9,9 @@
 
 5. **用户保留项**：`profile --exclude` 固化的路径在 plan 阶段排除、apply 阶段再次拦截（双层），命中即记账。
 
+6. **风险门**：目标含 Tier 3（不可回滚）且恢复能力不是 `ready` 时，`apply` 直接拒绝（码 4），需先建还原点或显式 `--accept-risk`。
+7. **standalone 白名单**：只有 catalog 里标注 `standalone: true` 且 Tier 1 的加性动作（当前仅建还原点）可脱离 plan 单独执行。
+
 ## 红线路径（引擎硬编码，规则表被改也拦得住）
 
 ```
