@@ -44,6 +44,7 @@ jobs:
       - name: Generate checksums
         shell: powershell
         run: |
+          New-Item -ItemType Directory -Force -Path checksums | Out-Null
           $root = (Get-Location).Path
           $files = @()
           foreach ($d in @('engine','catalog','playbooks','scripts')) {
