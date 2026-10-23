@@ -44,6 +44,7 @@ if (-not $script:WinMedicRoot) { $script:WinMedicRoot = (Resolve-Path (Join-Path
 . (Join-Path $PSScriptRoot 'lib\Action.ps1')
 . (Join-Path $PSScriptRoot 'lib\Scan.ps1')
 . (Join-Path $PSScriptRoot 'probes\storage.ps1')
+. (Join-Path $PSScriptRoot 'probes\boot.ps1')
 
 function Get-StatePath {
     param([string]$Name)
@@ -75,22 +76,34 @@ function Invoke-Doctor {
 function Invoke-Probe {
     $set = $Set.ToLower()
     $probes = @()
+    $probes += (Get-HostProbe)
+
     if ($set -eq 'storage' -or $set -eq 'all') {
-        $probes = @(
-            (Get-HostProbe), (Get-DriveSpaceProbe), (Get-SystemFilesProbe), (Get-RecycleBinProbe),
+        $probes += @(
+            (Get-DriveSpaceProbe), (Get-SystemFilesProbe), (Get-RecycleBinProbe),
             (Get-UpdateLeftoversProbe), (Get-PackageCacheProbe), (Get-BrowserCacheProbe),
             (Get-OfficeCacheProbe), (Get-AppCachesProbe)
         )
         if ($set -eq 'all') { $probes += (Get-WinSxSProbe) }
-        elseif ($script:IncludeWinSxS) { $probes += (Get-WinSxSProbe) }
-    } else {
-        Write-Log ('未知探针集: ' + $Set) -Level ERROR
+    }
+
+    if ($set -eq 'boot' -or $set -eq 'all' -or $set -eq 'intake') {
+        $probes += @((Get-BootTimeProbe), (Get-StartupItemsProbe), (Get-PerfBaselineProbe), (Get-DiskHealthProbe), (Get-ServicesAutoProbe))
+    }
+
+    if ($set -eq 'intake') {
+        $probes += (Get-DriveSpaceProbe)
+    }
+
+    if ($probes.Count -le 1) {
+        Write-Log ('未知探针集: ' + $Set + '（可用 storage / boot / intake / all）') -Level ERROR
         return $script:EXIT.USAGE
     }
 
     $candidates = @()
     foreach ($p in $probes) { if ($p.candidates) { $candidates += $p.candidates } }
-    $hostData = ($probes | Where-Object { $_.id -eq 'probe.host' } | Select-Object -First 1).data
+    $hostProbe = $probes | Where-Object { $_.id -eq 'probe.host' } | Select-Object -First 1
+    $hostData = $hostProbe.data
 
     $findings = [ordered]@{
         schemaVersion = 1
@@ -101,15 +114,19 @@ function Invoke-Probe {
         candidates    = @($candidates)
     }
 
-    $outPath = if ($Out) { $Out } else { Get-StatePath 'findings.json' }
+    $outPath = if ($Out) { $Out } else { Get-StatePath ($Set + '-findings.json') }
     Write-JsonResult -Object $findings -Path $outPath | Out-Null
 
     if ($Json) { Write-JsonResult -Object $findings | Out-Null; return $script:EXIT.OK }
-    Write-Log ('探针完成，候选 ' + $candidates.Count + ' 项') -Level OK
+    Write-Log ('探针集 [' + $Set + '] 完成，共 ' + $probes.Count + ' 个探针，候选 ' + $candidates.Count + ' 项') -Level OK
     Write-Host ('  结果: ' + $outPath)
-    $sum = 0L
-    foreach ($c in $candidates) { $sum += [int64]$c.size }
-    Write-Host ('  候选合计: ' + [math]::Round($sum / 1GB, 2) + ' GB')
+    $failed = @($probes | Where-Object { -not $_.ok })
+    foreach ($f in $failed) { Write-Host ('  [!] 未取得: ' + $f.id) }
+    if ($candidates.Count -gt 0) {
+        $sum = 0L
+        foreach ($c in $candidates) { $sum += [int64]$c.size }
+        Write-Host ('  候选合计: ' + [math]::Round($sum / 1GB, 2) + ' GB')
+    }
     return $script:EXIT.OK
 }
 
@@ -278,7 +295,7 @@ function Invoke-JournalCmd {
 function Show-Help {
     Write-Host 'WinMedic 引擎'
     Write-Host '  doctor                     环境自检'
-    Write-Host '  probe --set storage [--all] 只读采集'
+    Write-Host '  probe --set storage|boot|intake|all  只读采集'
     Write-Host '  plan  [--from findings.json] 生成方案'
     Write-Host '  apply --plan plan.json --ids R1,R2 --yes'
     Write-Host '  verify --journal <runId>   复核'

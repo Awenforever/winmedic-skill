@@ -5,6 +5,22 @@
 
 ## [Unreleased]
 
+## [0.5.0] - 2026-10-23
+
+### Added
+- 启动/性能域（只读诊断）：`probe --set boot` 与 `probe --set intake`
+- 探针：启动耗时事件（Diagnostics-Performance 100/101/102/103）、启动项枚举（Run/RunOnce/启动文件夹）、性能基线（内存/提交/进程/磁盘队列）、磁盘健康、自动服务计数
+- 启动项分类器 `Get-StartupRiskCategory`：security / system / input / driver / updater / sync / vendor / unknown，并给出 keep / optional-disable / investigate 建议
+- `probe --set all` 聚合存储 + 启动
+
+### Changed
+- `probe` 输出文件名按探针集区分（`<set>-findings.json`），避免互相覆盖
+- 探针失败不再整体报错，改为逐项标记 `ok=false` 并在输出中列出
+
+### Tests
+- 新增 13 个启动域用例（分类器 8 + 探针 5），总计 26 个 Pester 用例
+
+
 ## [0.1.0] - 2026-10-23
 
 ### Added

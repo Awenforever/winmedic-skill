@@ -66,6 +66,36 @@
       "domain": "core",
       "cost": "fast",
       "returns": "Host"
+    },
+    {
+      "id": "probe.boot-time",
+      "domain": "boot",
+      "cost": "fast",
+      "returns": "BootTime"
+    },
+    {
+      "id": "probe.startup-items",
+      "domain": "boot",
+      "cost": "fast",
+      "returns": "StartupItems"
+    },
+    {
+      "id": "probe.perf-baseline",
+      "domain": "boot",
+      "cost": "fast",
+      "returns": "PerfBaseline"
+    },
+    {
+      "id": "probe.disk-health",
+      "domain": "boot",
+      "cost": "fast",
+      "returns": "DiskHealth"
+    },
+    {
+      "id": "probe.services-auto",
+      "domain": "boot",
+      "cost": "fast",
+      "returns": "ServicesAuto"
     }
   ]
 }
