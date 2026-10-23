@@ -50,6 +50,8 @@ function New-CdrivePlan {
     $idx = 0
 
     $minBytes = 20MB
+    $profile = Get-CdriveProfile
+    $excludePatterns = @($profile.exclude)
     foreach ($cand in $Findings.candidates) {
         $act = $cat.Actions[$cand.actionId]
         if (-not $act) {
@@ -58,6 +60,10 @@ function New-CdrivePlan {
         }
         if ($act.tier -ge 4) {
             [void]$excluded.Add(@{ target = $cand.target; reason = 'Tier 4 红线，不进入方案' })
+            continue
+        }
+        if (Test-ExcludedPath -Target $cand.target -Patterns $excludePatterns) {
+            [void]$excluded.Add(@{ target = $cand.target; reason = (Get-ExclusionReason -Target $cand.target -Patterns $excludePatterns) })
             continue
         }
         if (Test-RedlinePath -Path $cand.target) {

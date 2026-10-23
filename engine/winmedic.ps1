@@ -15,7 +15,7 @@
 [CmdletBinding()]
 param(
     [Parameter(Position = 0)]
-    [ValidateSet('doctor', 'probe', 'plan', 'apply', 'verify', 'restore', 'journal', 'version', 'help')]
+    [ValidateSet('doctor', 'probe', 'plan', 'apply', 'verify', 'restore', 'journal', 'profile', 'version', 'help')]
     [string]$Command = 'help',
     [Parameter(Position = 1)]
     [string]$SubCommand,
@@ -29,6 +29,8 @@ param(
     [string]$RunId,
     [switch]$Yes,
     [switch]$Purge,
+    [string]$Exclude,
+    [switch]$Remove,
     [switch]$Json
 )
 
@@ -38,6 +40,7 @@ if (-not $script:WinMedicRoot) { $script:WinMedicRoot = (Resolve-Path (Join-Path
 
 . (Join-Path $PSScriptRoot 'lib\Common.ps1')
 . (Join-Path $PSScriptRoot 'lib\Safety.ps1')
+. (Join-Path $PSScriptRoot 'lib\Profile.ps1')
 . (Join-Path $PSScriptRoot 'lib\Journal.ps1')
 . (Join-Path $PSScriptRoot 'lib\Plan.ps1')
 . (Join-Path $PSScriptRoot 'lib\Verify.ps1')
@@ -200,6 +203,12 @@ function Invoke-Apply {
         $act = $cat.Actions[$it.actionId]
         if (-not $act) { Write-Log ('缺少动作定义: ' + $it.actionId) -Level ERROR; $fail++; continue }
         if ([int]$act.tier -ge 4) { Write-Log ('Tier 4 拒绝: ' + $it.actionId) -Level ERROR; $fail++; continue }
+        $profNow = Get-CdriveProfile
+        if (Test-ExcludedPath -Target $it.target -Patterns @($profNow.exclude)) {
+            Write-Log ('用户保留项拒绝: ' + $it.target) -Level WARN
+            Write-JournalRecord -RunId $runId -Record @{ itemId = $it.id; actionId = $it.actionId; target = $it.target; result = 'skipped'; reason = 'user-exclude' }
+            continue
+        }
         if (Test-RedlinePath -Path $it.target) {
             Write-Log ('红线拒绝: ' + $it.target + ' (' + (Get-RedlineReason -Path $it.target) + ')') -Level ERROR
             $fail++; continue
@@ -298,6 +307,34 @@ function Invoke-JournalCmd {
     return $script:EXIT.OK
 }
 
+function Invoke-Profile {
+    if ($Exclude) {
+        $r = Add-CdriveExclusion -Pattern $Exclude
+        Write-Log ('已加入保留项: ' + $Exclude) -Level OK
+        Write-Host ('  当前保留项: ' + ($r.exclude -join '; '))
+        return $script:EXIT.OK
+    }
+    if ($Remove) {
+        if (-not $Exclude) { Write-Log '移除保留项需要 --exclude <模式>' -Level ERROR; return $script:EXIT.USAGE }
+        $r = Remove-CdriveExclusion -Pattern $Exclude
+        Write-Log ('已移除保留项: ' + $Exclude) -Level OK
+        Write-Host ('  当前保留项: ' + ($r.exclude -join '; '))
+        return $script:EXIT.OK
+    }
+    $prof = Get-CdriveProfile
+    if ($Json) { Write-JsonResult -Object $prof | Out-Null; return $script:EXIT.OK }
+    Write-Log '当前 Profile' -Level INFO
+    Write-Host ('  配置文件: ' + (Get-ProfilePath))
+    if (@($prof.exclude).Count -eq 0) {
+        Write-Host '  保留项: (无)'
+    } else {
+        Write-Host '  保留项:'
+        foreach ($e in $prof.exclude) { Write-Host ('    ' + $e) }
+    }
+    Write-Host '  提示: 保留项命中的目标在 plan 阶段被排除，apply 阶段再次拦截。'
+    return $script:EXIT.OK
+}
+
 function Show-Help {
     Write-Host 'WinMedic 引擎'
     Write-Host '  doctor                     环境自检'
@@ -307,6 +344,7 @@ function Show-Help {
     Write-Host '  verify --journal <runId>   复核'
     Write-Host '  restore --journal <runId>  回滚'
     Write-Host '  journal list | journal show --journal <runId>'
+    Write-Host '  profile [--exclude <模式> [--remove]]   查看/维护保留项'
     Write-Host '  version'
     return $script:EXIT.OK
 }
@@ -319,6 +357,7 @@ switch ($Command) {
     'verify'  { $code = Invoke-VerifyCmd }
     'restore' { $code = Invoke-Restore }
     'journal' { $code = Invoke-JournalCmd }
+    'profile' { $code = Invoke-Profile }
     'version' { Write-Host ('winmedic ' + (Get-Content (Join-Path $script:WinMedicRoot 'VERSION') -Raw).Trim()); $code = $script:EXIT.OK }
     default   { $code = Show-Help }
 }

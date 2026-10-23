@@ -2,7 +2,7 @@
 name: winmedic
 description: Windows 电脑维修：诊断、清理、迁移、修复。覆盖磁盘空间、开机与性能、应用生命周期、更新与驱动、网络、安全态势、恢复分诊。只读优先，破坏性动作走隔离区并支持回滚，每条建议附证据。
 whenToUse: 用户说 C 盘爆满/变红、电脑卡顿、开机慢、软件卸不干净、想把微信或应用到 D 盘、大目录治理、更新失败、驱动异常、断网、蓝屏、误删文件、新机验收等需要「检查或改动本机 Windows」的请求。
-version: 1.0.0
+version: 1.1.0
 ---
 
 # WinMedic
@@ -87,6 +87,19 @@ winmedic.ps1 verify --journal <id>
 | 2 | 缓存，会重建 | 说明重建代价 |
 | 3 | 需判断，可能影响功能 | 逐项确认 + 展示证据 |
 | 4 | 红线 | **拒绝执行**，说明原因并给人工路径 |
+
+## 用户保留项（硬约束）
+
+用户说「别动微信」「D 盘别碰」时，**立刻固化成保留项**，不要只记在脑子里：
+
+```powershell
+winmedic.ps1 profile --exclude "C:\Users\<user>\Documents\WeChat Files"
+winmedic.ps1 profile --exclude "D:\*"
+winmedic.ps1 profile                       # 查看当前保留项
+winmedic.ps1 profile --exclude "..." --remove  # 移除
+```
+
+保留项是双层拦截：plan 阶段排除，apply 阶段再次拒绝并记账。
 
 ## 何时必须停手
 

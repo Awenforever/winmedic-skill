@@ -5,6 +5,17 @@
 
 ## [Unreleased]
 
+## [1.1.0] - 2026-10-23
+
+### Added
+- `profile` 子命令：`--exclude` 固化用户保留项，`--remove` 移除，无参数查看；profile 落盘到 `%ProgramData%\cdrive\profile.json`
+- 保留项双层拦截：plan 阶段进入 `excluded`，apply 阶段再次拒绝并写 journal（`reason=user-exclude`）
+- 通配符匹配（`*` / `?`），大小写不敏感，前缀路径自动包含子路径
+
+### Tests
+- 新增 11 个用例（匹配 7 + 持久化 3 + 方案拦截 1），总计 49 个 Pester 用例
+
+
 ## [1.0.0] - 2026-10-23
 
 ### Added

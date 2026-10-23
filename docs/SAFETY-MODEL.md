@@ -7,6 +7,8 @@
 3. **隔离区软删除**：默认 `Move-Item` 到 `%ProgramData%\cdrive\quarantine\<runId>\<itemId>\`，只有 `--purge` 才真删。
 4. **审计日志**：每条动作写 JSONL，含目标、前后可用空间、退出码、stdout 哈希。
 
+5. **用户保留项**：`profile --exclude` 固化的路径在 plan 阶段排除、apply 阶段再次拦截（双层），命中即记账。
+
 ## 红线路径（引擎硬编码，规则表被改也拦得住）
 
 ```

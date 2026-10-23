@@ -12,12 +12,12 @@
 | H6 | 隔离区同名冲突 | 冲突时加后缀 | 已实现 |
 | H7 | 非管理员 apply | 码 3 | 已实现 |
 | H8 | plan 被篡改 | 码 5 | 已实现 + 单测 |
-| H9 | 用户排除项 | 进 excluded | 待实现（profile） |
+| H9 | 用户排除项 | plan 排除 + apply 二次拦截 | 已实现 + 单测 |
 | H10 | 目标被占用 | 跳过并记账 | 部分 |
 | H11 | 中文/emoji | 无 emoji、无乱码 | 已实现 |
 | H12 | apply 中途 kill | journal 完整可 restore | 已实现（JSONL 逐条） |
 | H13 | plan 指向 WinSxS | 码 6 | 已实现 + 单测 |
-| H14 | 重复执行幂等 | 第二次 skipped | 部分 |
+| H14 | 重复执行幂等 | 第二次 skipped | 部分（目标已不存在时跳过） |
 
 ## 路由级（R 系列）
 

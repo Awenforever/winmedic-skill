@@ -3,6 +3,7 @@ BeforeAll {
     $repo = Split-Path -Parent (Split-Path -Parent $PSScriptRoot)
     . (Join-Path $repo 'engine\lib\Common.ps1')
     . (Join-Path $repo 'engine\lib\Safety.ps1')
+    . (Join-Path $repo 'engine\lib\Profile.ps1')
     . (Join-Path $repo 'engine\lib\Plan.ps1')
     $script:WinMedicRoot = $repo
 
