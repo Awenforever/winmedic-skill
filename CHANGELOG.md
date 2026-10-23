@@ -5,6 +5,21 @@
 
 ## [Unreleased]
 
+## [1.7.0] - 2026-10-24
+
+### Added
+- 打印机域（只读）：`probe --set printers`
+- `probe.printers`：打印机清单、默认打印机、Spooler 状态、队列任务、问题计数
+- `Get-PrinterWorkOfflineVerdict`：把脱机/卡纸/缺纸/耗材/暂停/报错翻成人话（判定顺序：卡纸 > 缺纸 > 耗材 > 暂停 > 脱机 > 报错）
+- playbook：`printer-repair`
+
+### Fixed
+- 分类顺序问题：`Paper Jam` 曾被 `paper` 规则先命中而误判为「缺纸」
+
+### Tests
+- 新增 6 个用例，总计 96 个 Pester + 6 个路由用例
+
+
 ## [1.6.0] - 2026-10-24
 
 ### Added

@@ -204,6 +204,12 @@
       "domain": "recovery",
       "cost": "fast",
       "returns": "RecoveryReadiness"
+    },
+    {
+      "id": "probe.printers",
+      "domain": "printers",
+      "cost": "fast",
+      "returns": "Printers"
     }
   ]
 }
