@@ -8,6 +8,8 @@
 | PB-101 | [storage-disk-space-recovery](playbooks/storage-disk-space-recovery.md) | C 盘红了、磁盘满了、空间不足、只剩几 G | storage |
 | PB-102 | [storage-large-folder-management](playbooks/storage-large-folder-management.md) | 哪个文件夹这么大、大目录治理、想腾空间 | storage |
 | PB-103 | [storage-partition-audit](playbooks/storage-partition-audit.md) | 分区不合理、C 盘太小、能不能合盘 | storage |
+| PB-501 | [network-diagnostics](playbooks/network-diagnostics.md) | 突然断网、能上微信打不开网页、DNS 解析失败 | network |
+| PB-502 | [vpn-proxy-troubleshooting](playbooks/vpn-proxy-troubleshooting.md) | 开了代理就上不了网、VPN 连上没网、git 拉不动 | network |
 | PB-401 | [update-troubleshooting](playbooks/update-troubleshooting.md) | 更新失败、一直装不上、更新卡住、重启又回滚 | updates |
 | PB-402 | [windows-driver-device-triage](playbooks/windows-driver-device-triage.md) | 设备管理器有黄叹号、声卡/网卡失效、驱动装不上 | updates |
 | PB-201 | [boot-slow-boot-triage](playbooks/boot-slow-boot-triage.md) | 开机特别慢、开机很久、开机卡住 | boot |

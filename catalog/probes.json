@@ -126,6 +126,30 @@
       "domain": "updates",
       "cost": "medium",
       "returns": "Drivers"
+    },
+    {
+      "id": "probe.network-adapters",
+      "domain": "network",
+      "cost": "fast",
+      "returns": "NetworkAdapters"
+    },
+    {
+      "id": "probe.dns-config",
+      "domain": "network",
+      "cost": "fast",
+      "returns": "DnsConfig"
+    },
+    {
+      "id": "probe.proxy-config",
+      "domain": "network",
+      "cost": "fast",
+      "returns": "ProxyConfig"
+    },
+    {
+      "id": "probe.vpn-adapters",
+      "domain": "network",
+      "cost": "fast",
+      "returns": "VpnAdapters"
     }
   ]
 }

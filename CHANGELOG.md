@@ -5,6 +5,22 @@
 
 ## [Unreleased]
 
+## [1.3.0] - 2026-10-23
+
+### Added
+- 网络域（只读配置，**不发起网络请求**）：`probe --set network`
+- `probe.network-adapters` / `probe.dns-config` / `probe.proxy-config` / `probe.vpn-adapters`
+- `Get-ProxyConflictSummary`：比对 WinINET / WinHTTP / 环境变量三处代理，检出不一致（实测踩过的 7890 vs 13499 坑）
+- `Test-IsVpnAdapterName`：识别 VPN / 隧道 / 虚拟化网卡
+- playbook：`network-diagnostics`、`vpn-proxy-troubleshooting`
+
+### Design decisions
+- 连通性测试（ping / Test-NetConnection）**不进引擎**，由宿主 Agent 显式执行，以维持「引擎不联网、无遥测」的不变量。
+
+### Tests
+- 新增 11 个用例，总计 69 个 Pester + 6 个路由用例
+
+
 ## [1.2.0] - 2026-10-23
 
 ### Added
