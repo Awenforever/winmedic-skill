@@ -15,7 +15,7 @@
 [CmdletBinding()]
 param(
     [Parameter(Position = 0)]
-    [ValidateSet('doctor', 'probe', 'plan', 'apply', 'verify', 'restore', 'journal', 'profile', 'report', 'explain', 'summary', 'diff', 'relocate', 'remote', 'trend', 'diagnose', 'tools', 'version', 'help')]
+    [ValidateSet('doctor', 'probe', 'plan', 'apply', 'verify', 'restore', 'journal', 'profile', 'report', 'explain', 'summary', 'diff', 'relocate', 'remote', 'trend', 'diagnose', 'tools', 'selftest', 'version', 'help')]
     [string]$Command = 'help',
     [string]$SubCommand,
     [string]$Set = '',
@@ -70,6 +70,7 @@ if (-not $script:WinMedicRoot) { $script:WinMedicRoot = (Resolve-Path (Join-Path
 . (Join-Path $PSScriptRoot 'lib\Trend.ps1')
 . (Join-Path $PSScriptRoot 'lib\Diagnose.ps1')
 . (Join-Path $PSScriptRoot 'lib\Tools.ps1')
+. (Join-Path $PSScriptRoot 'lib\SelfTest.ps1')
 . (Join-Path $PSScriptRoot 'lib\Scan.ps1')
 . (Join-Path $PSScriptRoot 'probes\storage.ps1')
 . (Join-Path $PSScriptRoot 'probes\boot.ps1')
@@ -903,6 +904,13 @@ function Invoke-ToolsCmd {
     return $script:EXIT.OK
 }
 
+function Invoke-SelfTestCmd {
+    $res = Invoke-WinMedicSelfTest -Keep:$Keep
+    if ($Json) { Write-JsonResult -Object $res | Out-Null; if ($res.ok) { return $script:EXIT.OK } else { return $script:EXIT.FAIL } }
+    Write-Host (Format-SelfTestReport -Result $res)
+    if ($res.ok) { return $script:EXIT.OK } else { return $script:EXIT.FAIL }
+}
+
 function Show-Help {
     Write-Host 'WinMedic 引擎'
     Write-Host '  doctor                     环境自检'
@@ -926,6 +934,7 @@ function Show-Help {
     Write-Host '  diagnose --list                         列出鉴别诊断用例'
     Write-Host '  diagnose --case dx.cdisk-full           鉴别诊断：只给事实与信号，不给结论'
     Write-Host '  tools [--json]                          器械台：外部工具可用性与风险级别'
+    Write-Host '  selftest [--keep]                       沙箱自检：证明隔离/还原逐字节一致'
     Write-Host '  apply --action <id> --yes              执行 standalone 动作（仅 Tier 1）'
     Write-Host '  apply ... --purge --accept-irreversible [--confirm-token X] 物理删除（不可回滚，需确认单令牌）'
     Write-Host '  version'
@@ -950,6 +959,7 @@ switch ($Command) {
     'trend'   { $code = Invoke-TrendCmd }
     'diagnose' { $code = Invoke-DiagnoseCmd }
     'tools'   { $code = Invoke-ToolsCmd }
+    'selftest' { $code = Invoke-SelfTestCmd }
     'version' { Write-Host ('winmedic ' + (Get-Content (Join-Path $script:WinMedicRoot 'VERSION') -Raw).Trim()); $code = $script:EXIT.OK }
     default   { $code = Show-Help }
 }

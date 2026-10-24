@@ -15,6 +15,12 @@
 
 另外：引擎自身的状态/隔离区目录永远不是清理目标（`Test-StateDirPath` 拒绝）。
 
+### 可回滚性如何被证明
+
+`winmedic.ps1 selftest` 在 `CDRIVE_HOME\sandbox` 造一棵目录树，走**真实代码路径**（`Invoke-QuarantineMove` → `Restore-JournalQuarantine`），
+逐文件 SHA256 比对隔离前后与还原前后，另外验证一次「只有 begin 没有 done」的孤儿恢复。
+任何一项不符预期即失败（退出码 1）。这是「可回滚」从主张变成证据的入口。
+
 ## 红线（不因用户请求而放开）
 
 

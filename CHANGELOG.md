@@ -5,6 +5,21 @@
 
 ## [Unreleased]
 
+## [3.1.0] - 2026-10-24
+
+### Added
+- **沙箱自检 `selftest`**：用真实代码路径证明可回滚
+  - 造目录树 → `Invoke-QuarantineMove` 隔离 → SHA256 校验 → `Restore-JournalQuarantine` 还原 → 再校验
+  - 额外覆盖「只有 begin 没有 done」的孤儿恢复
+  - 8 项检查全 PASS 才返回 0；`--keep` 保留沙箱便于排查
+  - 不触碰任何系统文件，可在 CI 与远端执行
+- `docs/SAFETY-MODEL.md` 增加「可回滚性如何被证明」章节
+- 4 个 Pester 用例 + 1 个契约用例
+
+### Verified
+- 本机实测 8/8 PASS，关键项：`restore-byte-identical`（3/3 文件逐字节一致）
+
+
 ## [3.0.1] - 2026-10-24
 
 ### Fixed（真实远端联调暴露的 4 个缺陷）

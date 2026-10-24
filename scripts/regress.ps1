@@ -105,6 +105,7 @@ if (-not $SkipCli) {
         @{ name = 'probe storage'; args = @('probe', '--set', 'storage'); expect = 0 },
         @{ name = 'probe 未知探针集 -> 2'; args = @('probe', '--set', 'nope'); expect = 2 },
         @{ name = 'probe mail'; args = @('probe', '--set', 'mail'); expect = 0 },
+        @{ name = 'selftest'; args = @('selftest'); expect = 0 },
         @{ name = 'diagnose --list'; args = @('diagnose', '--list'); expect = 0 },
         @{ name = 'diagnose case'; args = @('diagnose', '--case', 'dx.cdisk-full'); expect = 0 },
         @{ name = 'tools'; args = @('tools'); expect = 0 },
