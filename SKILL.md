@@ -1,7 +1,7 @@
 ---
 name: winmedic
 description: Windows 电脑维修：诊断、清理、迁移、修复。覆盖磁盘空间、开机与性能、应用生命周期、更新与驱动、网络、安全态势、恢复分诊。只读优先，破坏性动作走隔离区并支持回滚，每条建议附证据。
-whenToUse: 用户说 C 盘爆满/变红、电脑卡顿、开机慢、软件卸不干净、想把微信或应用到 D 盘、大目录治理、更新失败、驱动异常、断网、蓝屏、误删文件、新机验收等需要「检查或改动本机 Windows」的请求。 English keywords: disk full, low disk space, slow boot, startup bloat, uninstall leftovers, migrate app or data to another drive, Windows Update failure, driver or device problem, no internet, proxy/VPN issue, printer offline, backup check, recover deleted files, new PC intake.
+whenToUse: 用户说 C 盘爆满/变红、电脑卡顿、开机慢、软件卸不干净、想把微信或应用到 D 盘、大目录治理、更新失败、驱动异常、断网、蓝屏、误删文件、新机验收等需要「检查或改动本机 Windows」的请求。 迁移相关：把缓存搬到 D 盘、C 盘装不下、新软件装哪个盘、微信文件太大、暂存盘。 English keywords: move cache to another drive, which drive to install, disk full, low disk space, slow boot, startup bloat, uninstall leftovers, migrate app or data to another drive, Windows Update failure, driver or device problem, no internet, proxy/VPN issue, printer offline, backup check, recover deleted files, new PC intake.
 version: 1.16.0
 ---
 
@@ -132,22 +132,35 @@ winmedic.ps1 probe --set workloads
 
 加新软件不需要改代码：在 `catalog/workloads.json` 加一条签名（detect + measure + playbook）即可。
 
-## 迁移决策（用户说「把缓存都搬到非 C 盘」时）
+## 迁移决策（用户说「把缓存/软件搬到别的盘」「C 盘装不下新软件」时）
 
-**不要一律照做。** 先跑：
+**这是判断题，不是查表题。引擎只给事实，方案由你决定，但你必须走完清单。**
 
 ```powershell
-winmedic.ps1 relocate
+winmedic.ps1 relocate            # 磁盘概况 + 决策清单 + 事实表 + 默认建议
+winmedic.ps1 relocate --json     # 同上，结构化
 ```
 
-它会给出磁盘概况（NVMe/SSD/HDD + 剩余空间）与每个条目的建议，分三类：
+输出分三段，含义不同，**不要混为一谈**：
 
-1. **已知文件夹**（文档/下载/桌面…）→ 移动文件夹一次，不要逐个软件设
-   - `先搬文件夹、后装软件`：只搬文件夹即可
-   - `先装软件、后搬文件夹`：**必须同时改软件内的保存路径**，否则软件指回旧路径或在原处重建空目录
-   - 判定依据：该目录当前是否存在 + 软件自己记录的路径（微信 FileSavePath / Steam libraryfolders.vdf / JetBrains idea.properties）
-2. **热数据**（PS 暂存盘、Premiere 媒体缓存、IDE 索引、流媒体缓存）→ **留在最快的盘**；它本来就会自动清理，搬到机械盘只会更卡
-3. **冷数据**（游戏、虚拟机、书库、聊天记录）→ 搬到剩余空间最大的盘，容量优先
+| 段 | 含义 | 用法 |
+|---|---|---|
+| 决策清单 | 三条必须回答的问题 | **必须在回答里逐条给结论**，不许跳过 |
+| 事实 | 路径/体积/介质/是否存在/已知文件夹/软件声明路径 | 决策依据 |
+| 默认建议 | 引擎的默认视角（标注 `policySource=default-hint`） | **仅参考，可被你的判断推翻**；不许当结论直接转述 |
+
+### 三条清单问题（回答时必须显式覆盖）
+
+1. **是否在已知文件夹下？** 是 → 移动该文件夹一次，不要给单个软件设路径；但先判断下面第 3 条
+2. **热数据还是冷数据？** 热（实时渲染缓存、IDE 索引、流媒体缓存）→ 留最快盘；冷（游戏/虚拟机/书库/聊天记录）→ 才考虑搬容量盘
+3. **软件是否已记录绝对路径（先装后搬）？** 是 → 移动后必须同步改软件内设置，否则指回旧路径
+
+### 你（DSH）必须做的事
+
+- 先看事实表里的 `介质`：把热数据搬到 HDD 是错的，**即使它更大**
+- 先看 `软件声明路径`：那是「先装后搬」的硬证据
+- 方案要写成「做什么 → 为什么 → 风险 → 验证方式」，并让用户确认后才执行
+- 引擎不代你迁移；你的 job 是给出**带理由的方案**
 
 详见 playbook `apps-relocate-cache`（PB-913）。
 

@@ -167,6 +167,58 @@ function Get-AppDeclaredPaths {
     return $out
 }
 
+function Get-RelocationChecklist {
+    <#
+      强制决策清单：引擎只把问题摆出来，答案必须由 Agent 结合上下文填写。
+      这三条对应最常见的三种误判。
+    #>
+    return @(
+        '它是否落在已知文件夹（文档/下载/桌面/图片/视频/音乐）之下？若是，应移动该文件夹一次，而不是给单个软件设路径。',
+        '它是热数据还是冷数据？热数据（实时渲染缓存、IDE 索引、流媒体缓存）应留在最快的盘，它本来就会自动清理；冷数据（游戏/虚拟机/书库/聊天记录）才考虑搬到容量盘。',
+        '该软件是否已经记录了自己的绝对路径（先装后搬）？若是，移动后必须同步修改软件内的保存路径，否则会指回旧路径或在原处重建空目录。'
+    )
+}
+
+function Get-RelocationFacts {
+    <#
+      纯事实层：不判断、不建议，只把可客观测量的信息摊开。
+      返回数组，元素：@{ workload; label; path; kind; size; drive; media; exists; knownFolder; declaredPath }
+    #>
+    param(
+        [array]$Workloads = @(),
+        $Volumes = @{},
+        $KnownFolders = [ordered]@{},
+        $DeclaredPaths = @{}
+    )
+    $facts = @()
+    foreach ($wl in $Workloads) {
+        if (-not $wl.installed) { continue }
+        $declared = $null
+        if ($DeclaredPaths -and $DeclaredPaths.ContainsKey([string]$wl.id)) { $declared = $DeclaredPaths[[string]$wl.id] }
+        foreach ($it in @($wl.items)) {
+            if (-not $it.path) { continue }
+            $drive = Get-PathDrive -Path $it.path
+            $vol = $null
+            if ($drive -and $Volumes.ContainsKey($drive)) { $vol = $Volumes[$drive] }
+            $facts += [pscustomobject]@{
+                workload = [string]$wl.name
+                label = [string]$it.label
+                path = [string]$it.path
+                kind = [string]$it.kind
+                size = [int64]$it.size
+                drive = $drive
+                media = if ($vol) { [string]$vol.media } else { 'Unknown' }
+                freeGB = if ($vol) { [int]$vol.freeGB } else { 0 }
+                exists = (Test-Path -LiteralPath $it.path)
+                knownFolder = (Test-PathUnderKnownFolder -Path $it.path -KnownFolders $KnownFolders)
+                declaredPath = if ($declared) { $declared.value } else { '' }
+                declaredSource = if ($declared) { $declared.source } else { '' }
+            }
+        }
+    }
+    return $facts
+}
+
 function Get-RelocationAdvice {
     <#
       纯函数（可单测）：对每个 workload 的每个条目给出迁移建议。
@@ -209,6 +261,7 @@ function Get-RelocationAdvice {
                 path = [string]$it.path
                 kind = [string]$it.kind
                 policy = $policy
+                policySource = 'default-hint'
                 drive = $drive
                 media = $media
                 size = [int64]$it.size
@@ -279,6 +332,18 @@ function Get-RelocationAdvice {
         }
     }
     return $advices
+}
+
+function Format-RelocationFacts {
+    param([array]$Facts = @())
+    $sb = New-Object System.Text.StringBuilder
+    [void]$sb.AppendLine('| 软件 | 条目 | 路径 | 介质 | 存在 | 已知文件夹 | 软件声明路径 | 类型 | 体积 MB |')
+    [void]$sb.AppendLine('|---|---|---|---|---|---|---|---|---:|')
+    foreach ($f in $Facts) {
+        $sizeMb = if ($f.size -gt 0) { [math]::Round($f.size / 1MB, 0) } else { 0 }
+        [void]$sb.AppendLine(('| {0} | {1} | {2} | {3} | {4} | {5} | {6} | {7} | {8} |' -f $f.workload, $f.label, ($f.path -replace '\|', '/'), $f.media, $f.exists, $(if ($f.knownFolder) { $f.knownFolder } else { '-' }), $(if ($f.declaredPath) { $f.declaredPath } else { '-' }), $f.kind, $sizeMb))
+    }
+    return $sb.ToString().TrimEnd()
 }
 
 function Format-RelocationReport {

@@ -632,18 +632,46 @@ function Invoke-Diff {
 function Invoke-Relocate {
     $volumes = Get-RelocationVolumeProfile
     $known = Get-RelocationKnownFolders
-    $wl = Get-WorkloadsProbe -TimeBudgetSeconds 60
     $declared = Get-AppDeclaredPaths
-    $advices = Get-RelocationAdvice -Workloads @($wl.data.workloads) -Volumes $volumes -KnownFolders $known -DeclaredPaths $declared -SystemDrive 'C:'
+    $wl = Get-WorkloadsProbe -TimeBudgetSeconds 60
+    $facts = Get-RelocationFacts -Workloads @($wl.data.workloads) -Volumes $volumes -KnownFolders $known -DeclaredPaths $declared
+    $checklist = Get-RelocationChecklist
+    $hints = Get-RelocationAdvice -Workloads @($wl.data.workloads) -Volumes $volumes -KnownFolders $known -DeclaredPaths $declared -SystemDrive 'C:'
+
     if ($Json) {
-        Write-JsonResult -Object @{ volumes = $volumes; knownFolders = $known; declaredPaths = $declared; advices = @($advices) }
+        Write-JsonResult -Object @{
+            volumes = $volumes
+            knownFolders = $known
+            declaredPaths = $declared
+            checklist = $checklist
+            facts = @($facts)
+            defaultHints = @($hints)
+            notice = 'facts 是事实，defaultHints 只是默认参考；最终方案由 Agent 结合上下文判断，并须逐条回答 checklist'
+        }
         return $script:EXIT.OK
     }
-    Write-Host (Format-RelocationReport -Advices $advices -Volumes $volumes)
+
+    Write-Host '磁盘概况'
+    foreach ($k in ($volumes.Keys | Sort-Object)) {
+        $v = $volumes[$k]
+        Write-Host ('  {0}  {1,-5} 共 {2} GB 可用 {3} GB' -f $k, $v.media, $v.totalGB, $v.freeGB)
+    }
     Write-Host ''
-    $act = @($advices | Where-Object { $_.action -in @('move', 'known-folder', 'known-folder-then-app') })
-    Write-Host ('可优化项: ' + $act.Count + ' 项（只给建议，不自动迁移）')
-    Write-Host '迁移任何一项前请先看对应 playbook，并确认该软件已退出。'
+    Write-Host '决策清单（必须逐条判断，并把结论写进给用户的回答里）'
+    $i = 0
+    foreach ($q in $checklist) { $i++; Write-Host ('  ' + $i + '. ' + $q) }
+    Write-Host ''
+    Write-Host '事实'
+    Write-Host (Format-RelocationFacts -Facts $facts)
+    Write-Host ''
+    Write-Host '默认建议（仅供参考，可被判断推翻；不要当结论直接转述）'
+    $act = @($hints | Where-Object { $_.action -in @('move', 'known-folder', 'known-folder-then-app') })
+    if ($act.Count -eq 0) { Write-Host '  （默认视角下无待处理项）' }
+    else {
+        foreach ($a in $act) { Write-Host ('  [' + $a.policySource + '] ' + $a.workload + ' / ' + $a.label + ' -> ' + $a.action + ' ' + $a.target + '  ' + $a.reason) }
+    }
+    Write-Host ''
+    Write-Host '提示：引擎不执行迁移。给出方案前请确认目标盘空间与软件是否已退出。'
     return $script:EXIT.OK
 }
 
