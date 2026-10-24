@@ -22,6 +22,24 @@ BeforeAll {
     }
 }
 
+Describe '排除清单可见性' {
+    It '体积过小的候选带原因进入 excluded' {
+        $f = [pscustomobject]@{ host='H'; probes=@([pscustomobject]@{ id='probe.host'; data=[pscustomobject]@{ computerName='H' } }); candidates=@(
+            [pscustomobject]@{ actionId='storage.edge-cache'; target='C:\tiny'; kind='dir'; size=1048576; count=1 }) }
+        $plan = New-CdrivePlan -Findings $f
+        @($plan.items).Count | Should -Be 0
+        @($plan.excluded).Count | Should -Be 1
+        [string]$plan.excluded[0].reason | Should -Match '体积过小'
+        @($plan.excludedGroups)[0].count | Should -Be 1
+    }
+    It 'markdown 恒有已排除小节' {
+        $empty = [pscustomobject]@{ host='H'; items=@(); excluded=@(); excludedGroups=@(); recommendations=@(); totals=@{}; planHash='sha256:x' }
+        $md = Format-PlanMarkdown -Plan $empty
+        $md | Should -Match '已排除'
+        $md | Should -Match '没有排除项'
+    }
+}
+
 Describe '计划哈希稳定性' {
     It 'JSON 往返后哈希不变（真实缺陷回归）' {
         $items = @(

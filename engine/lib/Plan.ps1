@@ -155,6 +155,9 @@ function New-CdrivePlan {
         origin        = $planOrigin
         items         = @($items)
         excluded        = @($excluded)
+        excludedGroups  = @($excluded | Group-Object { [string]$_.reason } | ForEach-Object {
+            [ordered]@{ reason = [string]$_.Name; count = [int]$_.Count; samples = @($_.Group | Select-Object -First 3 | ForEach-Object { [string]$_.target }) }
+        })
         recommendations = @($recs)
         planHash      = (Get-PlanHash -Items $items)
     }
@@ -223,11 +226,21 @@ function Format-PlanMarkdown {
         foreach ($l in $e.links) { [void]$sb.AppendLine(('  - ' + $l)) }
         [void]$sb.AppendLine(('  - 核对于 ' + $e.verifiedOn))
     }
-    if ($Plan.excluded.Count -gt 0) {
-        [void]$sb.AppendLine('')
-        [void]$sb.AppendLine('## 已排除')
-        foreach ($x in $Plan.excluded) {
-            [void]$sb.AppendLine(('- {0} —— {1}' -f $x.target, $x.reason))
+    [void]$sb.AppendLine('')
+    [void]$sb.AppendLine('## 已排除（为什么没进方案）')
+    $exList = @($Plan.excluded)
+    if ($exList.Count -eq 0) {
+        [void]$sb.AppendLine('_本次没有排除项：所有候选都进入了方案，或本来就没有候选。_')
+    } else {
+        [void]$sb.AppendLine('| 原因 | 项数 | 示例 |')
+        [void]$sb.AppendLine('|---|---:|---|')
+        $groups = @($Plan.excludedGroups)
+        if ($groups.Count -eq 0) {
+            $groups = @($exList | Group-Object { [string]$_.reason } | ForEach-Object { [pscustomobject]@{ reason = $_.Name; count = $_.Count; samples = @($_.Group | Select-Object -First 3 | ForEach-Object { $_.target }) } })
+        }
+        foreach ($g in $groups) {
+            $sample = (@($g.samples) -join '；')
+            [void]$sb.AppendLine(('| ' + [string]$g.reason + ' | ' + [int]$g.count + ' | ' + $sample + ' |'))
         }
     }
     return $sb.ToString()

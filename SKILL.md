@@ -1,4 +1,4 @@
----
+﻿---
 name: winmedic
 description: Windows 电脑维修：诊断、清理、迁移、修复。覆盖磁盘空间、开机与性能、应用生命周期、更新与驱动、网络、安全态势、恢复分诊。只读优先，破坏性动作走隔离区并支持回滚，每条建议附证据。
 whenToUse: 用户说 C 盘爆满/变红、电脑卡顿、开机慢、软件卸不干净、想把微信或应用到 D 盘、大目录治理、更新失败、驱动异常、断网、蓝屏、误删文件、新机验收等需要「检查或改动本机 Windows」的请求。 迁移相关：把缓存搬到 D 盘、C 盘装不下、新软件装哪个盘、微信文件太大、暂存盘。 English keywords: remote PC troubleshooting, driver update failed, why is my disk filling up, disk growing, move cache to another drive, which drive to install, disk full, low disk space, slow boot, startup bloat, uninstall leftovers, migrate app or data to another drive, Windows Update failure, driver or device problem, no internet, proxy/VPN issue, printer offline, backup check, recover deleted files, new PC intake.
@@ -156,6 +156,9 @@ winmedic.ps1 relocate --json     # 同上，结构化
 3. **软件是否已记录绝对路径（先装后搬）？** 是 → 移动后必须同步改软件内设置，否则指回旧路径
 
 ### 你（DSH）必须做的事
+
+- **读 `plan` 的「已排除」小节**：被排除的项（体积过小/红线/用户排除）必须主动交代，不能让它无声消失；被排除 ≠ 不该动
+- 缓存是否该动，走 playbook `cache-disposal-judgment`（PB-104），不要照着动作表点
 
 - 先看事实表里的 `介质`：把热数据搬到 HDD 是错的，**即使它更大**
 - 先看 `软件声明路径`：那是「先装后搬」的硬证据
