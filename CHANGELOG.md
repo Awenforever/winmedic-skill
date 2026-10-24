@@ -5,6 +5,22 @@
 
 ## [Unreleased]
 
+## [2.6.0] - 2026-10-24
+
+### Added
+- **不可逆操作确认单**：`apply --purge` 执行前打印逐项说明，每项固定六行——这是什么 / 在哪里 / 有多大 / 为什么可以删 / 删了会怎样 / 能不能撤回
+- **确认单令牌子** `--confirm-token`：令牌为 `sha256('purge|计划指纹|条目列表')` 前 8 位；换条目或换计划即失效，未回填或填错则不执行（退出码 2，不删除任何内容）
+- `catalog/actions.json` 的 13 个动作全部补齐 `plain`（what / why / consequence），针对具体后果手写，非模板套话
+- `validate-catalog.ps1` 强制校验：动作缺 `plain` 或字段不全时 CI 失败
+- `engine/lib/Explain.ps1`：`Get-PlainExplanation` / `New-PurgeConfirmationToken` / `Format-PurgeConfirmation`
+
+### Notes
+- 兜底文案是「catalog 未提供通俗说明，按不可逆处理」，而不是编造解释——说明不了后果就不该删
+- 与 v2.5.0 的双闸串联：`--purge` 需要 `--accept-irreversible`（声明知情）+ `--confirm-token`（证明看过单子）
+
+### Tests
+- 新增 8 个用例（通俗说明 2 + 确认单内容 4 + 令牌绑定 2），总计 211 Pester + 6 路由
+
 ## [2.5.0] - 2026-10-24
 
 ### Changed
