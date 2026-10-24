@@ -5,6 +5,20 @@
 
 ## [Unreleased]
 
+## [3.5.3] - 2026-10-24
+
+### Verified（10 目标批量验证 / win11-test VM）
+- 一次性对 10 个目标执行 `apply → restore`：**PASS=10 FAIL=0 SKIP=0**
+- 覆盖：WER、崩溃转储、npm、NuGet、Gradle、INetCache、Teams、Chrome/Edge Service Worker、系统 WebCache
+- 每个目标都是「移走=True 还原=True 哈希一致=True」
+
+### Added
+- `docs/VERIFIED-TARGETS.md`：目标实测台账（已验 14 / 40，未验 26 及原因）
+
+### Notes
+- 台账的存在是为了避免「catalog 里有 = 能用」的错觉：40 个动作里目前真机闭环 14 个
+
+
 ## [3.5.2] - 2026-10-24
 
 ### Fixed
