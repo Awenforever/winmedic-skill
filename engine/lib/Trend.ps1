@@ -98,8 +98,16 @@ function Get-TrendSnapshot {
     }
 
     $rr = Get-TrendProbe -Findings $Findings -Id 'probe.recovery-readiness'
-    if ($rr -and $rr.data -and ($rr.data.PSObject.Properties.Name -contains 'shadowStorageBytes')) {
-        $m['recovery.shadowGB'] = [math]::Round((Get-TrendNumber -Object $rr.data -Name 'shadowStorageBytes') / 1GB, 2)
+    if ($rr -and $rr.data) {
+        if ($rr.data.PSObject.Properties.Name -contains 'shadowStorageBytes') {
+            $m['recovery.shadowGB'] = [math]::Round((Get-TrendNumber -Object $rr.data -Name 'shadowStorageBytes') / 1GB, 2)
+        }
+        if ($rr.data.PSObject.Properties.Name -contains 'shadowCopies') {
+            $m['recovery.shadowCopies'] = @($rr.data.shadowCopies).Count
+        }
+        if ($rr.data.PSObject.Properties.Name -contains 'restorePoints') {
+            $m['recovery.restorePoints'] = @($rr.data.restorePoints).Count
+        }
     }
 
     return [pscustomobject]@{

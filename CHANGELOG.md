@@ -5,6 +5,18 @@
 
 ## [Unreleased]
 
+## [3.1.2] - 2026-10-24
+
+### Fixed
+- 快照未映射 `probe.recovery-readiness` 的计数字段，导致「还原点/卷影副本」假设永远显示「无数据」；现补 `recovery.shadowCopies` / `recovery.restorePoints`
+- `dx.cdisk-full` 的 h.shadow 改用 `recovery.shadowCopies`，并说明实际占用需 `vssadmin` 查询
+
+### Verified（本机 VMware VM `win11-test`）
+- 远端只读采集：`storage` 15 秒级 / `intake` 27 探针（504 s）
+- 远端诊断：`diagnose --case dx.cdisk-full --from <远端 findings>` 全项有数据
+- **远端沙箱自检**：`selftest` 8/8 PASS，`restore-byte-identical` 逐字节一致
+
+
 ## [3.1.1] - 2026-10-24
 
 ### Fixed

@@ -104,11 +104,11 @@
         {
           "id": "h.shadow",
           "name": "还原点/卷影副本堆积",
-          "why": "系统保护占用可能达几十 GB",
+          "why": "卷影副本/还原点会占用可观空间；数量可直接看，实际占用需 vssadmin 查询",
           "checks": [
             {
-              "metric": "recovery.shadowGB",
-              "signal": ">20 GB"
+              "metric": "recovery.shadowCopies",
+              "signal": ">0 时用 vssadmin list shadowstorage 查实际占用"
             }
           ],
           "evidence": [
