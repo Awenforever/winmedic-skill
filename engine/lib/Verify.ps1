@@ -5,10 +5,13 @@
 #>
 
 function Invoke-VerifyRule {
-    param([Parameter(Mandatory)]$Rule)
+    param([Parameter(Mandatory)]$Rule, [string]$FallbackPath = '')
     switch ($Rule.kind) {
         'path_absent' {
-            return @{ ok = (-not (Test-Path -LiteralPath $Rule.path)); detail = ('路径不存在: ' + $Rule.path) }
+            $p = [string]$Rule.path
+            if (-not $p) { $p = $FallbackPath }
+            if (-not $p) { return @{ ok = $true; detail = '未提供路径，跳过校验' } }
+            return @{ ok = (-not (Test-Path -LiteralPath $p)); detail = ('路径不存在: ' + $p) }
         }
         'system_file_absent' {
             return @{ ok = (-not (Test-SystemFileExists -Path $Rule.path)); detail = ('系统文件不存在: ' + $Rule.path) }
@@ -36,12 +39,14 @@ function Invoke-VerifyRule {
 }
 
 function Invoke-ActionVerify {
-    param([Parameter(Mandatory)]$Action)
+    param([Parameter(Mandatory)]$Action, $Item = $null)
     $results = @()
     $pending = $false
     foreach ($r in @($Action.verify)) {
         if (-not $r) { continue }
-        $res = Invoke-VerifyRule -Rule $r
+        $fallback = ''
+        if ($Item -and ($Item.PSObject.Properties.Name -contains 'target')) { $fallback = [string]$Item.target }
+        $res = Invoke-VerifyRule -Rule $r -FallbackPath $fallback
         if ($res.ContainsKey('pendingReboot')) { $pending = $true }
         $results += @{ rule = $r.kind; ok = $res.ok; detail = $res.detail }
     }

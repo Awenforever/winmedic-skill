@@ -39,6 +39,21 @@ Describe '快照生成' {
     }
 }
 
+Describe '清理目标纳入病程' {
+    It '每个目标与合计都进快照' {
+        $f = [pscustomobject]@{ probeSet = 'storage'; probes = @(
+            [pscustomobject]@{ id = 'probe.host'; data = [pscustomobject]@{ computerName = 'H' } },
+            [pscustomobject]@{ id = 'probe.cleanup-targets'; data = [pscustomobject]@{ items = @(
+                [pscustomobject]@{ id = 'clean.cbs-logs'; size = 1073741824 },
+                [pscustomobject]@{ id = 'clean.pip-cache'; size = 536870912 }) } }
+        ) }
+        $s = Get-TrendSnapshot -Findings $f
+        $s.metrics['cleanup.cbs-logs.GB'] | Should -Be 1
+        $s.metrics['cleanup.pip-cache.GB'] | Should -Be 0.5
+        $s.metrics['cleanup.totalGB'] | Should -Be 1.5
+    }
+}
+
 Describe '增长计算' {
     It '少于两点判 insufficient' {
         (Get-TrendGrowth -Series @() -Metric 'm').confidence | Should -Be 'insufficient'

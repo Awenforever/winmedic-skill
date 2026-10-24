@@ -97,6 +97,19 @@ function Get-TrendSnapshot {
         }
     }
 
+    $ct = Get-TrendProbe -Findings $Findings -Id 'probe.cleanup-targets'
+    if ($ct -and $ct.data) {
+        $ctTotal = 0.0
+        foreach ($it in @($ct.data.items)) {
+            $sz = Get-TrendNumber -Object $it -Name 'size'
+            if ($sz -le 0) { continue }
+            $ctTotal += $sz
+            $key = 'cleanup.' + ([string]$it.id -replace '^clean\.', '') + '.GB'
+            $m[$key] = [math]::Round($sz / 1GB, 3)
+        }
+        if ($ctTotal -gt 0) { $m['cleanup.totalGB'] = [math]::Round($ctTotal / 1GB, 3) }
+    }
+
     $rr = Get-TrendProbe -Findings $Findings -Id 'probe.recovery-readiness'
     if ($rr -and $rr.data) {
         if ($rr.data.PSObject.Properties.Name -contains 'shadowStorageBytes') {

@@ -5,6 +5,21 @@
 
 ## [Unreleased]
 
+## [3.5.2] - 2026-10-24
+
+### Fixed
+- **`path_absent` 校验崩溃**：新目标动作的 `verify` 只写 `kind`，而校验函数只读 `$Rule.path` → `LiteralPath 为空`。现 `Invoke-ActionVerify -Item` 传入目标、`Invoke-VerifyRule -FallbackPath` 兜底；两者皆空时返回「跳过校验」
+
+### Added
+- `trend` 快照纳入清理目标：每个目标一个 `cleanup.<id>.GB` 指标 + `cleanup.totalGB`（本机实测一次快照含 15 项）
+- playbook `differential-cdisk-full` 增加「别只看系统项」小节（40 个目标分类与典型体积）
+- 病例 0008：新清理目标一执行就抛 LiteralPath 为空
+
+### Verified（多目标批量验证 / win11-test VM）
+- `storage.cbs-logs`、`storage.pip-cache`、`storage.chrome-shader-cache` 三个不同目标各跑 `apply → restore`：
+  **移走=True 还原=True 哈希一致=True，3/3 通过**
+
+
 ## [3.5.1] - 2026-10-24
 
 ### Added

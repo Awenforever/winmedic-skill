@@ -381,7 +381,7 @@ function Invoke-Apply {
         $pseudo = [pscustomobject]@{ id = 'S1'; target = '(standalone)'; actionId = $sAct.id }
         Write-JournalRecord -RunId $ridS -Record @{ itemId = 'S1'; actionId = $sAct.id; target = '(standalone)'; kind = $sAct.kind; phase = 'begin' }
         $rrS = Invoke-CdriveAction -Item $pseudo -Action $sAct -RunId $ridS
-        $vvS = Invoke-ActionVerify -Action $sAct
+        $vvS = Invoke-ActionVerify -Action $sAct -Item $pseudo
         Write-JournalRecord -RunId $ridS -Record @{ itemId = 'S1'; actionId = $sAct.id; target = '(standalone)'; kind = $sAct.kind; mode = $rrS.mode; ok = $rrS.ok; error = $rrS.error; outputSha256 = $rrS.outputSha256; verifyAllOk = $vvS.allOk; pendingReboot = $vvS.pendingReboot; phase = 'done' }
         if ($rrS.ok) { Write-Log ('完成: ' + $sAct.id) -Level OK } else { Write-Log ('失败: ' + $rrS.error) -Level ERROR }
         Write-Host ('  回滚: 该动作不可自动回滚，效果见 verify；runId=' + $ridS)
@@ -517,7 +517,7 @@ function Invoke-Apply {
         Write-Log ('执行 ' + $it.id + ' ' + $it.actionId + ' -> ' + $it.target)
         Write-JournalRecord -RunId $runId -Record @{ itemId = $it.id; actionId = $it.actionId; target = $it.target; kind = $act.kind; phase = 'begin' }
         $r = Invoke-CdriveAction -Item $it -Action $act -RunId $runId -Purge:$Purge
-        $ver = Invoke-ActionVerify -Action $act
+        $ver = Invoke-ActionVerify -Action $act -Item $it
         $recResult = if ($r.alreadyAbsent) { 'skipped' } else { 'ok' }
         $rec = @{
             itemId = $it.id; actionId = $it.actionId; target = $it.target; kind = $act.kind

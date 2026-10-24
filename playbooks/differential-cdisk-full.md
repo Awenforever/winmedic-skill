@@ -23,6 +23,19 @@
 | **近期异常增长** | 需要 2 条以上 `trend` 快照，`confidence=ok` 才能算速率 | **这是真正的病因线索** |
 | 还原点/卷影 | `vssadmin list shadowstorage` | 系统保护占用 |
 
+## 第 1.5 步：别只看系统项（数据驱动目标表）
+
+引擎的 `catalog/cleanup-targets.json` 目前覆盖 **40 个清理目标**，其中很多是「表面看不见但很大」的：
+
+| 类别 | 例子 | 典型体积 |
+|---|---|---|
+| 浏览器衍生缓存 | Edge/Chrome Service Worker、着色器缓存 | 数百 MB 到 1 GB+ |
+| 开发缓存 | pip / npm / NuGet / Gradle | 几十 MB 到数 GB |
+| 崩溃与日志 | 用户崩溃转储、WER、CBS 日志 | 百 MB 级 |
+| 协作/模型 | Teams、Slack、HuggingFace 模型缓存 | HF 可达数十 GB |
+
+所以「C 盘满」的结论不要停在 `Windows` 与用户文档——先看 `probe --set storage` 的 `probe.cleanup-targets` 明细。
+
 ## 第 2 步：区分「治标」与「治本」
 
 - 缓存类：清了会回来 → 治标，只在空间告急时做
