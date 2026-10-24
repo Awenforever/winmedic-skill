@@ -24,6 +24,8 @@
 | PB-301 | [apps-uninstall-residue](playbooks/apps-uninstall-residue.md) | 卸载残留、删不干净、卸载后还在 | apps |
 | PB-302 | [apps-migrate-to-another-drive](playbooks/apps-migrate-to-another-drive.md) | 把微信迁到 D 盘、软件搬到别的盘、下载目录搬家 | apps |
 | PB-303 | [apps-large-app-audit](playbooks/apps-large-app-audit.md) | 哪个软件占空间、装了太多软件 | apps |
+| PB-913 | [apps-relocate-cache](playbooks/apps-relocate-cache.md) | 想把缓存都搬到非 C 盘、已知文件夹迁移、缺该不该搬 | workloads |
+| PB-914 | [apps-adobe-triage](playbooks/apps-adobe-triage.md) | PS 暂存盘已满、Premiere 预览卡、Adobe 缓存 | workloads |
 | PB-911 | [apps-sync-clients-triage](playbooks/apps-sync-clients-triage.md) | OneDrive/网盘/会议/播放器缓存能不能删 | workloads |
 | PB-912 | [apps-dev-cache-triage](playbooks/apps-dev-cache-triage.md) | npm/pnpm 缓存、node_modules、构建产物 | workloads |
 | PB-905 | [apps-latex-triage](playbooks/apps-latex-triage.md) | TeX Live 占空间、宏包找不到、字体缓存坏 | workloads |

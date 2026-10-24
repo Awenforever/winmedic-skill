@@ -97,6 +97,10 @@ function Get-WorkloadsProbe {
         [string]$CatalogPath
     )
     $catalog = Get-WorkloadCatalog -CatalogPath $CatalogPath
+    $kfRoots = @{}
+    if (Get-Command Get-KnownFolderRoots -ErrorAction SilentlyContinue) {
+        try { $kfRoots = Get-KnownFolderRoots } catch { $kfRoots = @{} }
+    }
     $results = @()
     $sw = [Diagnostics.Stopwatch]::StartNew()
     $truncated = $false
@@ -104,6 +108,7 @@ function Get-WorkloadsProbe {
     foreach ($sig in $catalog) {
         if ($sw.Elapsed.TotalSeconds -gt $TimeBudgetSeconds) { $truncated = $true; break }
         $roots = Resolve-WorkloadRoots -Signature $sig
+        foreach ($kf in $kfRoots.Keys) { if (-not $roots.ContainsKey($kf)) { $roots[$kf] = $kfRoots[$kf] } }
         $installed = ($roots.Count -gt 0)
         $items = @()
         $cacheBytes = 0L
@@ -115,6 +120,15 @@ function Get-WorkloadsProbe {
                 $resolved = Expand-WorkloadTemplate -Template $tpl -Roots $roots
                 if (-not $resolved) { continue }
                 $kind = [string]$m.kind
+                $policy = [string]$m.policy
+                if (-not $policy) {
+                    $policy = switch ($kind) {
+                        'cache'  { 'keep-fast' }
+                        'data'   { 'move-cold' }
+                        'config' { 'never' }
+                        default  { 'ask' }
+                    }
+                }
                 $skipSize = $false
                 if ($m.skipSize) { $skipSize = [bool]$m.skipSize }
                 $paths = @()
@@ -127,7 +141,7 @@ function Get-WorkloadsProbe {
                     $size = -1
                     if (-not $skipSize) { $size = Get-WorkloadSize -Path $p }
                     if (-not $skipSize -and $size -le 0) { continue }
-                    $items += [pscustomobject]@{ label = [string]$m.label; kind = $kind; path = $p; size = $size; skipped = $skipSize }
+                    $items += [pscustomobject]@{ label = [string]$m.label; kind = $kind; policy = $policy; path = $p; size = $size; skipped = $skipSize }
                     if ($size -gt 0) {
                         if ($kind -eq 'cache') { $cacheBytes += $size }
                         elseif ($kind -eq 'data') { $dataBytes += $size }
@@ -255,6 +269,35 @@ function Get-ProxyChainProbe {
             clientCount = @($clients).Count
             clients = @($clients)
             note = '代理客户端卸载/切换端口后，各层配置常不同步；这是「关掉代理反而全断」的常见原因'
+        }
+        candidates = @()
+    }
+}
+function Get-RelocationProbe {
+    param([int]$TimeBudgetSeconds = 60)
+    $volumes = Get-RelocationVolumeProfile
+    $known = Get-RelocationKnownFolders
+    $wl = Get-WorkloadsProbe -TimeBudgetSeconds $TimeBudgetSeconds
+    $declared = Get-AppDeclaredPaths
+    $advices = Get-RelocationAdvice -Workloads @($wl.data.workloads) -Volumes $volumes -KnownFolders $known -DeclaredPaths $declared -SystemDrive 'C:'
+
+    $actionable = @($advices | Where-Object { $_.action -in @('move', 'known-folder') })
+    $hotOnHdd = @($advices | Where-Object { $_.action -eq 'move' -and $_.policy -eq 'keep-fast' })
+    $bytesToMove = 0L
+    foreach ($a in $actionable) { if ($a.size -gt 0) { $bytesToMove += [int64]$a.size } }
+
+    return @{
+        id = 'probe.relocation'
+        ok = $true
+        data = @{
+            volumes = $volumes
+            knownFolders = $known
+            declaredPaths = $declared
+            advices = @($advices)
+            actionableCount = $actionable.Count
+            hotOnHddCount = $hotOnHdd.Count
+            bytesToMove = $bytesToMove
+            note = '只给建议，不执行迁移；迁移动作涉及用户数据，必须由用户逐项确认'
         }
         candidates = @()
     }

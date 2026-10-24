@@ -5,6 +5,27 @@
 
 ## [Unreleased]
 
+## [2.3.0] - 2026-10-24
+
+### Added
+- **迁移策略层** `engine/lib/Relocation.ps1`：按「盘介质 + 已知文件夹 + 热/冷数据」给出迁移建议，而不是一律搬出 C 盘
+- `winmedic relocate` 命令与 `probe --set relocation`
+- 盘介质探测（NVMe / SSD / HDD + 剩余空间），已知文件夹当前路径探测
+- 软件自有路径读取（微信 `FileSavePath`、Steam `libraryfolders.vdf`、JetBrains `idea.properties`）作为时序判据的硬证据
+- 签名表支持引用已知文件夹实际位置（`{kfDocuments}` 等），不再写死 `%USERPROFILE%\Documents`
+- 新增签名：VMware、Adobe Premiere、Adobe Photoshop；微信改为按「文档」下的真实目录测量
+- 2 个 playbook：`apps-relocate-cache`（决策模型）、`apps-adobe-triage`（暂存盘/媒体缓存）
+
+### Fixed
+- **迁移建议的时序错误**（用户指出）：此前把「移动已知文件夹」当成通用解法，忽略了「先装后搬」场景下软件配置里已存绝对路径。现区分为 `known-folder`（先搬后装）与 `known-folder-then-app`（先装后搬，必须同步改软件设置），并用目录是否存在 + 软件声明路径判定
+- `Get-RelocationAdvice` 的 policy 兜底：policy 为空时按 kind 推导（函数自洽，不依赖调用方）
+
+### Notes
+- 本机实测：C: NVMe 237GB、D:/F: SATA SSD、E: HDD 1863GB；已知文件夹已在 E:，因此微信等软件的数据自然落在 `E:\__VIVE__\Documents`，验证了「先搬后装」路径
+
+### Tests
+- 新增 8 个迁移用例（时序 3 + 热冷判据 5），总计 191 个 Pester + 6 个路由用例
+
 ## [2.2.0] - 2026-10-24
 
 ### Added

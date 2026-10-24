@@ -79,6 +79,7 @@ else {
             if ($m.kind -notin @('cache', 'data', 'config', 'review')) { [void]$errors.Add('workload measure kind 非法: ' + $w.id + ' -> ' + $m.kind) }
             foreach ($mm in [regex]::Matches([string]$m.path, '\{([A-Za-z0-9_]+)\}')) {
                 $key = $mm.Groups[1].Value
+                if ($key -like 'kf*') { continue }
                 if ($declared -notcontains $key) { [void]$errors.Add('workload 引用了未声明的占位符: ' + $w.id + ' -> {' + $key + '}') }
             }
         }

@@ -218,6 +218,11 @@
           "type": "path",
           "path": "%APPDATA%\\Tencent\\QQLive",
           "as": "qqLive"
+        },
+        {
+          "type": "path",
+          "path": "%APPDATA%\\Tencent",
+          "as": "tcRoot"
         }
       ],
       "measure": [
@@ -225,6 +230,12 @@
           "path": "{qqLive}",
           "kind": "review",
           "label": "腾讯视频数据（可能含已下载视频）"
+        },
+        {
+          "path": "{tcRoot}\\xwechat",
+          "kind": "config",
+          "label": "同目录下的微信程序数据（不属本项）",
+          "optional": true
         }
       ],
       "cautions": [
@@ -239,30 +250,41 @@
       "detect": [
         {
           "type": "path",
-          "path": "%APPDATA%\\Tencent\\xwechat",
-          "as": "wxNew"
-        },
-        {
-          "type": "path",
-          "path": "%APPDATA%\\Tencent\\WeChat",
-          "as": "wxOld"
+          "path": "%APPDATA%\\Tencent",
+          "as": "tencentAppData"
         }
       ],
       "measure": [
         {
-          "path": "{wxNew}",
+          "path": "{kfDocuments}\\WeChat Files",
           "kind": "data",
-          "label": "微信 4.x 数据（含聊天记录）"
+          "label": "微信 3.x 聊天记录（在「文档」下）"
         },
         {
-          "path": "{wxOld}",
+          "path": "{kfDocuments}\\xwechat_files",
           "kind": "data",
-          "label": "微信 3.x 数据（含聊天记录）"
+          "label": "微信 4.x 聊天记录（在「文档」下）"
+        },
+        {
+          "path": "{kfDocuments}\\Tencent Files",
+          "kind": "data",
+          "label": "QQ/腾讯文件（在「文档」下）"
+        },
+        {
+          "path": "{tencentAppData}\\xwechat",
+          "kind": "config",
+          "label": "微信程序数据（配置/缓存，勿删）"
+        },
+        {
+          "path": "{tencentAppData}\\WeChat",
+          "kind": "config",
+          "label": "微信程序数据（旧版，勿删）"
         }
       ],
       "cautions": [
         "聊天记录是用户数据，禁止删除",
-        "迁移只能用微信自带的文件管理设置"
+        "「文档」已搬走时，先搬后装的软件会自动落到新位置；先装后搬则必须同步改软件内的保存路径",
+        "微信的保存路径在：设置 → 文件管理"
       ]
     },
     {
@@ -452,6 +474,93 @@
       "cautions": [
         "缓存重建后首次预览会变慢",
         "工程文件不在这里，删缓存不会丢项目"
+      ]
+    },
+    {
+      "id": "workload.vmware",
+      "name": "VMware Workstation",
+      "playbook": "playbooks/apps-migrate-to-another-drive.md",
+      "detect": [
+        {
+          "type": "path",
+          "path": "%APPDATA%\\VMware",
+          "as": "vmCfg"
+        },
+        {
+          "type": "path",
+          "path": "%USERPROFILE%\\Documents\\Virtual Machines",
+          "as": "vmStore"
+        }
+      ],
+      "measure": [
+        {
+          "path": "{vmStore}",
+          "kind": "data",
+          "label": "虚拟机磁盘（冷数据，容量优先）"
+        },
+        {
+          "path": "{vmCfg}",
+          "kind": "config",
+          "label": "虚拟机配置（勿删）"
+        }
+      ],
+      "cautions": [
+        "虚拟机目录动辄几十上百 GB，迁移前必须关机并确认快照已合并"
+      ]
+    },
+    {
+      "id": "workload.adobe-premiere",
+      "name": "Adobe Premiere Pro",
+      "playbook": "playbooks/apps-adobe-triage.md",
+      "detect": [
+        {
+          "type": "path",
+          "path": "%APPDATA%\\Adobe\\Premiere Pro",
+          "as": "prCfg"
+        }
+      ],
+      "measure": [
+        {
+          "path": "%APPDATA%\\Adobe\\Common\\Media Cache Files",
+          "kind": "cache",
+          "label": "媒体缓存文件（编辑时高频读写）"
+        },
+        {
+          "path": "%APPDATA%\\Adobe\\Common\\Media Cache",
+          "kind": "cache",
+          "label": "媒体缓存数据库"
+        },
+        {
+          "path": "{prCfg}",
+          "kind": "config",
+          "label": "Premiere 配置"
+        }
+      ],
+      "cautions": [
+        "媒体缓存供实时预览使用，放在固态上才不卡；它会在项目关闭后自动回收"
+      ]
+    },
+    {
+      "id": "workload.adobe-photoshop",
+      "name": "Adobe Photoshop",
+      "playbook": "playbooks/apps-adobe-triage.md",
+      "detect": [
+        {
+          "type": "path",
+          "path": "%APPDATA%\\Adobe\\Adobe Photoshop 2024",
+          "as": "psCfg"
+        }
+      ],
+      "measure": [
+        {
+          "path": "{psCfg}",
+          "kind": "cache",
+          "label": "Photoshop 设置与缓存"
+        }
+      ],
+      "cautions": [
+        "暂存盘（Scratch Disk）默认在系统盘临时目录，属热数据，**建议保留在最快的固态**",
+        "暂存盘不当会报「暂存盘已满」，不是磁盘真的满了"
       ]
     }
   ]

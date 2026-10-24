@@ -15,7 +15,7 @@
 [CmdletBinding()]
 param(
     [Parameter(Position = 0)]
-    [ValidateSet('doctor', 'probe', 'plan', 'apply', 'verify', 'restore', 'journal', 'profile', 'report', 'explain', 'summary', 'diff', 'version', 'help')]
+    [ValidateSet('doctor', 'probe', 'plan', 'apply', 'verify', 'restore', 'journal', 'profile', 'report', 'explain', 'summary', 'diff', 'relocate', 'version', 'help')]
     [string]$Command = 'help',
     [string]$SubCommand,
     [string]$Set = '',
@@ -52,6 +52,7 @@ if (-not $script:WinMedicRoot) { $script:WinMedicRoot = (Resolve-Path (Join-Path
 . (Join-Path $PSScriptRoot 'lib\Report.ps1')
 . (Join-Path $PSScriptRoot 'lib\Summary.ps1')
 . (Join-Path $PSScriptRoot 'lib\Recommendations.ps1')
+. (Join-Path $PSScriptRoot 'lib\Relocation.ps1')
 . (Join-Path $PSScriptRoot 'lib\Scan.ps1')
 . (Join-Path $PSScriptRoot 'probes\storage.ps1')
 . (Join-Path $PSScriptRoot 'probes\boot.ps1')
@@ -234,12 +235,16 @@ function Invoke-Probe {
         $probes += @((Get-WorkloadsProbe -TimeBudgetSeconds 60), (Get-ProxyChainProbe))
     }
 
+    if ($set -eq 'relocation') {
+        $probes += @((Get-RelocationProbe -TimeBudgetSeconds 60))
+    }
+
     if ($set -eq 'intake') {
         $probes += (Get-DriveSpaceProbe)
     }
 
     if ($probes.Count -le 1) {
-        Write-Log ('未知探针集: ' + $Set + '（可用 storage / boot / apps / updates / network / security / recovery / printers / backup / mail / workloads / intake / all）') -Level ERROR
+        Write-Log ('未知探针集: ' + $Set + '（可用 storage / boot / apps / updates / network / security / recovery / printers / backup / mail / workloads / relocation / intake / all）') -Level ERROR
         return $script:EXIT.USAGE
     }
 
@@ -624,10 +629,28 @@ function Invoke-Diff {
     return $script:EXIT.OK
 }
 
+function Invoke-Relocate {
+    $volumes = Get-RelocationVolumeProfile
+    $known = Get-RelocationKnownFolders
+    $wl = Get-WorkloadsProbe -TimeBudgetSeconds 60
+    $declared = Get-AppDeclaredPaths
+    $advices = Get-RelocationAdvice -Workloads @($wl.data.workloads) -Volumes $volumes -KnownFolders $known -DeclaredPaths $declared -SystemDrive 'C:'
+    if ($Json) {
+        Write-JsonResult -Object @{ volumes = $volumes; knownFolders = $known; declaredPaths = $declared; advices = @($advices) }
+        return $script:EXIT.OK
+    }
+    Write-Host (Format-RelocationReport -Advices $advices -Volumes $volumes)
+    Write-Host ''
+    $act = @($advices | Where-Object { $_.action -in @('move', 'known-folder', 'known-folder-then-app') })
+    Write-Host ('可优化项: ' + $act.Count + ' 项（只给建议，不自动迁移）')
+    Write-Host '迁移任何一项前请先看对应 playbook，并确认该软件已退出。'
+    return $script:EXIT.OK
+}
+
 function Show-Help {
     Write-Host 'WinMedic 引擎'
     Write-Host '  doctor                     环境自检'
-    Write-Host '  probe --set storage|boot|apps|updates|network|security|recovery|printers|backup|mail|workloads|intake|all'
+    Write-Host '  probe --set ...|workloads|relocation|intake|all'
     Write-Host '  plan  [--from findings.json] 生成方案'
     Write-Host '  apply --plan plan.json --ids R1,R2 --yes'
     Write-Host '  verify --journal <runId>   复核'
@@ -638,6 +661,7 @@ function Show-Help {
     Write-Host '  explain [--action <id>]                查看动作证据与回滚方式'
     Write-Host '  summary                                一屏体检摘要'
     Write-Host '  diff --from a.json --to b.json         两次采集对比'
+    Write-Host '  relocate                               迁移策略建议（缓存/数据该不该搬）'
     Write-Host '  apply --action <id> --yes              执行 standalone 动作（仅 Tier 1）'
     Write-Host '  version'
     return $script:EXIT.OK
@@ -656,6 +680,7 @@ switch ($Command) {
     'explain' { $code = Invoke-Explain }
     'summary' { $code = Invoke-Summary }
     'diff'    { $code = Invoke-Diff }
+    'relocate' { $code = Invoke-Relocate }
     'version' { Write-Host ('winmedic ' + (Get-Content (Join-Path $script:WinMedicRoot 'VERSION') -Raw).Trim()); $code = $script:EXIT.OK }
     default   { $code = Show-Help }
 }

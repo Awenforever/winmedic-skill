@@ -132,6 +132,25 @@ winmedic.ps1 probe --set workloads
 
 加新软件不需要改代码：在 `catalog/workloads.json` 加一条签名（detect + measure + playbook）即可。
 
+## 迁移决策（用户说「把缓存都搬到非 C 盘」时）
+
+**不要一律照做。** 先跑：
+
+```powershell
+winmedic.ps1 relocate
+```
+
+它会给出磁盘概况（NVMe/SSD/HDD + 剩余空间）与每个条目的建议，分三类：
+
+1. **已知文件夹**（文档/下载/桌面…）→ 移动文件夹一次，不要逐个软件设
+   - `先搬文件夹、后装软件`：只搬文件夹即可
+   - `先装软件、后搬文件夹`：**必须同时改软件内的保存路径**，否则软件指回旧路径或在原处重建空目录
+   - 判定依据：该目录当前是否存在 + 软件自己记录的路径（微信 FileSavePath / Steam libraryfolders.vdf / JetBrains idea.properties）
+2. **热数据**（PS 暂存盘、Premiere 媒体缓存、IDE 索引、流媒体缓存）→ **留在最快的盘**；它本来就会自动清理，搬到机械盘只会更卡
+3. **冷数据**（游戏、虚拟机、书库、聊天记录）→ 搬到剩余空间最大的盘，容量优先
+
+详见 playbook `apps-relocate-cache`（PB-913）。
+
 ## 证据查询
 
 任何动作执行前，若用户问「为什么」「依据是什么」，直接查：
