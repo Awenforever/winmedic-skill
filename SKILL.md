@@ -2,7 +2,7 @@
 name: winmedic
 description: Windows 电脑维修：诊断、清理、迁移、修复。覆盖磁盘空间、开机与性能、应用生命周期、更新与驱动、网络、安全态势、恢复分诊。只读优先，破坏性动作走隔离区并支持回滚，每条建议附证据。
 whenToUse: 用户说 C 盘爆满/变红、电脑卡顿、开机慢、软件卸不干净、想把微信或应用到 D 盘、大目录治理、更新失败、驱动异常、断网、蓝屏、误删文件、新机验收等需要「检查或改动本机 Windows」的请求。 English keywords: disk full, low disk space, slow boot, startup bloat, uninstall leftovers, migrate app or data to another drive, Windows Update failure, driver or device problem, no internet, proxy/VPN issue, printer offline, backup check, recover deleted files, new PC intake.
-version: 1.15.0
+version: 1.16.0
 ---
 
 # WinMedic
@@ -106,6 +106,12 @@ winmedic.ps1 diff --from a.json --to b.json   # 两次采集对比
 ```
 
 `summary` 未采集的领域显示 `[?] 未采集`，**不要据此下结论**，先补采集。
+
+摘要末尾会直接列出「建议」（按优先级），与 `plan` 的建议段同源。要机器可读就加 `--json` 并重定向：
+
+```powershell
+winmedic.ps1 summary --json > status.json
+```
 
 ## 证据查询
 

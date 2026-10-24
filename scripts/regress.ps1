@@ -156,6 +156,19 @@ if (-not $SkipCli) {
         Add-Result 'cli' $c.name $ok ('exit=' + $r.code + '（期望 ' + $c.expect + '）')
     }
 
+    # JSON 契约：验证 stdout 能被外部消费（重定向到文件后解析）
+    $jsonOut = Join-Path $env:TEMP ('wm-json-' + [guid]::NewGuid().ToString('N').Substring(0, 6) + '.json')
+    & powershell -NoProfile -ExecutionPolicy Bypass -File $engine summary --set intake --json > $jsonOut 2>$null
+    $okJson = $false; $detailJson = ''
+    try {
+        $j = Get-Content -LiteralPath $jsonOut -Raw -Encoding UTF8 | ConvertFrom-Json
+        $dc = @($j.domains).Count
+        $okJson = ($dc -ge 5 -and $j.host -ne $null)
+        $detailJson = ('domains=' + $dc + ' recs=' + @($j.recommendations).Count)
+    } catch { $detailJson = $_.Exception.Message }
+    if (Test-Path -LiteralPath $jsonOut) { Remove-Item -LiteralPath $jsonOut -Force }
+    Add-Result 'cli' 'JSON 契约: summary --json' $okJson $detailJson
+
     # 未知批次
     $r = Invoke-Engine -EngineArgs @('verify', '--journal', 'no-such-run')
     Add-Result 'cli' 'verify 未知批次 -> 2' ($r.code -eq 2) ('exit=' + $r.code)

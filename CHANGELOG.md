@@ -5,6 +5,20 @@
 
 ## [Unreleased]
 
+## [1.16.0] - 2026-10-24
+
+### Added
+- `summary` 末尾直接列出处置建议（按优先级），与 `plan` 建议段同源；不再需要先跑一遍 plan 才知道该做什么
+- `summary --json` 输出 `host / probeSet / domains / recommendations` 结构化结果，可直接被外部程序消费
+
+### Fixed
+- **`--json` 输出一直为空**：派发器用 `$code = Invoke-Xxx` 捕获函数返回值，把函数内 `Write-Output` 的 JSON 一并吞进变量，从未到达控制台。改为 `[Console]::Out.WriteLine` 直写 stdout（随修随验：`summary --json > x.json` 得到 9 域 4 建议）
+- `--json` / `--accept-risk` 等布尔开关写在双横线形式时被当成未知参数；现单独识别且不吞掉后续 token
+
+### Tests
+- 新增 2 个摘要建议用例；回归新增 1 项「JSON 契约」（重定向解析）共 36 项
+
+
 ## [1.15.0] - 2026-10-24
 
 ### Added

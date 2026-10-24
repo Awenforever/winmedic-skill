@@ -65,9 +65,8 @@ function Write-JsonResult {
         if ($dir -and -not (Test-Path -LiteralPath $dir)) { New-Item -ItemType Directory -Force -Path $dir | Out-Null }
         [IO.File]::WriteAllText($Path, $json, (New-Object Text.UTF8Encoding($false)))
     } else {
-        Write-Output $json
+        [Console]::Out.WriteLine($json)
     }
-    return $json
 }
 
 # ---- 权限 ------------------------------------------------------------------

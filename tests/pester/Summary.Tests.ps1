@@ -3,6 +3,7 @@ BeforeAll {
     $repo = Split-Path -Parent (Split-Path -Parent $PSScriptRoot)
     . (Join-Path $repo 'engine\lib\Common.ps1')
     . (Join-Path $repo 'engine\lib\Summary.ps1')
+    . (Join-Path $repo 'engine\lib\Recommendations.ps1')
     function New-FullFindings {
         [pscustomobject]@{
             generatedAt = '2026-10-24T01:00:00+08:00'
@@ -68,6 +69,24 @@ Describe '摘要渲染' {
         foreach ($d in @('磁盘', '启动', '应用', '更新', '网络', '安全', '恢复', '备份', '外设')) {
             $md | Should -Match $d
         }
+    }
+}
+
+Describe '摘要中的建议' {
+    It '有建议时渲染建议段并标注可执行动作' {
+        $f = New-FullFindings
+        $f.probes[6].data.level = 'poor'
+        $f.probes[6].data.risks = @('没有系统还原点')
+        $md = Format-WinMedicSummary -Findings $f
+        $md | Should -Match '建议:'
+        $md | Should -Match '先建系统还原点'
+        $md | Should -Match 'recovery.create-restore-point'
+    }
+    It '无建议时不渲染建议段' {
+        $f = New-FullFindings
+        $f.probes[1].data.items = @([pscustomobject]@{ advice = 'keep' })
+        $md = Format-WinMedicSummary -Findings $f
+        $md | Should -Not -Match '建议:'
     }
 }
 

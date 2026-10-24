@@ -107,6 +107,11 @@ function Get-SummaryLines {
     return $lines
 }
 
+function Get-SummaryRecommendations {
+    param($Findings)
+    try { return @(Get-Recommendations -Findings $Findings) } catch { return @() }
+}
+
 function Format-WinMedicSummary {
     param([Parameter(Mandatory)]$Findings)
     $sb = New-Object System.Text.StringBuilder
@@ -118,6 +123,17 @@ function Format-WinMedicSummary {
     $mark = @{ ok = '[OK]  '; warn = '[WARN]'; bad = '[BAD] '; info = '[--]  '; unknown = '[?]   ' }
     foreach ($l in (Get-SummaryLines -Findings $Findings)) {
         [void]$sb.AppendLine(($mark[$l.verdict] + ' ' + $l.domain + '  ' + $l.text))
+    }
+    $recs = Get-SummaryRecommendations -Findings $Findings
+    if ($recs.Count -gt 0) {
+        [void]$sb.AppendLine('')
+        [void]$sb.AppendLine('建议:')
+        $order = @{ high = 0; medium = 1; low = 2 }
+        $sorted = @($recs | Sort-Object -Property @{ Expression = { $order[[string]$_.severity] } })
+        foreach ($r in $sorted) {
+            $how = if ($r.engineAction) { '  -> ' + $r.engineAction } else { '' }
+            [void]$sb.AppendLine(('  [' + ([string]$r.severity).ToUpper() + '] ' + $r.title + $how))
+        }
     }
     return $sb.ToString().TrimEnd()
 }

@@ -72,6 +72,19 @@ function Resolve-RestArguments {
         $tok = [string]$Tokens[$i]
         if ($tok.StartsWith('--')) {
             $key = $tok.Substring(2).ToLowerInvariant()
+            # 布尔开关不消费后续 token
+            if (@('yes', 'purge', 'json', 'remove', 'accept-risk', 'acceptrisk') -contains $key) {
+                switch ($key) {
+                    'yes'                { $script:YesFlag = $true }
+                    'purge'              { $script:PurgeFlag = $true }
+                    'json'               { $script:JsonFlag = $true }
+                    'remove'             { $script:RemoveFlag = $true }
+                    'accept-risk'        { $script:AcceptRiskFlag = $true }
+                    'acceptrisk'         { $script:AcceptRiskFlag = $true }
+                }
+                $i++
+                continue
+            }
             $val = $null
             if (($i + 1) -lt $Tokens.Count) {
                 $next = [string]$Tokens[$i + 1]
@@ -566,7 +579,16 @@ function Invoke-Summary {
     $fp = Resolve-FindingsPath
     if (-not $fp) { Write-Log '找不到 findings，请先运行 probe' -Level ERROR; return $script:EXIT.USAGE }
     $findings = Get-Content -LiteralPath $fp -Raw -Encoding UTF8 | ConvertFrom-Json
-    if ($Json) { Write-JsonResult -Object (Get-SummaryLines -Findings $findings) | Out-Null; return $script:EXIT.OK }
+    if ($Json) {
+        Write-JsonResult -Object @{
+            host = $findings.host
+            probeSet = $findings.probeSet
+            generatedAt = $findings.generatedAt
+            domains = @(Get-SummaryLines -Findings $findings)
+            recommendations = @(Get-SummaryRecommendations -Findings $findings)
+        }
+        return $script:EXIT.OK
+    }
     Write-Host (Format-WinMedicSummary -Findings $findings)
     Write-Host ''
     Write-Host ('  数据源: ' + $fp)
