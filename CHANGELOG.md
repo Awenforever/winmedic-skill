@@ -5,6 +5,24 @@
 
 ## [Unreleased]
 
+## [3.2.0] - 2026-10-24
+
+### Fixed（真实处置演练暴露的 2 个致命缺陷）
+1. **plan 哈希 JSON 往返不稳定**：`Get-PlanHash` 直接用 `-f` 拼接 int64，`plan.json` 回读后 size 变成 Int32，同一份计划算出不同哈希 → `apply` 一律被判「plan 校验失败」，**真实处置从未成功过**。改为规范化字符串（显式 `[int64]`/`[int]`/InvariantCulture）+ `v2` 前缀，并补「JSON 往返后哈希不变」回归用例
+2. **done 记录缺 `phase`**：主循环只给 `begin` 写了 `phase`，`verify` 因此把每次成功执行都报成「中断残留」，`restore` 还会重复救回。现补 `phase='done'`，并让 `verify` 只汇总 done 记录
+
+### Verified（G1 真实处置演练，win11-test VM / 管理员）
+- 向 Edge 缓存写入 120 MB（3 个 40 MB 文件），`plan` 命中 `storage.edge-cache`
+- `apply` 真实移入隔离区：**缓存目录消失**，journal 记录 begin → done（含 quarantinePath）
+- `verify`：**无中断残留**
+- `restore`：**3/3 文件逐字节一致**，journal 追加 restored 记录
+- 演练证据保存于 `C:\ProgramData\cdrive\state\g1-evidence.jsonl`
+
+### Notes
+- 前置条件真实生效：Edge 进程运行时 `apply` 被拒（仍在运行: msedge），结束进程后才执行
+- 该 VM 回收站不保留内容（删 90 MB 后 `$Recycle.Bin` 仅剩 3 个 129 字节元数据桩），所以改用目录型目标
+
+
 ## [3.1.2] - 2026-10-24
 
 ### Fixed

@@ -31,12 +31,22 @@ function Import-CdriveCatalog {
 }
 
 function Get-PlanHash {
+    <#
+      规范化后再哈希：先显式转成字符串/int64，避免 JSON 往返后类型变化（Int64 -> Int32）
+      导致同一份计划算出不同哈希。前缀 v2 用于和旧算法区分。
+    #>
     param([Parameter(Mandatory)]$Items)
     $parts = @()
-    foreach ($it in ($Items | Sort-Object -Property id)) {
-        $parts += ('{0}|{1}|{2}|{3}|{4}' -f $it.id, $it.actionId, $it.target, $it.size, $it.tier)
+    foreach ($it in ($Items | Sort-Object -Property { [string]$_.id })) {
+        $id = [string]$it.id
+        $actionId = [string]$it.actionId
+        $target = [string]$it.target
+        $size = ([int64]$it.size).ToString([Globalization.CultureInfo]::InvariantCulture)
+        $tier = ([int]$it.tier).ToString([Globalization.CultureInfo]::InvariantCulture)
+        $parts += ($id + '|' + $actionId + '|' + $target + '|' + $size + '|' + $tier)
     }
-    return ('sha256:' + (Get-StringSha256 -Text ($parts -join "`n")))
+    $basis = ($parts -join [Environment]::NewLine)
+    return ('sha256:' + (Get-StringSha256 -Text ('v2' + [Environment]::NewLine + $basis)))
 }
 
 function New-CdrivePlan {

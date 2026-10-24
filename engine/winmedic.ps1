@@ -500,6 +500,7 @@ function Invoke-Apply {
             exitCode = $r.exitCode; outputSha256 = $r.outputSha256
             freeBefore = $r.freeBefore; freeAfter = $r.freeAfter
             verifyAllOk = $ver.allOk; pendingReboot = $ver.pendingReboot; verify = $ver.results
+            phase = 'done'
         }
         Write-JournalRecord -RunId $runId -Record $rec
         if ($r.alreadyAbsent) { Write-Log ($it.id + ' 目标已不存在，跳过') -Level WARN }
@@ -517,8 +518,9 @@ function Invoke-VerifyCmd {
     if (-not $Journal) { Write-Log 'verify 需要 --journal <runId>' -Level ERROR; return $script:EXIT.USAGE }
     $recs = Get-JournalRecords -RunId $Journal
     if ($recs.Count -eq 0) { Write-Log '该 runId 没有记录' -Level WARN; return $script:EXIT.USAGE }
+    $doneRecs = @($recs | Where-Object { -not ($_.PSObject.Properties.Name -contains 'phase') -or [string]$_.phase -eq 'done' })
     $out = @()
-    foreach ($r in $recs) {
+    foreach ($r in $doneRecs) {
         $out += [pscustomobject]@{
             itemId = $r.itemId; actionId = $r.actionId; ok = $r.ok; mode = $r.mode
             pendingReboot = $r.pendingReboot; verifyAllOk = $r.verifyAllOk

@@ -22,6 +22,29 @@ BeforeAll {
     }
 }
 
+Describe '计划哈希稳定性' {
+    It 'JSON 往返后哈希不变（真实缺陷回归）' {
+        $items = @(
+            [pscustomobject]@{ id = 'R1'; actionId = 'storage.software-distribution-download'; target = 'C:\Windows\SoftwareDistribution\Download'; size = [int64]97891982; tier = [int32]2 },
+            [pscustomobject]@{ id = 'R2'; actionId = 'storage.edge-cache'; target = 'C:\Users\k\AppData\Local\Microsoft\Edge\User Data\Default\Cache'; size = [int64]125829120; tier = [int32]2 }
+        )
+        $h1 = Get-PlanHash -Items $items
+        $back = (($items) | ConvertTo-Json -Depth 6 | ConvertFrom-Json)
+        $h2 = Get-PlanHash -Items $back
+        $h1 | Should -Be $h2
+    }
+    It '顺序不同但内容相同 -> 哈希一致' {
+        $a = @([pscustomobject]@{ id='R1'; actionId='x'; target='C:\a'; size=[int64]1; tier=2 }, [pscustomobject]@{ id='R2'; actionId='y'; target='C:\b'; size=[int64]2; tier=2 })
+        $b = @([pscustomobject]@{ id='R2'; actionId='y'; target='C:\b'; size=[int64]2; tier=2 }, [pscustomobject]@{ id='R1'; actionId='x'; target='C:\a'; size=[int64]1; tier=2 })
+        (Get-PlanHash -Items $a) | Should -Be (Get-PlanHash -Items $b)
+    }
+    It '内容变化 -> 哈希变化' {
+        $a = @([pscustomobject]@{ id='R1'; actionId='x'; target='C:\a'; size=[int64]1; tier=2 })
+        $b = @([pscustomobject]@{ id='R1'; actionId='x'; target='C:\a'; size=[int64]1; tier=3 })
+        (Get-PlanHash -Items $a) | Should -Not -Be (Get-PlanHash -Items $b)
+    }
+}
+
 Describe '方案生成' {
     It '只保留足够大的项，过小项被排除' {
         $plan = New-CdrivePlan -Findings (New-TestFindings)
