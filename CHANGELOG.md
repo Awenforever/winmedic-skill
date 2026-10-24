@@ -5,6 +5,19 @@
 
 ## [Unreleased]
 
+## [2.0.0] - 2026-10-24
+
+### Added
+- **MCP 服务器** `engine/mcp/winmedic-mcp.ps1`：stdio JSON-RPC 2.0，10 个工具，PowerShell 5.1 实现零依赖
+  - 写工具（apply/restore）必须显式 `yes=true`；`-ReadOnly` 可整体禁用
+  - 完全继承引擎红线、风险门、plan 哈希与审计日志，服务器本身不拼命令
+- `docs/MCP.md`：协议细节、客户端配置示例、安全边界与已知限制
+- 7 个 MCP 集成用例（真实启动子进程、喂 stdin、解析 stdout）
+
+### Changed
+- 版本进入 2.x：能力面从「CLI + Skill」扩展到「CLI + Skill + MCP」
+
+
 ## [1.17.0] - 2026-10-24
 
 ### Added

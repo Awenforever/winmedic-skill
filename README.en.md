@@ -85,6 +85,17 @@ Storage · Boot & performance · Applications · Updates & drivers · Network ·
 
 21 playbooks, 36 probes, 13 actions, 14 evidence entries.
 
+## MCP (optional)
+
+When the host cannot run scripts directly, use the built-in MCP server (stdio JSON-RPC, PowerShell, no dependencies):
+
+```powershell
+.\engine\mcp\winmedic-mcp.ps1              # full
+.\engine\mcp\winmedic-mcp.ps1 -ReadOnly    # audit only
+```
+
+Ten tools; write tools require an explicit `yes=true` and inherit every engine guard (red lines, risk gate, plan hash). See [docs/MCP.md](docs/MCP.md).
+
 ## Requirements
 
 - Windows 10 / 11

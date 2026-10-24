@@ -154,6 +154,9 @@ winmedic.ps1 profile --exclude "..." --remove  # 移除
 
 ## 引擎调用约定
 
+> 若宿主只能通过 MCP 访问工具，用 `engine\mcp\winmedic-mcp.ps1`（见 [docs/MCP.md](docs/MCP.md)）；
+> 工具参数与下面命令一一对应，写工具需 `yes=true`。其余规则完全一致。
+
 - 所有子命令支持 `--json`，无 `--json` 时输出人类可读摘要。
 - 退出码：0 成功 / 2 用法 / 3 权限 / 4 前置未过 / 5 plan 失效 / 6 红线 / 7 部分失败。
 - **不要绕过引擎直接下删除命令**。引擎的价值就是哈希绑定、隔离区和审计日志。

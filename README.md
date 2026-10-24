@@ -59,6 +59,18 @@ tests/                  Pester 单测、路由测试、fixtures、真机 lab
 docs/                   设计、安全模型、证据契约、难例、路线图
 ```
 
+## MCP（可选）
+
+宿主不方便直接跑脚本时，可用内置 MCP 服务器（stdio JSON-RPC，PowerShell 实现，零依赖）：
+
+```powershell
+.\engine\mcp\winmedic-mcp.ps1              # 全功能
+.\engine\mcp\winmedic-mcp.ps1 -ReadOnly    # 只读审查模式
+```
+
+10 个工具（doctor / probe / summary / plan / apply / verify / restore / journal / explain / profile），
+写工具必须显式 `yes=true`，且完全继承引擎的红线、风险门与 plan 校验。详见 [docs/MCP.md](docs/MCP.md)。
+
 ## 要求
 
 - Windows 10 / 11
