@@ -14,8 +14,8 @@
 4. 引擎路径双反斜杠 → 单反斜杠
 
 ### Verified
-- **S1 验收达成**：remote --target ustc-wjh --set storage 真实成功（11.8 s），9 个探针全部 origin=remote:ustc-wjh
-- 远端 DESKTOP-CN7P93M / Windows 11 Pro / 管理员，C: 231.4 GB 可用 66.6 GB
+- **S1 验收达成**：`remote --target win11-test --set storage`（本机 VMware VM，Windows 11 Test）成功，9 个探针全部 origin=remote:win11-test
+- 远端 DESKTOP-GB7NLMT / Windows 11 Pro 26200 / 管理员，C: 62.8 GB 可用 24.2 GB；冷启动首采 152.6 s
 - 远端临时目录与本地 loopback 残留已清理
 
 ### Tests

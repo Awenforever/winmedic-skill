@@ -49,7 +49,7 @@
 
 - 远端需 PowerShell 5.1+（引擎本身要求）
 - 远端必须是 Windows（本 skill 的定位）
-- SSH 传输路径已在真实远端验证（ustc-wjh / DESKTOP-CN7P93M，Win11 Pro，11.8 s）
+- SSH 传输路径已在真实远端验证：本机 VMware VM `win11-test`（Windows 11 Test / DESKTOP-GB7NLMT / Win11 Pro 26200），冷启动首采 152.6 s，9 个探针全部 `origin=remote:win11-test`
 - 大探针集（`--set all`）在远端可能数分钟，注意 `--timeout`
 ## 踩坑记录（2026-10-24 首次真实远端联调）
 
