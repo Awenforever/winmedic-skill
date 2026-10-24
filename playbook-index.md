@@ -24,6 +24,8 @@
 | PB-301 | [apps-uninstall-residue](playbooks/apps-uninstall-residue.md) | 卸载残留、删不干净、卸载后还在 | apps |
 | PB-302 | [apps-migrate-to-another-drive](playbooks/apps-migrate-to-another-drive.md) | 把微信迁到 D 盘、软件搬到别的盘、下载目录搬家 | apps |
 | PB-303 | [apps-large-app-audit](playbooks/apps-large-app-audit.md) | 哪个软件占空间、装了太多软件 | apps |
+| PB-911 | [apps-sync-clients-triage](playbooks/apps-sync-clients-triage.md) | OneDrive/网盘/会议/播放器缓存能不能删 | workloads |
+| PB-912 | [apps-dev-cache-triage](playbooks/apps-dev-cache-triage.md) | npm/pnpm 缓存、node_modules、构建产物 | workloads |
 | PB-905 | [apps-latex-triage](playbooks/apps-latex-triage.md) | TeX Live 占空间、宏包找不到、字体缓存坏 | workloads |
 | PB-906 | [apps-jetbrains-triage](playbooks/apps-jetbrains-triage.md) | PyCharm 卡、索引重建、IDE 配置占空间 | workloads |
 | PB-907 | [apps-steam-triage](playbooks/apps-steam-triage.md) | Steam 占几百 G、游戏装错盘、着色器缓存 | workloads |

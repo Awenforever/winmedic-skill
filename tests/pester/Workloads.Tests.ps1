@@ -80,6 +80,15 @@ Describe '负载探针' {
             else { $w.verdict | Should -Be 'none' }
         }
     }
+    It 'review 类型单独累计，不计入 cache/data' {
+        $r = Get-WorkloadsProbe -TimeBudgetSeconds 30
+        foreach ($w in $r.data.workloads) {
+            $sum = 0L
+            foreach ($i in $w.items) { if ($i.kind -eq 'review' -and $i.size -gt 0) { $sum += $i.size } }
+            $w.reviewBytes | Should -Be $sum
+        }
+    }
+
     It '缓存与数据分别累计' {
         $r = Get-WorkloadsProbe -TimeBudgetSeconds 30
         foreach ($w in $r.data.workloads) {

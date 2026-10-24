@@ -5,6 +5,20 @@
 
 ## [Unreleased]
 
+## [2.2.0] - 2026-10-24
+
+### Added
+- 签名表从 5 条扩到 **14 条**：新增腾讯视频、微信、腾讯会议、OneDrive、网易云音乐、npm/pnpm 开发缓存、Calibre、OBS、Adobe
+- 新增 `kind=review`（需人工确认）：单独累计为 `reviewBytes`，不计入 cache/data，避免把「用户主动下载的视频」当缓存
+- 2 个 playbook：`apps-sync-clients-triage`（同步盘/会议/播放器）、`apps-dev-cache-triage`（npm/pnpm/构建产物）
+- 建议规则：review 类 ≥1 GB 提示「需人工确认」
+
+### Notes
+- 本机实测（14 签名全部命中，2.3 秒）：OneDrive 缓存 1.13 GB、腾讯会议 913 MB、TeX 323 MB、网易云 156 MB、Steam 缓存 143 MB、Office 125 MB；另有三类不计入清理：腾讯视频 2.18 GB（review）、微信 2.98 GB（data）、Steam 游戏库 225 GB（data，在 D 盘）
+
+### Tests
+- 新增 2 个用例（review 累计、review 建议），总计 183 个 Pester + 6 个路由用例
+
 ## [2.1.0] - 2026-10-24
 
 ### Added

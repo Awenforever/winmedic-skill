@@ -98,6 +98,15 @@ Describe '建议生成' {
         @($r | Where-Object { $_.id -like 'rec.workload-cache:*' }).Count | Should -Be 1
         ($r | Where-Object { $_.id -eq 'rec.workload-cache:workload.steam' }).severity | Should -Be 'low'
     }
+    It 'review 类超 1 GB 提示需人工确认' {
+        $f = New-Findings -Probes @((New-Probe 'probe.workloads' ([pscustomobject]@{
+            workloads = @([pscustomobject]@{ id = 'workload.tencent-video'; name = '腾讯视频'; installed = $true; cacheBytes = 0; dataBytes = 0; reviewBytes = 2GB; playbook = 'playbooks/apps-migrate-to-another-drive.md' })
+        })))
+        $r = @(@(Get-Recommendations -Findings $f) | Where-Object { $_.id -like 'rec.workload-review:*' })
+        @($r).Count | Should -Be 1
+        $r[0].title | Should -Match '需人工确认'
+    }
+
     It 'Steam 游戏库超 100 GB 额外提示' {
         $f = New-Findings -Probes @((New-Probe 'probe.workloads' ([pscustomobject]@{
             workloads = @([pscustomobject]@{ id = 'workload.steam'; name = 'Steam'; installed = $true; cacheBytes = 0; dataBytes = 200GB; playbook = 'playbooks/apps-steam-triage.md' })

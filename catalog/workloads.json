@@ -208,6 +208,251 @@
         "Normal.dotm 损坏时删除即可重建，但会丢自定义样式",
         "改模板前先关掉所有 Office 程序"
       ]
+    },
+    {
+      "id": "workload.tencent-video",
+      "name": "腾讯视频 (QQLive)",
+      "playbook": "playbooks/apps-migrate-to-another-drive.md",
+      "detect": [
+        {
+          "type": "path",
+          "path": "%APPDATA%\\Tencent\\QQLive",
+          "as": "qqLive"
+        }
+      ],
+      "measure": [
+        {
+          "path": "{qqLive}",
+          "kind": "review",
+          "label": "腾讯视频数据（可能含已下载视频）"
+        }
+      ],
+      "cautions": [
+        "里面可能有用户主动下载的影视文件",
+        "删除前必须确认；清理缓存请用客户端内「清理缓存」"
+      ]
+    },
+    {
+      "id": "workload.wechat",
+      "name": "微信 (WeChat)",
+      "playbook": "playbooks/apps-migrate-to-another-drive.md",
+      "detect": [
+        {
+          "type": "path",
+          "path": "%APPDATA%\\Tencent\\xwechat",
+          "as": "wxNew"
+        },
+        {
+          "type": "path",
+          "path": "%APPDATA%\\Tencent\\WeChat",
+          "as": "wxOld"
+        }
+      ],
+      "measure": [
+        {
+          "path": "{wxNew}",
+          "kind": "data",
+          "label": "微信 4.x 数据（含聊天记录）"
+        },
+        {
+          "path": "{wxOld}",
+          "kind": "data",
+          "label": "微信 3.x 数据（含聊天记录）"
+        }
+      ],
+      "cautions": [
+        "聊天记录是用户数据，禁止删除",
+        "迁移只能用微信自带的文件管理设置"
+      ]
+    },
+    {
+      "id": "workload.tencent-meeting",
+      "name": "腾讯会议 (WeMeet)",
+      "playbook": "playbooks/apps-sync-clients-triage.md",
+      "detect": [
+        {
+          "type": "path",
+          "path": "%APPDATA%\\Tencent\\WeMeet",
+          "as": "weMeet"
+        }
+      ],
+      "measure": [
+        {
+          "path": "{weMeet}",
+          "kind": "cache",
+          "label": "会议缓存（日志/临时文件/安装包）"
+        }
+      ],
+      "cautions": [
+        "会议录制文件若保存在此处，删前确认",
+        "退出客户端后再清"
+      ]
+    },
+    {
+      "id": "workload.onedrive",
+      "name": "OneDrive 客户端",
+      "playbook": "playbooks/apps-sync-clients-triage.md",
+      "detect": [
+        {
+          "type": "path",
+          "path": "%LOCALAPPDATA%\\Microsoft\\OneDrive",
+          "as": "odLocal"
+        }
+      ],
+      "measure": [
+        {
+          "path": "{odLocal}\\logs",
+          "kind": "cache",
+          "label": "客户端日志"
+        },
+        {
+          "path": "{odLocal}\\ListSync",
+          "kind": "cache",
+          "label": "同步列表缓存"
+        },
+        {
+          "path": "{odLocal}\\Update",
+          "kind": "cache",
+          "label": "更新包残留"
+        },
+        {
+          "path": "{odLocal}\\settings",
+          "kind": "config",
+          "label": "客户端设置（勿删）"
+        }
+      ],
+      "cautions": [
+        "云端文件本身不在这里，删本地缓存不会丢文件",
+        "不要删 settings，会要求重新登录"
+      ]
+    },
+    {
+      "id": "workload.netease-music",
+      "name": "网易云音乐",
+      "playbook": "playbooks/apps-sync-clients-triage.md",
+      "detect": [
+        {
+          "type": "path",
+          "path": "%LOCALAPPDATA%\\Netease\\CloudMusic",
+          "as": "neRoot"
+        }
+      ],
+      "measure": [
+        {
+          "path": "{neRoot}\\Cache",
+          "kind": "cache",
+          "label": "流媒体缓存"
+        }
+      ],
+      "cautions": [
+        "下载的音乐默认在别的目录，删缓存不影响已下载歌曲"
+      ]
+    },
+    {
+      "id": "workload.dev-caches",
+      "name": "开发缓存 (npm / pnpm)",
+      "playbook": "playbooks/apps-dev-cache-triage.md",
+      "detect": [
+        {
+          "type": "path",
+          "path": "%LOCALAPPDATA%\\npm-cache",
+          "as": "npmCache"
+        },
+        {
+          "type": "path",
+          "path": "%LOCALAPPDATA%\\pnpm\\store",
+          "as": "pnpmStore"
+        }
+      ],
+      "measure": [
+        {
+          "path": "{npmCache}",
+          "kind": "cache",
+          "label": "npm 缓存"
+        },
+        {
+          "path": "{pnpmStore}",
+          "kind": "cache",
+          "label": "pnpm 全局存储"
+        }
+      ],
+      "cautions": [
+        "清 npm 缓存用 npm cache clean --force，别手删目录",
+        "pnpm store 可用 pnpm store prune 精确清理"
+      ]
+    },
+    {
+      "id": "workload.calibre",
+      "name": "Calibre",
+      "playbook": "playbooks/storage-large-folder-management.md",
+      "detect": [
+        {
+          "type": "path",
+          "path": "%USERPROFILE%\\Calibre Library",
+          "as": "calibreLib"
+        }
+      ],
+      "measure": [
+        {
+          "path": "{calibreLib}",
+          "kind": "data",
+          "label": "书库（电子书本体）"
+        }
+      ],
+      "cautions": [
+        "书库是用户数据，处理方式只有迁移或删书"
+      ]
+    },
+    {
+      "id": "workload.obs",
+      "name": "OBS Studio",
+      "playbook": "playbooks/apps-sync-clients-triage.md",
+      "detect": [
+        {
+          "type": "path",
+          "path": "%APPDATA%\\obs-studio",
+          "as": "obsCfg"
+        }
+      ],
+      "measure": [
+        {
+          "path": "{obsCfg}",
+          "kind": "config",
+          "label": "场景与配置（含录屏路径设置）"
+        }
+      ],
+      "cautions": [
+        "配置里有推流密钥，不要外传",
+        "录像默认不在这里"
+      ]
+    },
+    {
+      "id": "workload.adobe",
+      "name": "Adobe Creative Cloud",
+      "playbook": "playbooks/storage-large-folder-management.md",
+      "detect": [
+        {
+          "type": "path",
+          "path": "%APPDATA%\\Adobe\\Common",
+          "as": "adobeCommon"
+        }
+      ],
+      "measure": [
+        {
+          "path": "{adobeCommon}\\Media Cache Files",
+          "kind": "cache",
+          "label": "媒体缓存文件"
+        },
+        {
+          "path": "{adobeCommon}\\Media Cache",
+          "kind": "cache",
+          "label": "媒体缓存数据库"
+        }
+      ],
+      "cautions": [
+        "缓存重建后首次预览会变慢",
+        "工程文件不在这里，删缓存不会丢项目"
+      ]
     }
   ]
 }

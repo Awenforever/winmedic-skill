@@ -108,6 +108,7 @@ function Get-WorkloadsProbe {
         $items = @()
         $cacheBytes = 0L
         $dataBytes = 0L
+        $reviewBytes = 0L
         if ($installed) {
             foreach ($m in @($sig.measure)) {
                 $tpl = [string]$m.path
@@ -130,6 +131,7 @@ function Get-WorkloadsProbe {
                     if ($size -gt 0) {
                         if ($kind -eq 'cache') { $cacheBytes += $size }
                         elseif ($kind -eq 'data') { $dataBytes += $size }
+                        elseif ($kind -eq 'review') { $reviewBytes += $size }
                     }
                 }
             }
@@ -143,6 +145,7 @@ function Get-WorkloadsProbe {
             items = @($items)
             cacheBytes = $cacheBytes
             dataBytes = $dataBytes
+            reviewBytes = $reviewBytes
             verdict = (Get-WorkloadVerdict -CacheBytes $cacheBytes -DataBytes $dataBytes)
             cautions = @($sig.cautions)
         }

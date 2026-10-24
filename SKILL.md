@@ -126,7 +126,8 @@ winmedic.ps1 probe --set workloads
 关键区分：
 
 - `kind=cache`（着色器缓存、IDE 索引、texmf-var、OfficeFileCache）→ 可清理，代价是重建
-- `kind=data`（游戏本体、Zotero 附件、texmf-dist）→ **绝不删**，只能迁移
+- `kind=data`（游戏本体、Zotero 附件、微信聊天记录、texmf-dist）→ **绝不删**，只能迁移
+- `kind=review`（腾讯视频下载、混合目录）→ **必须先确认**，其中可能含用户主动下载的内容
 - `probe.proxy-chain` 列出 system/WinHTTP/git/npm/pip 五层代理值，`consistent=false` 就是冲突
 
 加新软件不需要改代码：在 `catalog/workloads.json` 加一条签名（detect + measure + playbook）即可。

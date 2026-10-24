@@ -70,6 +70,11 @@ docs/                   设计、安全模型、证据契约、难例、路线�
 | Steam | `shadercache` / `appcache` / `depotcache` | `steamapps\common` 游戏本体 |
 | Zotero | — | `storage` 附件、`zotero.sqlite` |
 | Office / Word | `OfficeFileCache` | `Normal.dotm` 模板 |
+| 腾讯会议 / 网易云 / OneDrive | 日志、ListSync、流媒体缓存、更新包 | `settings`、登录态 |
+| npm / pnpm | npm-cache、pnpm store | — |
+| 腾讯视频 | — | **需人工确认**（可能含已下载视频） |
+| 微信 | — | 聊天记录（只能迁移） |
+| Calibre / OBS / Adobe | Adobe 媒体缓存 | 书库、场景配置、推流密钥 |
 
 另有 `probe.proxy-chain`：比对 system / WinHTTP / git / npm / pip 五层代理，检出「关了代理反而全断」的根因。
 

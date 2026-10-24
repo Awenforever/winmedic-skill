@@ -122,6 +122,11 @@ function Get-Recommendations {
             $sev = if ([int64]$w.cacheBytes -ge 5GB) { 'medium' } else { 'low' }
             [void]$recs.Add((New-Recommendation -Id ('rec.workload-cache:' + $w.id) -Domain 'workloads' -Severity $sev -Title ($w.name + ' 缓存 ' + [math]::Round([double]$w.cacheBytes / 1GB, 2) + ' GB') -Detail '缓存可重建，清理前请先退出该程序' -Playbook $w.playbook))
         }
+        $review = @($wl.workloads | Where-Object { $_.installed -and [int64]$_.reviewBytes -ge 1GB } | Sort-Object -Property { [int64]$_.reviewBytes } -Descending | Select-Object -First 2)
+        foreach ($w in $review) {
+            [void]$recs.Add((New-Recommendation -Id ('rec.workload-review:' + $w.id) -Domain 'workloads' -Severity 'low' -Title ($w.name + ' 占 ' + [math]::Round([double]$w.reviewBytes / 1GB, 2) + ' GB（需人工确认）') -Detail '其中可能含用户主动下载的内容，必须先确认再处理' -Playbook $w.playbook))
+        }
+
         $steam = @($wl.workloads | Where-Object { $_.id -eq 'workload.steam' -and [int64]$_.dataBytes -ge 100GB }) | Select-Object -First 1
         if ($steam) {
             [void]$recs.Add((New-Recommendation -Id 'rec.steam-library' -Domain 'workloads' -Severity 'low' -Title ('Steam 游戏库 ' + [math]::Round([double]$steam.dataBytes / 1GB, 0) + ' GB') -Detail '确认游戏库所在盘符；不在系统盘则无需处理，不在玩的游戏可卸载或迁移库' -Playbook 'playbooks/apps-steam-triage.md'))
