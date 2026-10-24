@@ -49,5 +49,15 @@
 
 - 远端需 PowerShell 5.1+（引擎本身要求）
 - 远端必须是 Windows（本 skill 的定位）
-- **SSH 传输路径尚未在真实远端验证过**（编写时目标机离线）；`--via local` 链路已由测试覆盖
+- SSH 传输路径已在真实远端验证（ustc-wjh / DESKTOP-CN7P93M，Win11 Pro，11.8 s）
 - 大探针集（`--set all`）在远端可能数分钟，注意 `--timeout`
+## 踩坑记录（2026-10-24 首次真实远端联调）
+
+| 现象 | 根因 | 修法 |
+|---|---|---|
+| Out-Null 不是内部或外部命令 | 远端 shell 是 cmd，双引号与管道被 cmd 解析；PS 5.1 传原生参数会丢内嵌双引号 | 远端命令改为无引号、无管道 |
+| scp: usage: ... | cmd /c echo %TEMP% 回传值尾部带引号，目标串被破坏 | 清洗引号并校验盘符格式 |
+| 脚本首行变成 Stop = 'Stop' | 赋值串里的变量在本地就被展开了 | 改用单引号字面量 |
+| probe 跑完但没有 findings | -File 用单引号，cmd 不剥单引号，路径带引号导致脚本没执行 | 路径无空格时裸写（Format-RemotePathArg） |
+
+教训：远端默认 shell 可能是 cmd / Git Bash / 其他，不能假设 POSIX 引号语义。

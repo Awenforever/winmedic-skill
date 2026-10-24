@@ -63,14 +63,25 @@ function New-RemoteStageScript {
     )
     if (-not $OutFile) { $OutFile = Join-Path $Root ($Set + '-findings.json') }
     $lines = @(
-        "$ErrorActionPreference = 'Stop'",
+        '$ErrorActionPreference = ''Stop''',
         "Set-ExecutionPolicy -Scope Process Bypass -Force -ErrorAction SilentlyContinue",
         "[Console]::OutputEncoding = [Text.Encoding]::UTF8",
         ('$env:CDRIVE_HOME = ''' + (Join-Path $Root 'cdrive') + "'"),
-        ('& ''' + (Join-Path $Root 'engine\\winmedic.ps1') + ''' probe --set ' + $Set + ' --out ''' + $OutFile + "'"),
-        "exit $LASTEXITCODE"
+        ('& ''' + (Join-Path $Root 'engine\winmedic.ps1') + ''' probe --set ' + $Set + ' --out ''' + $OutFile + "'"),
+        'exit $LASTEXITCODE'
     )
     return ($lines -join [Environment]::NewLine)
+}
+
+function Format-RemotePathArg {
+    <#
+      远端命令里的路径参数：无空格时裸写（cmd 不剥单引号，裸写最稳）；
+      含空格时用双引号兜底。
+    #>
+    param([string]$Path = '')
+    if (-not $Path) { return '' }
+    if ($Path -match ' ') { return ('"' + $Path + '"') }
+    return $Path
 }
 
 function New-RemoteBundle {
@@ -191,12 +202,18 @@ function Invoke-RemoteSession {
     $bundle = $null
     $localOut = $null
     try {
-        $rTemp = Invoke-RemoteShell -Target $profile.alias -Command 'powershell -NoProfile -Command "[Console]::Out.WriteLine($env:TEMP)"'
+        $rTemp = Invoke-RemoteShell -Target $profile.alias -Command 'cmd /c echo %TEMP%'
         if (-not $rTemp.ok -or -not $rTemp.text) {
             return @{ ok = $false; exitCode = 8; runId = $runId; detail = ('无法获取远端 TEMP: ' + $rTemp.text) }
         }
-        $remoteDir = ($rTemp.text.Trim().TrimEnd('\')) + '\winmedic-' + $runId
-        $mk = Invoke-RemoteShell -Target $profile.alias -Command ('powershell -NoProfile -Command "New-Item -ItemType Directory -Force -Path ''' + $remoteDir + ''' | Out-Null"')
+        $remoteTemp = ''
+        if ($rTemp.text) { $remoteTemp = (($rTemp.text.Trim() -split "\n")[0]) }
+        $remoteTemp = $remoteTemp.Trim().Trim([char]34).Trim([char]39).TrimEnd([char]92).Trim()
+        if ($remoteTemp -notmatch '^[A-Za-z]:\\') {
+            return @{ ok = $false; exitCode = 8; runId = $runId; detail = ('远端 TEMP 无法解析: [' + $rTemp.text + ']') }
+        }
+        $remoteDir = $remoteTemp + '\winmedic-' + $runId
+        $mk = Invoke-RemoteShell -Target $profile.alias -Command ('powershell -NoProfile -Command New-Item -ItemType Directory -Force -Path ' + (Format-RemotePathArg $remoteDir))
         if (-not $mk.ok) { return @{ ok = $false; exitCode = 8; runId = $runId; detail = ('无法创建远端目录: ' + $mk.text) } }
 
         $bundle = New-RemoteBundle -RepoRoot $RepoRoot
@@ -204,7 +221,7 @@ function Invoke-RemoteSession {
         & scp -o BatchMode=yes $bundle ($profile.alias + ':' + ($remoteZip -replace '\\', '/')) 2>&1 | Out-Null
         if ($LASTEXITCODE -ne 0) { return @{ ok = $false; exitCode = 8; runId = $runId; detail = '上传 bundle 失败（scp）' } }
 
-        $expand = Invoke-RemoteShell -Target $profile.alias -Command ('powershell -NoProfile -Command "Expand-Archive -LiteralPath ''' + $remoteZip + ''' -DestinationPath ''' + $remoteDir + ''' -Force"')
+        $expand = Invoke-RemoteShell -Target $profile.alias -Command ('powershell -NoProfile -Command Expand-Archive -LiteralPath ' + (Format-RemotePathArg $remoteZip) + ' -DestinationPath ' + (Format-RemotePathArg $remoteDir) + ' -Force')
         if (-not $expand.ok) { return @{ ok = $false; exitCode = 8; runId = $runId; detail = ('远端解压失败: ' + $expand.text) } }
 
         $stageLocal = Join-Path ([IO.Path]::GetTempPath()) ('stage-' + $runId + '.ps1')
@@ -214,7 +231,7 @@ function Invoke-RemoteSession {
         & scp -o BatchMode=yes $stageLocal ($profile.alias + ':' + ($remoteStage -replace '\\', '/')) 2>&1 | Out-Null
         if ($LASTEXITCODE -ne 0) { return @{ ok = $false; exitCode = 8; runId = $runId; detail = '上传引导脚本失败（scp）' } }
 
-        $run = Invoke-RemoteShell -Target $profile.alias -Command ('powershell -NoProfile -ExecutionPolicy Bypass -File "' + $remoteStage + '"') -TimeoutSec $TimeoutSec
+        $run = Invoke-RemoteShell -Target $profile.alias -Command ('powershell -NoProfile -ExecutionPolicy Bypass -File ' + (Format-RemotePathArg $remoteStage)) -TimeoutSec $TimeoutSec
         $remoteOut = $remoteDir + '\' + $Set + '-findings.json'
         $localOut = Join-Path ([IO.Path]::GetTempPath()) ('pull-' + $runId + '.json')
         & scp -o BatchMode=yes ($profile.alias + ':' + ($remoteOut -replace '\\', '/')) $localOut 2>&1 | Out-Null
@@ -232,7 +249,7 @@ function Invoke-RemoteSession {
     } finally {
         if ($bundle -and (Test-Path -LiteralPath $bundle)) { Remove-Item -LiteralPath $bundle -Force -ErrorAction SilentlyContinue }
         if (-not $Keep) {
-            try { $null = Invoke-RemoteShell -Target $profile.alias -Command ('powershell -NoProfile -Command "Remove-Item -LiteralPath ''' + $remoteDir + ''' -Recurse -Force -ErrorAction SilentlyContinue"') -TimeoutSec 30 } catch { }
+            try { $null = Invoke-RemoteShell -Target $profile.alias -Command ('powershell -NoProfile -Command Remove-Item -LiteralPath ' + (Format-RemotePathArg $remoteDir) + ' -Recurse -Force -ErrorAction SilentlyContinue') -TimeoutSec 30 } catch { }
         }
     }
 }

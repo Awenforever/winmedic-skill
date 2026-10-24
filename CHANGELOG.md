@@ -5,6 +5,22 @@
 
 ## [Unreleased]
 
+## [3.0.1] - 2026-10-24
+
+### Fixed（真实远端联调暴露的 4 个缺陷）
+1. 远端命令引号语义：cmd 不剥单引号，PS 5.1 传原生参数会丢内嵌双引号 → 改为无引号无管道，新增 Format-RemotePathArg
+2. 远端 TEMP 解析：cmd /c echo %TEMP% 回传带尾引号 → 清洗 + 盘符校验，失败明确报 8
+3. 引导脚本变量被本地展开（ErrorActionPreference / LASTEXITCODE）→ 改单引号字面量
+4. 引擎路径双反斜杠 → 单反斜杠
+
+### Verified
+- **S1 验收达成**：remote --target ustc-wjh --set storage 真实成功（11.8 s），9 个探针全部 origin=remote:ustc-wjh
+- 远端 DESKTOP-CN7P93M / Windows 11 Pro / 管理员，C: 231.4 GB 可用 66.6 GB
+- 远端临时目录与本地 loopback 残留已清理
+
+### Tests
+- 新增 4 个回归用例（裸路径、含空格兜底、脚本不展开变量、路径单反斜杠）
+
 ## [3.0.0] - 2026-10-24
 
 ### Added

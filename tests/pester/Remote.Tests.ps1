@@ -58,6 +58,24 @@ Describe '落库命名与引导脚本' {
     }
 }
 
+Describe '远端命令构造（真实踩坑回归）' {
+    It '路径无空格时裸写（cmd 不剥单引号）' {
+        Format-RemotePathArg 'C:\Users\k\AppData\Local\Temp\x' | Should -Be 'C:\Users\k\AppData\Local\Temp\x'
+    }
+    It '含空格时用双引号兜底' {
+        (Format-RemotePathArg 'C:\Program Files\x').StartsWith('"') | Should -BeTrue
+    }
+    It '引导脚本不得在本地展开变量' {
+        $s = New-RemoteStageScript -Root 'C:\t' -RunId 'r' -Set intake
+        $s | Should -Match '\$ErrorActionPreference'
+        $s | Should -Match 'exit \$LASTEXITCODE'
+    }
+    It '引导脚本里的引擎路径只有一个反斜杠' {
+        $s = New-RemoteStageScript -Root 'C:\t' -RunId 'r' -Set intake
+        $s | Should -Not -Match 'engine\\\\winmedic'
+    }
+}
+
 Describe 'loopback 会话' {
     It '本机跑通并落库带 origin' {
         $repo2 = Split-Path -Parent (Split-Path -Parent $PSScriptRoot)
