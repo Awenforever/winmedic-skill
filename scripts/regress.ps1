@@ -108,6 +108,7 @@ if (-not $SkipCli) {
         @{ name = 'selftest'; args = @('selftest'); expect = 0 },
         @{ name = 'diagnose --list'; args = @('diagnose', '--list'); expect = 0 },
         @{ name = 'diagnose case'; args = @('diagnose', '--case', 'dx.cdisk-full'); expect = 0 },
+        @{ name = 'diagnose from 缺文件'; args = @('diagnose', '--case', 'dx.cdisk-full', '--from', 'no-such-file.json'); expect = 2 },
         @{ name = 'tools'; args = @('tools'); expect = 0 },
         @{ name = 'trend 记录'; args = @('trend', '--record', '--set', 'storage'); expect = 0 },
         @{ name = 'trend 报告'; args = @('trend'); expect = 0 },

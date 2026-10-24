@@ -295,7 +295,12 @@ function Invoke-Probe {
     }
 
     if ($set -eq 'intake') {
-        $probes += (Get-DriveSpaceProbe)
+        # intake 是「首次全面体检」，必须覆盖 storage 组，否则 C 盘诊断凑不齐证据
+        $probes += @(
+            (Get-DriveSpaceProbe), (Get-SystemFilesProbe), (Get-RecycleBinProbe),
+            (Get-UpdateLeftoversProbe), (Get-PackageCacheProbe), (Get-BrowserCacheProbe),
+            (Get-OfficeCacheProbe), (Get-AppCachesProbe)
+        )
     }
 
     if ($probes.Count -le 1) {
@@ -884,7 +889,12 @@ function Invoke-DiagnoseCmd {
     }
     $one = Get-DiagnosisById -Id $Case
     if (-not $one) { Write-Log ('未知诊断用例: ' + $Case) -Level ERROR; return $script:EXIT.USAGE }
-    $picked = Resolve-FindingsForDiagnosis -RequiredProbes @($one.requiredProbes)
+    if ($From) {
+        if (-not (Test-Path -LiteralPath $From)) { Write-Log ('找不到文件: ' + $From) -Level ERROR; return $script:EXIT.USAGE }
+        $picked = @{ path = $From; findings = (Get-Content -LiteralPath $From -Raw -Encoding UTF8 | ConvertFrom-Json); coverage = @($one.requiredProbes).Count; total = @($one.requiredProbes).Count }
+    } else {
+        $picked = Resolve-FindingsForDiagnosis -RequiredProbes @($one.requiredProbes)
+    }
     if (-not $picked) { Write-Log '没有 findings，请先 probe' -Level ERROR; return $script:EXIT.PRECONDITION }
     $findings = $picked.findings
     if ($picked.coverage -lt $picked.total) {
@@ -933,6 +943,7 @@ function Show-Help {
     Write-Host '    [--days 14] [--top 10]'
     Write-Host '  diagnose --list                         列出鉴别诊断用例'
     Write-Host '  diagnose --case dx.cdisk-full           鉴别诊断：只给事实与信号，不给结论'
+    Write-Host '    [--from <findings.json>]              指定数据来源（例如远端采集结果）'
     Write-Host '  tools [--json]                          器械台：外部工具可用性与风险级别'
     Write-Host '  selftest [--keep]                       沙箱自检：证明隔离/还原逐字节一致'
     Write-Host '  apply --action <id> --yes              执行 standalone 动作（仅 Tier 1）'

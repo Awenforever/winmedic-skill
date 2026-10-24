@@ -5,6 +5,20 @@
 
 ## [Unreleased]
 
+## [3.1.1] - 2026-10-24
+
+### Fixed
+- **`intake` 不含 storage 探针组**：作为「首次全面体检」，它只采了 `probe.drive-space`，导致 `dx.cdisk-full` 的 8 项证据永远凑不齐。现已补上 system-files / recycle-bin / update-leftovers / package-cache / browser-cache / office-cache / app-caches（intake 探针数 20 → 27）
+
+### Added
+- `diagnose --from <findings.json>`：显式指定数据来源，便于对**远端采集结果**做诊断，而不是被动挑本地最新文件
+- 契约用例：`diagnose --from` 缺文件时退出码 2
+
+### Verified
+- 本地 `probe --set intake`：27 个探针，dx.cdisk-full 所需的 8 项全部就位
+- `diagnose --case dx.cdisk-full --from <远端 intake findings>`：正确报出该份数据缺哪些探针
+
+
 ## [3.1.0] - 2026-10-24
 
 ### Added
