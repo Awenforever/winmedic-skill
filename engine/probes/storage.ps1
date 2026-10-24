@@ -268,3 +268,39 @@ function Get-TopConsumersProbe {
     $results = $results | Sort-Object -Property { $_.size } -Descending | Select-Object -First $Top
     return @{ id = 'probe.top-consumers'; ok = $true; data = @{ drive = $Drive; items = $results }; candidates = @() }
 }
+function Get-CleanupTargetsProbe {
+    <#
+      数据驱动：读 catalog/cleanup-targets.json，测量每个目标的体积并产出候选。
+      加目标 = 加一条数据，不需要改这里。
+    #>
+    param([string]$CatalogPath)
+    if (-not $CatalogPath) {
+        $root = $script:WinMedicRoot
+        if (-not $root) { $root = Split-Path -Parent (Split-Path -Parent $PSScriptRoot) }
+        $CatalogPath = Join-Path $root 'catalog\cleanup-targets.json'
+    }
+    $items = @()
+    $cands = @()
+    if (-not (Test-Path -LiteralPath $CatalogPath)) {
+        return @{ id = 'probe.cleanup-targets'; ok = $true; data = @{ items = @(); catalog = '' }; candidates = @() }
+    }
+    $raw = Get-Content -LiteralPath $CatalogPath -Raw -Encoding UTF8 | ConvertFrom-Json
+    foreach ($t in @($raw.targets)) {
+        foreach ($tpl in @($t.paths)) {
+            $p = [Environment]::ExpandEnvironmentVariables([string]$tpl)
+            $resolved = @()
+            if ($p.Contains('*')) {
+                $resolved = @(Get-Item -Path $p -Force -ErrorAction SilentlyContinue | ForEach-Object { $_.FullName })
+            } elseif (Test-Path -LiteralPath $p) {
+                $resolved = @($p)
+            }
+            foreach ($rp in $resolved) {
+                $sz = Get-PathSize -Path $rp
+                if ($sz.Size -le 0) { continue }
+                $items += [pscustomobject]@{ id = [string]$t.id; label = [string]$t.label; path = $rp; size = [int64]$sz.Size; count = [int]$sz.Count }
+                $cands += (New-Candidate -ActionId ([string]$t.actionId) -Target $rp -Kind 'dir' -Size $sz.Size -Count $sz.Count -Notes '移入隔离区')
+            }
+        }
+    }
+    return @{ id = 'probe.cleanup-targets'; ok = $true; data = @{ items = @($items); catalog = $CatalogPath }; candidates = @($cands) }
+}

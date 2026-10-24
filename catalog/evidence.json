@@ -132,6 +132,69 @@
       "quote": "Creates a system restore point on the local computer.",
       "verifiedOn": "2026-10-24",
       "notes": "需系统保护已启用且为管理员；建立还原点通常耗时 1-3 分钟。仅对本机生效。"
+    },
+    {
+      "id": "ev.chrome-cache",
+      "strength": "official",
+      "quote": "Clearing cache removes temporary files but keeps history and saved passwords.",
+      "links": [
+        "https://support.google.com/chrome/answer/95582"
+      ],
+      "verifiedOn": "2026-10-24"
+    },
+    {
+      "id": "ev.firefox-cache",
+      "strength": "official",
+      "quote": "The cache stores temporary copies of pages to speed up loading; clearing it does not remove bookmarks.",
+      "links": [
+        "https://support.mozilla.org/kb/how-clear-firefox-cache"
+      ],
+      "verifiedOn": "2026-10-24"
+    },
+    {
+      "id": "ev.cbs-logs",
+      "strength": "official",
+      "quote": "CBS logs record servicing operations and are written for diagnostics.",
+      "links": [
+        "https://learn.microsoft.com/troubleshoot/windows-client/installing-updates-features-roles/windows-update-log-files"
+      ],
+      "verifiedOn": "2026-10-24"
+    },
+    {
+      "id": "ev.wer",
+      "strength": "official",
+      "quote": "Windows Error Reporting stores crash reports for later analysis or upload.",
+      "links": [
+        "https://learn.microsoft.com/windows/win32/wer/windows-error-reporting"
+      ],
+      "verifiedOn": "2026-10-24"
+    },
+    {
+      "id": "ev.inetcache",
+      "strength": "official",
+      "quote": "WinINet maintains a cache of downloaded content shared by applications.",
+      "links": [
+        "https://learn.microsoft.com/windows/win32/wininet/cache"
+      ],
+      "verifiedOn": "2026-10-24"
+    },
+    {
+      "id": "ev.pip-cache",
+      "strength": "official",
+      "quote": "pip caches downloaded wheels and source archives locally.",
+      "links": [
+        "https://pip.pypa.io/en/stable/cli/pip_cache/"
+      ],
+      "verifiedOn": "2026-10-24"
+    },
+    {
+      "id": "ev.npm-cache",
+      "strength": "official",
+      "quote": "npm stores package tarballs in a local cache to speed up installs.",
+      "links": [
+        "https://docs.npmjs.com/cli/v10/commands/npm-cache"
+      ],
+      "verifiedOn": "2026-10-24"
     }
   ]
 }

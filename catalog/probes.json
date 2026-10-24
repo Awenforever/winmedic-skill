@@ -234,6 +234,12 @@
       "domain": "workloads",
       "cost": "fast",
       "returns": "ProxyChain"
+    },
+    {
+      "id": "probe.cleanup-targets",
+      "domain": "storage",
+      "cost": "medium",
+      "returns": "CleanupTargets"
     }
   ]
 }

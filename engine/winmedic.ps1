@@ -248,7 +248,7 @@ function Invoke-Probe {
         $probes += @(
             (Get-DriveSpaceProbe), (Get-SystemFilesProbe), (Get-RecycleBinProbe),
             (Get-UpdateLeftoversProbe), (Get-PackageCacheProbe), (Get-BrowserCacheProbe),
-            (Get-OfficeCacheProbe), (Get-AppCachesProbe)
+            (Get-OfficeCacheProbe), (Get-AppCachesProbe), (Get-CleanupTargetsProbe)
         )
         if ($set -eq 'all') { $probes += (Get-WinSxSProbe) }
     }

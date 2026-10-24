@@ -1,0 +1,295 @@
+{
+  "schemaVersion": 1,
+  "note": "数据驱动的清理目标：探针按此表测量并产出候选；加目标 = 加一条数据。",
+  "targets": [
+    {
+      "id": "clean.chrome-cache",
+      "actionId": "storage.chrome-cache",
+      "label": "Chrome 网页缓存",
+      "paths": [
+        "%LOCALAPPDATA%\\Google\\Chrome\\User Data\\Default\\Cache"
+      ],
+      "kind": "dir",
+      "tier": 2,
+      "evidence": "ev.chrome-cache",
+      "requires": [
+        "process-not-running:chrome.exe"
+      ],
+      "plain": {
+        "what": "Chrome 保存的网页缓存（图片、脚本等）",
+        "why": "缓存只用于加速，删除后浏览器会自动重建",
+        "consequence": "网页首次打开略慢；部分网站可能需要重新登录"
+      }
+    },
+    {
+      "id": "clean.chrome-code-cache",
+      "actionId": "storage.chrome-code-cache",
+      "label": "Chrome 代码缓存",
+      "paths": [
+        "%LOCALAPPDATA%\\Google\\Chrome\\User Data\\Default\\Code Cache"
+      ],
+      "kind": "dir",
+      "tier": 2,
+      "evidence": "ev.chrome-cache",
+      "requires": [
+        "process-not-running:chrome.exe"
+      ],
+      "plain": {
+        "what": "Chrome 缓存的编译后脚本",
+        "why": "可重建，删除不影响收藏与密码",
+        "consequence": "网页首次加载稍慢"
+      }
+    },
+    {
+      "id": "clean.edge-code-cache",
+      "actionId": "storage.edge-code-cache",
+      "label": "Edge 代码缓存",
+      "paths": [
+        "%LOCALAPPDATA%\\Microsoft\\Edge\\User Data\\Default\\Code Cache"
+      ],
+      "kind": "dir",
+      "tier": 2,
+      "evidence": "ev.edge-cache",
+      "requires": [
+        "process-not-running:msedge.exe"
+      ],
+      "plain": {
+        "what": "Edge 缓存的编译后脚本",
+        "why": "可重建",
+        "consequence": "网页首次加载稍慢"
+      }
+    },
+    {
+      "id": "clean.firefox-cache",
+      "actionId": "storage.firefox-cache",
+      "label": "Firefox 缓存",
+      "paths": [
+        "%LOCALAPPDATA%\\Mozilla\\Firefox\\Profiles\\*\\cache2"
+      ],
+      "kind": "dir",
+      "tier": 2,
+      "evidence": "ev.firefox-cache",
+      "requires": [
+        "process-not-running:firefox.exe"
+      ],
+      "plain": {
+        "what": "Firefox 的网页缓存目录",
+        "why": "缓存可重建，不影响书签与密码",
+        "consequence": "网页首次打开略慢"
+      }
+    },
+    {
+      "id": "clean.cbs-logs",
+      "actionId": "storage.cbs-logs",
+      "label": "CBS 组件安装日志",
+      "paths": [
+        "%WINDIR%\\Logs\\CBS"
+      ],
+      "kind": "dir",
+      "tier": 1,
+      "evidence": "ev.cbs-logs",
+      "requires": [],
+      "plain": {
+        "what": "Windows 组件安装过程的日志文件",
+        "why": "只是过程记录，不参与系统运行",
+        "consequence": "以后排查组件更新失败会少一份日志"
+      }
+    },
+    {
+      "id": "clean.wer",
+      "actionId": "storage.wer-reports",
+      "label": "Windows 错误报告",
+      "paths": [
+        "%LOCALAPPDATA%\\Microsoft\\Windows\\WER"
+      ],
+      "kind": "dir",
+      "tier": 1,
+      "evidence": "ev.wer",
+      "requires": [],
+      "plain": {
+        "what": "程序崩溃后生成的错误报告与转储",
+        "why": "已经上报过的历史报告不再需要",
+        "consequence": "以后排查崩溃时少一份历史样本"
+      }
+    },
+    {
+      "id": "clean.crash-dumps",
+      "actionId": "storage.crash-dumps",
+      "label": "用户崩溃转储",
+      "paths": [
+        "%LOCALAPPDATA%\\CrashDumps"
+      ],
+      "kind": "dir",
+      "tier": 1,
+      "evidence": "ev.wer",
+      "requires": [],
+      "plain": {
+        "what": "程序崩溃时写下的转储文件",
+        "why": "历史转储体积大且很少再被使用",
+        "consequence": "无法再对旧崩溃做深入分析"
+      }
+    },
+    {
+      "id": "clean.inetcache",
+      "actionId": "storage.inetcache",
+      "label": "系统 INetCache",
+      "paths": [
+        "%LOCALAPPDATA%\\Microsoft\\Windows\\INetCache"
+      ],
+      "kind": "dir",
+      "tier": 2,
+      "evidence": "ev.inetcache",
+      "requires": [],
+      "plain": {
+        "what": "系统与部分应用共用的网页缓存",
+        "why": "缓存可重建",
+        "consequence": "个别应用首次加载变慢，可能需要重新登录内嵌网页"
+      }
+    },
+    {
+      "id": "clean.pip-cache",
+      "actionId": "storage.pip-cache",
+      "label": "pip 下载缓存",
+      "paths": [
+        "%LOCALAPPDATA%\\pip\\Cache"
+      ],
+      "kind": "dir",
+      "tier": 1,
+      "evidence": "ev.pip-cache",
+      "requires": [],
+      "plain": {
+        "what": "Python 包管理器 pip 的下载缓存",
+        "why": "缓存可重建，删除后用 pip 时会重新下载",
+        "consequence": "下次安装相同包需要重新联网下载"
+      }
+    },
+    {
+      "id": "clean.npm-cache",
+      "actionId": "storage.npm-cache",
+      "label": "npm 下载缓存",
+      "paths": [
+        "%LOCALAPPDATA%\\npm-cache"
+      ],
+      "kind": "dir",
+      "tier": 1,
+      "evidence": "ev.npm-cache",
+      "requires": [],
+      "plain": {
+        "what": "Node.js 包管理器 npm 的下载缓存",
+        "why": "缓存可重建；建议优先用 npm cache clean --force",
+        "consequence": "下次 npm install 需要重新下载依赖"
+      }
+    },
+    {
+      "id": "clean.chrome-gpu-cache",
+      "actionId": "storage.chrome-gpu-cache",
+      "label": "Chrome GPU 缓存",
+      "paths": [
+        "%LOCALAPPDATA%\\Google\\Chrome\\User Data\\Default\\GPUCache"
+      ],
+      "kind": "dir",
+      "tier": 2,
+      "evidence": "ev.chrome-cache",
+      "requires": [
+        "process-not-running:chrome.exe"
+      ],
+      "plain": {
+        "what": "Chrome 的 GPU 着色器缓存",
+        "why": "可重建，删除不影响设置",
+        "consequence": "网页图形首次渲染略慢"
+      }
+    },
+    {
+      "id": "clean.edge-gpu-cache",
+      "actionId": "storage.edge-gpu-cache",
+      "label": "Edge GPU 缓存",
+      "paths": [
+        "%LOCALAPPDATA%\\Microsoft\\Edge\\User Data\\Default\\GPUCache"
+      ],
+      "kind": "dir",
+      "tier": 2,
+      "evidence": "ev.edge-cache",
+      "requires": [
+        "process-not-running:msedge.exe"
+      ],
+      "plain": {
+        "what": "Edge 的 GPU 着色器缓存",
+        "why": "可重建",
+        "consequence": "网页图形首次渲染略慢"
+      }
+    },
+    {
+      "id": "clean.edge-dawn-cache",
+      "actionId": "storage.edge-dawn-cache",
+      "label": "Edge Dawn/WebGPU 缓存",
+      "paths": [
+        "%LOCALAPPDATA%\\Microsoft\\Edge\\User Data\\Default\\DawnGraphiteCache",
+        "%LOCALAPPDATA%\\Microsoft\\Edge\\User Data\\Default\\DawnWebGPUCache"
+      ],
+      "kind": "dir",
+      "tier": 2,
+      "evidence": "ev.edge-cache",
+      "requires": [
+        "process-not-running:msedge.exe"
+      ],
+      "plain": {
+        "what": "Edge 的 WebGPU 编译缓存",
+        "why": "可重建",
+        "consequence": "使用 WebGPU 的网页首次加载略慢"
+      }
+    },
+    {
+      "id": "clean.firefox-startup-cache",
+      "actionId": "storage.firefox-startup-cache",
+      "label": "Firefox 启动缓存",
+      "paths": [
+        "%LOCALAPPDATA%\\Mozilla\\Firefox\\Profiles\\*\\startupCache"
+      ],
+      "kind": "dir",
+      "tier": 1,
+      "evidence": "ev.firefox-cache",
+      "requires": [
+        "process-not-running:firefox.exe"
+      ],
+      "plain": {
+        "what": "Firefox 启动时用的预编译缓存",
+        "why": "可重建",
+        "consequence": "Firefox 下一次启动略慢"
+      }
+    },
+    {
+      "id": "clean.wer-machine",
+      "actionId": "storage.wer-machine",
+      "label": "系统级错误报告",
+      "paths": [
+        "%ProgramData%\\Microsoft\\Windows\\WER"
+      ],
+      "kind": "dir",
+      "tier": 1,
+      "evidence": "ev.wer",
+      "requires": [],
+      "plain": {
+        "what": "系统级（非当前用户）错误报告与转储",
+        "why": "历史报告不再需要",
+        "consequence": "少一份系统级崩溃历史"
+      }
+    },
+    {
+      "id": "clean.delivery-optimization",
+      "actionId": "storage.delivery-optimization",
+      "label": "传递优化缓存",
+      "paths": [
+        "%WINDIR%\\SoftwareDistribution\\DeliveryOptimization"
+      ],
+      "kind": "dir",
+      "tier": 2,
+      "evidence": "ev.softwaredistribution",
+      "requires": [],
+      "plain": {
+        "what": "Windows 更新点对点分发缓存",
+        "why": "缓存可重建，会自动重新下载",
+        "consequence": "局域网内分发更新时需重新下载，可能增加流量"
+      }
+    }
+  ]
+}

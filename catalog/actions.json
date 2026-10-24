@@ -326,6 +326,342 @@
         "why": "为后续的系统级操作提供一条退路",
         "consequence": "会占用几百 MB 到数 GB 磁盘空间；不修改任何个人文件"
       }
+    },
+    {
+      "id": "storage.chrome-cache",
+      "domain": "storage",
+      "kind": "quarantine",
+      "tier": 2,
+      "risk": "low",
+      "evidence": "ev.chrome-cache",
+      "reversible": "full",
+      "requires": [
+        "process-not-running:chrome.exe"
+      ],
+      "targetsProbe": "probe.cleanup-targets",
+      "verify": {
+        "kind": "path_absent"
+      },
+      "standalone": false,
+      "plain": {
+        "what": "Chrome 保存的网页缓存（图片、脚本等）",
+        "why": "缓存只用于加速，删除后浏览器会自动重建",
+        "consequence": "网页首次打开略慢；部分网站可能需要重新登录"
+      }
+    },
+    {
+      "id": "storage.chrome-code-cache",
+      "domain": "storage",
+      "kind": "quarantine",
+      "tier": 2,
+      "risk": "low",
+      "evidence": "ev.chrome-cache",
+      "reversible": "full",
+      "requires": [
+        "process-not-running:chrome.exe"
+      ],
+      "targetsProbe": "probe.cleanup-targets",
+      "verify": {
+        "kind": "path_absent"
+      },
+      "standalone": false,
+      "plain": {
+        "what": "Chrome 缓存的编译后脚本",
+        "why": "可重建，删除不影响收藏与密码",
+        "consequence": "网页首次加载稍慢"
+      }
+    },
+    {
+      "id": "storage.edge-code-cache",
+      "domain": "storage",
+      "kind": "quarantine",
+      "tier": 2,
+      "risk": "low",
+      "evidence": "ev.edge-cache",
+      "reversible": "full",
+      "requires": [
+        "process-not-running:msedge.exe"
+      ],
+      "targetsProbe": "probe.cleanup-targets",
+      "verify": {
+        "kind": "path_absent"
+      },
+      "standalone": false,
+      "plain": {
+        "what": "Edge 缓存的编译后脚本",
+        "why": "可重建",
+        "consequence": "网页首次加载稍慢"
+      }
+    },
+    {
+      "id": "storage.firefox-cache",
+      "domain": "storage",
+      "kind": "quarantine",
+      "tier": 2,
+      "risk": "low",
+      "evidence": "ev.firefox-cache",
+      "reversible": "full",
+      "requires": [
+        "process-not-running:firefox.exe"
+      ],
+      "targetsProbe": "probe.cleanup-targets",
+      "verify": {
+        "kind": "path_absent"
+      },
+      "standalone": false,
+      "plain": {
+        "what": "Firefox 的网页缓存目录",
+        "why": "缓存可重建，不影响书签与密码",
+        "consequence": "网页首次打开略慢"
+      }
+    },
+    {
+      "id": "storage.cbs-logs",
+      "domain": "storage",
+      "kind": "quarantine",
+      "tier": 1,
+      "risk": "low",
+      "evidence": "ev.cbs-logs",
+      "reversible": "full",
+      "requires": [],
+      "targetsProbe": "probe.cleanup-targets",
+      "verify": {
+        "kind": "path_absent"
+      },
+      "standalone": false,
+      "plain": {
+        "what": "Windows 组件安装过程的日志文件",
+        "why": "只是过程记录，不参与系统运行",
+        "consequence": "以后排查组件更新失败会少一份日志"
+      }
+    },
+    {
+      "id": "storage.wer-reports",
+      "domain": "storage",
+      "kind": "quarantine",
+      "tier": 1,
+      "risk": "low",
+      "evidence": "ev.wer",
+      "reversible": "full",
+      "requires": [],
+      "targetsProbe": "probe.cleanup-targets",
+      "verify": {
+        "kind": "path_absent"
+      },
+      "standalone": false,
+      "plain": {
+        "what": "程序崩溃后生成的错误报告与转储",
+        "why": "已经上报过的历史报告不再需要",
+        "consequence": "以后排查崩溃时少一份历史样本"
+      }
+    },
+    {
+      "id": "storage.crash-dumps",
+      "domain": "storage",
+      "kind": "quarantine",
+      "tier": 1,
+      "risk": "low",
+      "evidence": "ev.wer",
+      "reversible": "full",
+      "requires": [],
+      "targetsProbe": "probe.cleanup-targets",
+      "verify": {
+        "kind": "path_absent"
+      },
+      "standalone": false,
+      "plain": {
+        "what": "程序崩溃时写下的转储文件",
+        "why": "历史转储体积大且很少再被使用",
+        "consequence": "无法再对旧崩溃做深入分析"
+      }
+    },
+    {
+      "id": "storage.inetcache",
+      "domain": "storage",
+      "kind": "quarantine",
+      "tier": 2,
+      "risk": "low",
+      "evidence": "ev.inetcache",
+      "reversible": "full",
+      "requires": [],
+      "targetsProbe": "probe.cleanup-targets",
+      "verify": {
+        "kind": "path_absent"
+      },
+      "standalone": false,
+      "plain": {
+        "what": "系统与部分应用共用的网页缓存",
+        "why": "缓存可重建",
+        "consequence": "个别应用首次加载变慢，可能需要重新登录内嵌网页"
+      }
+    },
+    {
+      "id": "storage.pip-cache",
+      "domain": "storage",
+      "kind": "quarantine",
+      "tier": 1,
+      "risk": "low",
+      "evidence": "ev.pip-cache",
+      "reversible": "full",
+      "requires": [],
+      "targetsProbe": "probe.cleanup-targets",
+      "verify": {
+        "kind": "path_absent"
+      },
+      "standalone": false,
+      "plain": {
+        "what": "Python 包管理器 pip 的下载缓存",
+        "why": "缓存可重建，删除后用 pip 时会重新下载",
+        "consequence": "下次安装相同包需要重新联网下载"
+      }
+    },
+    {
+      "id": "storage.npm-cache",
+      "domain": "storage",
+      "kind": "quarantine",
+      "tier": 1,
+      "risk": "low",
+      "evidence": "ev.npm-cache",
+      "reversible": "full",
+      "requires": [],
+      "targetsProbe": "probe.cleanup-targets",
+      "verify": {
+        "kind": "path_absent"
+      },
+      "standalone": false,
+      "plain": {
+        "what": "Node.js 包管理器 npm 的下载缓存",
+        "why": "缓存可重建；建议优先用 npm cache clean --force",
+        "consequence": "下次 npm install 需要重新下载依赖"
+      }
+    },
+    {
+      "id": "storage.chrome-gpu-cache",
+      "domain": "storage",
+      "kind": "quarantine",
+      "tier": 2,
+      "risk": "low",
+      "evidence": "ev.chrome-cache",
+      "reversible": "full",
+      "requires": [
+        "process-not-running:chrome.exe"
+      ],
+      "targetsProbe": "probe.cleanup-targets",
+      "verify": {
+        "kind": "path_absent"
+      },
+      "standalone": false,
+      "plain": {
+        "what": "Chrome 的 GPU 着色器缓存",
+        "why": "可重建，删除不影响设置",
+        "consequence": "网页图形首次渲染略慢"
+      }
+    },
+    {
+      "id": "storage.edge-gpu-cache",
+      "domain": "storage",
+      "kind": "quarantine",
+      "tier": 2,
+      "risk": "low",
+      "evidence": "ev.edge-cache",
+      "reversible": "full",
+      "requires": [
+        "process-not-running:msedge.exe"
+      ],
+      "targetsProbe": "probe.cleanup-targets",
+      "verify": {
+        "kind": "path_absent"
+      },
+      "standalone": false,
+      "plain": {
+        "what": "Edge 的 GPU 着色器缓存",
+        "why": "可重建",
+        "consequence": "网页图形首次渲染略慢"
+      }
+    },
+    {
+      "id": "storage.edge-dawn-cache",
+      "domain": "storage",
+      "kind": "quarantine",
+      "tier": 2,
+      "risk": "low",
+      "evidence": "ev.edge-cache",
+      "reversible": "full",
+      "requires": [
+        "process-not-running:msedge.exe"
+      ],
+      "targetsProbe": "probe.cleanup-targets",
+      "verify": {
+        "kind": "path_absent"
+      },
+      "standalone": false,
+      "plain": {
+        "what": "Edge 的 WebGPU 编译缓存",
+        "why": "可重建",
+        "consequence": "使用 WebGPU 的网页首次加载略慢"
+      }
+    },
+    {
+      "id": "storage.firefox-startup-cache",
+      "domain": "storage",
+      "kind": "quarantine",
+      "tier": 1,
+      "risk": "low",
+      "evidence": "ev.firefox-cache",
+      "reversible": "full",
+      "requires": [
+        "process-not-running:firefox.exe"
+      ],
+      "targetsProbe": "probe.cleanup-targets",
+      "verify": {
+        "kind": "path_absent"
+      },
+      "standalone": false,
+      "plain": {
+        "what": "Firefox 启动时用的预编译缓存",
+        "why": "可重建",
+        "consequence": "Firefox 下一次启动略慢"
+      }
+    },
+    {
+      "id": "storage.wer-machine",
+      "domain": "storage",
+      "kind": "quarantine",
+      "tier": 1,
+      "risk": "low",
+      "evidence": "ev.wer",
+      "reversible": "full",
+      "requires": [],
+      "targetsProbe": "probe.cleanup-targets",
+      "verify": {
+        "kind": "path_absent"
+      },
+      "standalone": false,
+      "plain": {
+        "what": "系统级（非当前用户）错误报告与转储",
+        "why": "历史报告不再需要",
+        "consequence": "少一份系统级崩溃历史"
+      }
+    },
+    {
+      "id": "storage.delivery-optimization",
+      "domain": "storage",
+      "kind": "quarantine",
+      "tier": 2,
+      "risk": "low",
+      "evidence": "ev.softwaredistribution",
+      "reversible": "full",
+      "requires": [],
+      "targetsProbe": "probe.cleanup-targets",
+      "verify": {
+        "kind": "path_absent"
+      },
+      "standalone": false,
+      "plain": {
+        "what": "Windows 更新点对点分发缓存",
+        "why": "缓存可重建，会自动重新下载",
+        "consequence": "局域网内分发更新时需重新下载，可能增加流量"
+      }
     }
   ]
 }

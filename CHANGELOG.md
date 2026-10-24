@@ -5,6 +5,25 @@
 
 ## [Unreleased]
 
+## [3.4.0] - 2026-10-24
+
+### Added（G5 覆盖扩容）
+- **数据驱动的清理目标表** `catalog/cleanup-targets.json`：加目标 = 加一条数据，不再为每个目录写代码
+- 新增 16 个目标 / 动作（13 → **29** 个动作）：Chrome 缓存与代码/GPU 缓存、Edge 代码/GPU/Dawn 缓存、Firefox 缓存与启动缓存、CBS 组件日志、用户与系统级 WER、用户崩溃转储、INetCache、pip 缓存、npm 缓存、传递优化缓存
+- 新探针 `probe.cleanup-targets`：按表展开（含 `*` 通配与环境变量）、测量、产出候选
+- 每个新动作都带 `plain` 通俗说明与 `verify`（`path_absent`），沿用不可逆确认单机制
+
+### Verified（G5 / 本机）
+- 目录校验通过：probes=40 actions=**29** evidence=21
+- 本机实测命中 7 个真实目标：Firefox 缓存 ≈2.0 GB、崩溃转储 190 MB、CBS 日志 56 MB、pip 缓存 59 MB、npm 缓存 13 MB、Edge 代码缓存 6 MB 等
+- `plan` 由原来的 2 项增加到 11 项
+
+### G4 进度（趋势多日样本）
+- 已在本机记录 30 条快照；`trend --days 7` 正确拒绝给出速率（间隔不足 0.5 天）
+- 已创建计划任务 `WinMedicTrend`（每日 12:00 执行 `trend --record`），用于积累真实多日样本
+- **多日速率验证待明日数据**，本版本不宣称已通过
+
+
 ## [3.3.0] - 2026-10-24
 
 ### Added
