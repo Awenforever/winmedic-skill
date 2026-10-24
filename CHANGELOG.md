@@ -5,6 +5,22 @@
 
 ## [Unreleased]
 
+## [2.7.0] - 2026-10-24
+
+### Added
+- **远程会话层**：`remote --target <别名> --set <探针集>`，SSH 只读采集并回传
+  - 打包最小运行集 → scp → 远端临时目录 → 跑 probe → 回传 → 落库 → 默认清理
+  - 回传 findings 一律打 `origin=remote:<别名>`，本地 apply 拒绝远端条目
+  - `--via local` loopback 模式（CI 与本机自测）
+- 新退出码 `8 = REMOTE`（远端不可达/传输失败）
+- `docs/REMOTE.md`：用法、安全边界、失败处理、已知限制
+- 9 个用例（target 解析 4 + origin 2 + 命名/脚本 2 + loopback 端到端 1）+ 3 个契约用例
+
+### Notes
+- 只用既有 SSH 信任，`BatchMode=yes` 杜绝交互式密码；不写入任何凭据
+- **SSH 传输路径尚未在真实远端验证**：编写时目标机（192.168.0.103）离线。loopback 链路已验证
+
+
 ## [2.6.0] - 2026-10-24
 
 ### Added

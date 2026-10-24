@@ -15,7 +15,7 @@
 [CmdletBinding()]
 param(
     [Parameter(Position = 0)]
-    [ValidateSet('doctor', 'probe', 'plan', 'apply', 'verify', 'restore', 'journal', 'profile', 'report', 'explain', 'summary', 'diff', 'relocate', 'version', 'help')]
+    [ValidateSet('doctor', 'probe', 'plan', 'apply', 'verify', 'restore', 'journal', 'profile', 'report', 'explain', 'summary', 'diff', 'relocate', 'remote', 'version', 'help')]
     [string]$Command = 'help',
     [string]$SubCommand,
     [string]$Set = '',
@@ -34,6 +34,10 @@ param(
     [switch]$AcceptRisk,
     [switch]$AcceptIrreversible,
     [string]$ConfirmToken,
+    [string]$Target,
+    [string]$Via,
+    [int]$TimeoutSec = 300,
+    [switch]$Keep,
     [switch]$Remove,
     [switch]$Json,
     [Parameter(ValueFromRemainingArguments = $true)]
@@ -56,6 +60,7 @@ if (-not $script:WinMedicRoot) { $script:WinMedicRoot = (Resolve-Path (Join-Path
 . (Join-Path $PSScriptRoot 'lib\Recommendations.ps1')
 . (Join-Path $PSScriptRoot 'lib\Relocation.ps1')
 . (Join-Path $PSScriptRoot 'lib\Explain.ps1')
+. (Join-Path $PSScriptRoot 'lib\Remote.ps1')
 . (Join-Path $PSScriptRoot 'lib\Scan.ps1')
 . (Join-Path $PSScriptRoot 'probes\storage.ps1')
 . (Join-Path $PSScriptRoot 'probes\boot.ps1')
@@ -79,7 +84,7 @@ function Resolve-RestArguments {
         if ($tok.StartsWith('--')) {
             $key = $tok.Substring(2).ToLowerInvariant()
             # 布尔开关不消费后续 token
-            if (@('yes', 'purge', 'json', 'remove', 'accept-risk', 'acceptrisk', 'accept-irreversible', 'acceptirreversible') -contains $key) {
+            if (@('yes', 'purge', 'json', 'remove', 'accept-risk', 'acceptrisk', 'accept-irreversible', 'acceptirreversible', 'keep') -contains $key) {
                 switch ($key) {
                     'yes'                { $script:YesFlag = $true }
                     'purge'              { $script:PurgeFlag = $true }
@@ -87,7 +92,9 @@ function Resolve-RestArguments {
                     'remove'             { $script:RemoveFlag = $true }
                     'accept-risk'        { $script:AcceptRiskFlag = $true }
                     'acceptrisk'         { $script:AcceptRiskFlag = $true }
+                    'accept-irreversible' { $script:AcceptIrrevFlag = $true }
                     'acceptirreversible' { $script:AcceptIrrevFlag = $true }
+                    'keep'               { $script:KeepFlag = $true }
                 }
                 $i++
                 continue
@@ -108,6 +115,10 @@ function Resolve-RestArguments {
                 'action'  { $script:ActionArg = $val }
                 'exclude' { $script:ExcludeArg = $val }
                 'sub'     { $script:SubArg = $val }
+                'confirm-token' { if ($val) { $script:ConfirmTokenValue = $val } }
+                'target'  { if ($val) { $script:TargetValue = $val } }
+                'via'     { if ($val) { $script:ViaValue = $val } }
+                'timeout' { if ($val) { $script:TimeoutValue = [int]$val } }
                 default   { Write-Log ('未知参数: ' + $tok) -Level ERROR; exit $script:EXIT.USAGE }
             }
         } elseif ($tok -match '^-(yes|purge|json|remove|accept-risk)$') {
@@ -117,8 +128,6 @@ function Resolve-RestArguments {
                 'json'        { $script:JsonFlag = $true }
                 'remove'      { $script:RemoveFlag = $true }
                 'accept-risk' { $script:AcceptRiskFlag = $true }
-                    'accept-irreversible' { $script:AcceptIrrevFlag = $true }
-                    'confirm-token' { $i++; if ($i -lt $Rest.Count) { $script:ConfirmTokenValue = [string]$Rest[$i] } }
             }
         } else {
             if (-not $script:SubArg) { $script:SubArg = $tok }
@@ -144,6 +153,10 @@ $script:RemoveFlag = [bool]$Remove
 $script:AcceptRiskFlag = [bool]$AcceptRisk
 $script:AcceptIrrevFlag = [bool]$AcceptIrreversible
 $script:ConfirmTokenValue = [string]$ConfirmToken
+$script:TargetValue = [string]$Target
+$script:ViaValue = [string]$Via
+$script:TimeoutValue = [int]$TimeoutSec
+$script:KeepFlag = [bool]$Keep
 Resolve-RestArguments -Tokens $Rest
 $Set = $script:SetArg
 $From = $script:FromArg
@@ -162,6 +175,10 @@ $Remove = $script:RemoveFlag
 $AcceptRisk = $script:AcceptRiskFlag
 $AcceptIrreversible = $script:AcceptIrrevFlag
 $ConfirmToken = $script:ConfirmTokenValue
+$Target = $script:TargetValue
+$Via = $script:ViaValue
+$TimeoutSec = $script:TimeoutValue
+$Keep = $script:KeepFlag
 
 function Get-StatePath {
     param([string]$Name)
@@ -748,6 +765,32 @@ function Invoke-Relocate {
     return $script:EXIT.OK
 }
 
+function Invoke-RemoteCmd {
+    if (-not $Target) {
+        Write-Log 'remote 需要 --target <ssh 别名或 user@host>' -Level ERROR
+        Write-Log '示例: winmedic.ps1 remote --target augenstern-adm --set intake' -Level INFO
+        return $script:EXIT.USAGE
+    }
+    $viaActual = 'ssh'
+    if ($Via -and $Via.ToLower() -eq 'local') { $viaActual = 'local' }
+    $setActual = if ($Set) { $Set.ToLower() } else { 'intake' }
+    $res = Invoke-RemoteSession -Target $Target -Set $setActual -Via $viaActual -TimeoutSec $TimeoutSec -Keep:$Keep
+    if ($Json) {
+        Write-JsonResult -Object $res
+        return $res.exitCode
+    }
+    if (-not $res.ok) {
+        Write-Log ('远程采集失败: ' + $res.detail) -Level ERROR
+        Write-Log '排查顺序: 1) ssh 别名能否解析 2) 目标机是否开机 3) ssh -o BatchMode=yes <target> echo ok' -Level INFO
+        return $res.exitCode
+    }
+    Write-Log ('远程采集完成 (' + $res.seconds + 's, ' + $res.detail + ')') -Level OK
+    Write-Host ('  findings: ' + $res.findingsPath)
+    Write-Host ('  runId   : ' + $res.runId)
+    Write-Host '  提示: 远端数据的 origin 为 remote:<别名>，本地 apply 会拒绝这些条目'
+    return $script:EXIT.OK
+}
+
 function Show-Help {
     Write-Host 'WinMedic 引擎'
     Write-Host '  doctor                     环境自检'
@@ -763,6 +806,8 @@ function Show-Help {
     Write-Host '  summary                                一屏体检摘要'
     Write-Host '  diff --from a.json --to b.json         两次采集对比'
     Write-Host '  relocate                               迁移策略建议（缓存/数据该不该搬）'
+    Write-Host '  remote --target <别名> --set intake      远端只读采集（SSH），结果打 origin 标记'
+    Write-Host '    [--via ssh|local] [--keep] [--timeout 秒]'
     Write-Host '  apply --action <id> --yes              执行 standalone 动作（仅 Tier 1）'
     Write-Host '  apply ... --purge --accept-irreversible [--confirm-token X] 物理删除（不可回滚，需确认单令牌）'
     Write-Host '  version'
@@ -783,6 +828,7 @@ switch ($Command) {
     'summary' { $code = Invoke-Summary }
     'diff'    { $code = Invoke-Diff }
     'relocate' { $code = Invoke-Relocate }
+    'remote'  { $code = Invoke-RemoteCmd }
     'version' { Write-Host ('winmedic ' + (Get-Content (Join-Path $script:WinMedicRoot 'VERSION') -Raw).Trim()); $code = $script:EXIT.OK }
     default   { $code = Show-Help }
 }

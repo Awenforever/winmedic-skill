@@ -1,0 +1,238 @@
+﻿#Requires -Version 5.1
+<#
+.SYNOPSIS
+  远程会话层：把只读探针送到远端执行，把证据带回来。
+.DESCRIPTION
+  设计约束：
+    - 只用既有 SSH 信任（BatchMode，绝不交互式要密码）
+    - 默认只读：本版本不支持远程 apply
+    - 远端 findings 一律打 origin 标记，本地 apply 必须拒绝远端条目
+    - 远端临时目录默认清理
+#>
+
+function Get-RemoteTargetProfile {
+    <#  纯函数：解析 target。返回 @{ valid; alias; user; host; isLoopback; error }  #>
+    param([string]$Target = '')
+    $p = @{ valid = $false; alias = ''; user = ''; host = ''; isLoopback = $false; error = '' }
+    if (-not $Target) { $p.error = 'target 不能为空'; return $p }
+    $t = $Target.Trim()
+    $p.alias = $t
+    if ($t -match '^(?<u>[^@\s]+)@(?<h>[^@\s]+)$') {
+        $p.user = $Matches['u']
+        $p.host = $Matches['h']
+    } elseif ($t -match '^[A-Za-z0-9._-]+$') {
+        $p.host = $t
+    } else {
+        $p.error = ('无法解析 target: ' + $t)
+        return $p
+    }
+    $loopbacks = @('localhost', '127.0.0.1', '::1', '.')
+    if ($loopbacks -contains $p.host.ToLowerInvariant()) { $p.isLoopback = $true }
+    if ($env:COMPUTERNAME -and $p.host.Equals($env:COMPUTERNAME, [StringComparison]::OrdinalIgnoreCase)) { $p.isLoopback = $true }
+    $p.valid = $true
+    return $p
+}
+
+function Set-FindingsOrigin {
+    <#  纯函数：给每个 probe 打 origin 标记（已有则保留）。返回新对象。  #>
+    param($Findings = $null, [string]$Origin = 'local')
+    if (-not $Findings) { return $Findings }
+    foreach ($pr in @($Findings.probes)) {
+        if (-not $pr) { continue }
+        if ($pr.PSObject.Properties.Name -contains 'origin' -and $pr.origin) { continue }
+        $pr | Add-Member -NotePropertyName 'origin' -NotePropertyValue $Origin -Force
+    }
+    return $Findings
+}
+
+function Get-RemoteFindingsName {
+    <#  纯函数：远端回传文件的落库名。  #>
+    param([string]$Alias = '', [string]$Set = 'storage')
+    $safe = ($Alias -replace '[^A-Za-z0-9._-]', '_')
+    if (-not $safe) { $safe = 'unknown' }
+    return ('remote-' + $safe + '-' + $Set + '-findings.json')
+}
+
+function New-RemoteStageScript {
+    <#  纯函数：生成远端引导脚本（不执行）。  #>
+    param(
+        [Parameter(Mandatory)][string]$Root,
+        [Parameter(Mandatory)][string]$RunId,
+        [string]$Set = 'intake',
+        [string]$OutFile = ''
+    )
+    if (-not $OutFile) { $OutFile = Join-Path $Root ($Set + '-findings.json') }
+    $lines = @(
+        "$ErrorActionPreference = 'Stop'",
+        "Set-ExecutionPolicy -Scope Process Bypass -Force -ErrorAction SilentlyContinue",
+        "[Console]::OutputEncoding = [Text.Encoding]::UTF8",
+        ('$env:CDRIVE_HOME = ''' + (Join-Path $Root 'cdrive') + "'"),
+        ('& ''' + (Join-Path $Root 'engine\\winmedic.ps1') + ''' probe --set ' + $Set + ' --out ''' + $OutFile + "'"),
+        "exit $LASTEXITCODE"
+    )
+    return ($lines -join [Environment]::NewLine)
+}
+
+function New-RemoteBundle {
+    <#  打包最小运行集（engine/catalog/VERSION/SKILL.md），返回 zip 路径。  #>
+    param([Parameter(Mandatory)][string]$RepoRoot, [string]$OutZip = '')
+    $stage = Join-Path ([IO.Path]::GetTempPath()) ('winmedic-stage-' + [guid]::NewGuid().ToString('N').Substring(0, 6))
+    New-Item -ItemType Directory -Force -Path $stage | Out-Null
+    foreach ($item in @('engine', 'catalog', 'VERSION', 'SKILL.md')) {
+        $src = Join-Path $RepoRoot $item
+        if (Test-Path -LiteralPath $src) { Copy-Item -LiteralPath $src -Destination $stage -Recurse -Force }
+    }
+    if (-not $OutZip) { $OutZip = Join-Path ([IO.Path]::GetTempPath()) ('winmedic-' + [guid]::NewGuid().ToString('N').Substring(0, 6) + '.zip') }
+    if (Test-Path -LiteralPath $OutZip) { Remove-Item -LiteralPath $OutZip -Force }
+    Compress-Archive -Path (Join-Path $stage '*') -DestinationPath $OutZip -Force
+    Remove-Item -LiteralPath $stage -Recurse -Force -ErrorAction SilentlyContinue
+    return $OutZip
+}
+
+function Invoke-RemoteShell {
+    <#
+      执行一条远端命令。返回 @{ ok; exit; text }。
+      注意：PS 5.1 下原生命令写 stderr 会产生 NativeCommandError，
+      在 ErrorActionPreference=Stop 时会终止进程（exit 1）。这里必须局部降级。
+    #>
+    param([Parameter(Mandatory)][string]$Target, [Parameter(Mandatory)][string]$Command, [int]$TimeoutSec = 30)
+    $prev = $ErrorActionPreference
+    $ErrorActionPreference = 'Continue'
+    try {
+        $argList = @('-o', 'BatchMode=yes', '-o', ('ConnectTimeout=' + $TimeoutSec), '-o', 'StrictHostKeyChecking=accept-new', $Target, $Command)
+        $out = & ssh @argList 2>&1 | Out-String
+        $code = $LASTEXITCODE
+        if ($null -eq $code) { $code = 255 }
+        return @{ ok = ($code -eq 0); exit = $code; text = $out.Trim() }
+    } catch {
+        return @{ ok = $false; exit = 255; text = $_.Exception.Message }
+    } finally {
+        $ErrorActionPreference = $prev
+    }
+}
+
+function Test-RemoteReachable {
+    param([Parameter(Mandatory)][string]$Target, [int]$TimeoutSec = 8)
+    $r = Invoke-RemoteShell -Target $Target -Command 'echo winmedic-ok' -TimeoutSec $TimeoutSec
+    return @{ ok = ($r.ok -and $r.text -match 'winmedic-ok'); text = $r.text }
+}
+
+function Get-RemoteStateDir {
+    $d = Join-Path (Get-CdriveStateDir) 'state'
+    if (-not (Test-Path -LiteralPath $d)) { New-Item -ItemType Directory -Force -Path $d | Out-Null }
+    return $d
+}
+
+function Import-RemoteFindings {
+    <#  回传文件落库并打 origin 标记，返回本地路径。  #>
+    param(
+        [Parameter(Mandatory)][string]$RemoteFile,
+        [Parameter(Mandatory)][string]$Alias,
+        [Parameter(Mandatory)][string]$Set
+    )
+    if (-not (Test-Path -LiteralPath $RemoteFile)) { throw ('回传文件不存在: ' + $RemoteFile) }
+    $name = Get-RemoteFindingsName -Alias $Alias -Set $Set
+    $dest = Join-Path (Get-RemoteStateDir) $name
+    Copy-Item -LiteralPath $RemoteFile -Destination $dest -Force
+    $f = Get-Content -LiteralPath $dest -Raw -Encoding UTF8 | ConvertFrom-Json
+    $f = Set-FindingsOrigin -Findings $f -Origin ('remote:' + $Alias)
+    ($f | ConvertTo-Json -Depth 12) | Set-Content -LiteralPath $dest -Encoding UTF8
+    return $dest
+}
+
+function Invoke-RemoteSession {
+    <#
+      编排一次远程只读采集。
+      -Via 'local' 时走 loopback（把远端步骤在本机临时目录执行），用于 CI 与自测。
+      返回 @{ ok; exitCode; findingsPath; runId; seconds; detail }
+    #>
+    param(
+        [Parameter(Mandatory)][string]$Target,
+        [string]$Set = 'intake',
+        [ValidateSet('ssh', 'local')][string]$Via = 'ssh',
+        [int]$TimeoutSec = 300,
+        [string]$RepoRoot = '',
+        [switch]$Keep
+    )
+    $sw = [Diagnostics.Stopwatch]::StartNew()
+    $runId = 'rem-' + (Get-Date).ToString('yyyyMMdd-HHmmss')
+    if (-not $RepoRoot) { $RepoRoot = Split-Path -Parent (Split-Path -Parent $PSScriptRoot) }
+    $profile = Get-RemoteTargetProfile -Target $Target
+    if (-not $profile.valid) { return @{ ok = $false; exitCode = 8; detail = $profile.error; runId = $runId } }
+
+    if ($Via -eq 'local') {
+        $root = Join-Path ([IO.Path]::GetTempPath()) ('winmedic-' + $runId)
+        New-Item -ItemType Directory -Force -Path $root | Out-Null
+        foreach ($item in @('engine', 'catalog', 'VERSION')) {
+            $src = Join-Path $RepoRoot $item
+            if (Test-Path -LiteralPath $src) { Copy-Item -LiteralPath $src -Destination $root -Recurse -Force }
+        }
+        $outFile = Join-Path $root ($Set + '-findings.json')
+        $env:CDRIVE_HOME = Join-Path $root 'cdrive'
+        try {
+            $null = & (Join-Path $root 'engine\winmedic.ps1') probe --set $Set --out $outFile 2>&1
+        } finally {
+            Remove-Item Env:\CDRIVE_HOME -ErrorAction SilentlyContinue
+        }
+        if (-not (Test-Path -LiteralPath $outFile)) { return @{ ok = $false; exitCode = 8; detail = 'loopback 未生成 findings'; runId = $runId } }
+        $dest = Import-RemoteFindings -RemoteFile $outFile -Alias ($profile.alias + '-loopback') -Set $Set
+        if (-not $Keep) { Remove-Item -LiteralPath $root -Recurse -Force -ErrorAction SilentlyContinue }
+        $sw.Stop()
+        return @{ ok = $true; exitCode = 0; findingsPath = $dest; runId = $runId; seconds = [math]::Round($sw.Elapsed.TotalSeconds, 1); detail = 'loopback' }
+    }
+
+    $reach = Test-RemoteReachable -Target $profile.alias
+    if (-not $reach.ok) {
+        $sw.Stop()
+        return @{ ok = $false; exitCode = 8; runId = $runId; seconds = [math]::Round($sw.Elapsed.TotalSeconds, 1); detail = ('不可达: ' + $reach.text) }
+    }
+
+    $sw2 = [Diagnostics.Stopwatch]::StartNew()
+    $bundle = $null
+    $localOut = $null
+    try {
+        $rTemp = Invoke-RemoteShell -Target $profile.alias -Command 'powershell -NoProfile -Command "[Console]::Out.WriteLine($env:TEMP)"'
+        if (-not $rTemp.ok -or -not $rTemp.text) {
+            return @{ ok = $false; exitCode = 8; runId = $runId; detail = ('无法获取远端 TEMP: ' + $rTemp.text) }
+        }
+        $remoteDir = ($rTemp.text.Trim().TrimEnd('\')) + '\winmedic-' + $runId
+        $mk = Invoke-RemoteShell -Target $profile.alias -Command ('powershell -NoProfile -Command "New-Item -ItemType Directory -Force -Path ''' + $remoteDir + ''' | Out-Null"')
+        if (-not $mk.ok) { return @{ ok = $false; exitCode = 8; runId = $runId; detail = ('无法创建远端目录: ' + $mk.text) } }
+
+        $bundle = New-RemoteBundle -RepoRoot $RepoRoot
+        $remoteZip = $remoteDir + '\bundle.zip'
+        & scp -o BatchMode=yes $bundle ($profile.alias + ':' + ($remoteZip -replace '\\', '/')) 2>&1 | Out-Null
+        if ($LASTEXITCODE -ne 0) { return @{ ok = $false; exitCode = 8; runId = $runId; detail = '上传 bundle 失败（scp）' } }
+
+        $expand = Invoke-RemoteShell -Target $profile.alias -Command ('powershell -NoProfile -Command "Expand-Archive -LiteralPath ''' + $remoteZip + ''' -DestinationPath ''' + $remoteDir + ''' -Force"')
+        if (-not $expand.ok) { return @{ ok = $false; exitCode = 8; runId = $runId; detail = ('远端解压失败: ' + $expand.text) } }
+
+        $stageLocal = Join-Path ([IO.Path]::GetTempPath()) ('stage-' + $runId + '.ps1')
+        $stageText = New-RemoteStageScript -Root $remoteDir -RunId $runId -Set $Set
+        Set-Content -LiteralPath $stageLocal -Value $stageText -Encoding UTF8
+        $remoteStage = $remoteDir + '\stage.ps1'
+        & scp -o BatchMode=yes $stageLocal ($profile.alias + ':' + ($remoteStage -replace '\\', '/')) 2>&1 | Out-Null
+        if ($LASTEXITCODE -ne 0) { return @{ ok = $false; exitCode = 8; runId = $runId; detail = '上传引导脚本失败（scp）' } }
+
+        $run = Invoke-RemoteShell -Target $profile.alias -Command ('powershell -NoProfile -ExecutionPolicy Bypass -File "' + $remoteStage + '"') -TimeoutSec $TimeoutSec
+        $remoteOut = $remoteDir + '\' + $Set + '-findings.json'
+        $localOut = Join-Path ([IO.Path]::GetTempPath()) ('pull-' + $runId + '.json')
+        & scp -o BatchMode=yes ($profile.alias + ':' + ($remoteOut -replace '\\', '/')) $localOut 2>&1 | Out-Null
+        if ($LASTEXITCODE -ne 0) {
+            $hint = '远端探测可能失败或超时'
+            if ($run.text) { $hint = $hint + '；远端输出: ' + $run.text }
+            return @{ ok = $false; exitCode = 8; runId = $runId; detail = $hint }
+        }
+
+        $dest = Import-RemoteFindings -RemoteFile $localOut -Alias $profile.alias -Set $Set
+        $sw.Stop()
+        return @{ ok = $true; exitCode = 0; findingsPath = $dest; runId = $runId; seconds = [math]::Round($sw.Elapsed.TotalSeconds, 1); detail = ('remote=' + $remoteDir); remoteOutput = $run.text }
+    } catch {
+        return @{ ok = $false; exitCode = 8; runId = $runId; detail = ('远程会话异常: ' + $_.Exception.Message) }
+    } finally {
+        if ($bundle -and (Test-Path -LiteralPath $bundle)) { Remove-Item -LiteralPath $bundle -Force -ErrorAction SilentlyContinue }
+        if (-not $Keep) {
+            try { $null = Invoke-RemoteShell -Target $profile.alias -Command ('powershell -NoProfile -Command "Remove-Item -LiteralPath ''' + $remoteDir + ''' -Recurse -Force -ErrorAction SilentlyContinue"') -TimeoutSec 30 } catch { }
+        }
+    }
+}
