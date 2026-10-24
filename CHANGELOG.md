@@ -5,6 +5,23 @@
 
 ## [Unreleased]
 
+## [3.6.0] - 2026-10-25
+
+### Fixed（元数据不实）
+- `storage.hiberfil-off` 标注 `reversible=full`，但它是 `command` 型（无隔离区），`powercfg /h off` 删除的休眠文件**无法还原** → 改为 `none`
+- `validate-catalog.ps1` 新增规则：`command`/`dism` 型动作声明 `reversible=full` 直接判失败
+
+### Verified（系统类目标 4/4 / win11-test VM）
+- `storage.wer-machine`、`storage.delivery-optimization`、`storage.office-file-cache`：移走 + 还原 + 哈希一致
+- `storage.recycle-bin-empty`：用**构造计划**绕过 20 MB 阈值，移走 + 还原 + 哈希一致
+- 累计已验证目标 **18 / 40**
+
+### Docs
+- 新增 `docs/SYSTEM-TARGETS.md`：系统类目标的边界（回收站可回滚、休眠文件与 WINSXS 不可回滚）
+- `docs/VERIFIED-TARGETS.md` 更新到 18 个，并补充「构造计划」验证方法
+- `storage-disk-space-recovery`、`windows-data-recovery-triage` 两个 playbook 增加「先看目标表」小节
+
+
 ## [3.5.3] - 2026-10-24
 
 ### Verified（10 目标批量验证 / win11-test VM）

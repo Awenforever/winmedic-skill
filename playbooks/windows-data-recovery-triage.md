@@ -1,5 +1,20 @@
 # 数据恢复分诊
 
+## 先看目标表，别凭记忆列目录
+
+引擎的 `catalog/cleanup-targets.json` 覆盖 **40 个清理目标**，探针 `probe.cleanup-targets` 会按表测量并给出候选。
+常见但容易被漏掉的：
+
+| 类别 | 例子 | 典型体积 |
+|---|---|---|
+| 浏览器衍生 | Service Worker、着色器缓存、Dawn/WebGPU | 数百 MB ~ 1 GB+ |
+| 开发缓存 | pip / npm / NuGet / Gradle / HF 模型 | 几十 MB ~ 数十 GB |
+| 崩溃与日志 | 崩溃转储、WER（用户/系统）、CBS 日志 | 百 MB 级 |
+| 协作软件 | Teams、Slack 缓存 | 数百 MB |
+
+边界：`storage.hiberfil-off` 与 `storage.winsxs-cleanup` **不可回滚**，执行前必须取得用户明确同意；详见 `docs/SYSTEM-TARGETS.md`。
+
+
 ## 适用
 「误删的文件能找回吗」「回收站清空了」「硬盘里的资料没了」。
 

@@ -32,7 +32,7 @@
       "risk": "none",
       "command": "powercfg /h off",
       "evidence": "ev.hiberfil",
-      "reversible": "full",
+      "reversible": "none",
       "rollback": "powercfg /h on",
       "requires": [
         "admin"
