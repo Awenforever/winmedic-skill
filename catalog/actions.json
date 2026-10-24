@@ -662,6 +662,240 @@
         "why": "缓存可重建，会自动重新下载",
         "consequence": "局域网内分发更新时需重新下载，可能增加流量"
       }
+    },
+    {
+      "id": "storage.teams-cache",
+      "domain": "storage",
+      "kind": "quarantine",
+      "tier": 2,
+      "risk": "low",
+      "evidence": "ev.teams-cache",
+      "reversible": "full",
+      "requires": [
+        "process-not-running:Teams.exe"
+      ],
+      "targetsProbe": "probe.cleanup-targets",
+      "verify": {
+        "kind": "path_absent"
+      },
+      "standalone": false,
+      "plain": {
+        "what": "Microsoft Teams 的本地缓存",
+        "why": "缓存可重建，聊天记录在云端",
+        "consequence": "Teams 首次加载与搜索略慢，可能需要重新登录"
+      }
+    },
+    {
+      "id": "storage.slack-cache",
+      "domain": "storage",
+      "kind": "quarantine",
+      "tier": 2,
+      "risk": "low",
+      "evidence": "ev.slack-cache",
+      "reversible": "full",
+      "requires": [
+        "process-not-running:slack.exe"
+      ],
+      "targetsProbe": "probe.cleanup-targets",
+      "verify": {
+        "kind": "path_absent"
+      },
+      "standalone": false,
+      "plain": {
+        "what": "Slack 桌面客户端缓存",
+        "why": "缓存可重建，消息在服务器",
+        "consequence": "Slack 重启后首次加载略慢"
+      }
+    },
+    {
+      "id": "storage.hf-cache",
+      "domain": "storage",
+      "kind": "quarantine",
+      "tier": 2,
+      "risk": "low",
+      "evidence": "ev.hf-cache",
+      "reversible": "full",
+      "requires": [],
+      "targetsProbe": "probe.cleanup-targets",
+      "verify": {
+        "kind": "path_absent"
+      },
+      "standalone": false,
+      "plain": {
+        "what": "下载过的模型与数据集缓存（含大模型权重）",
+        "why": "可重新下载，但体积常达数十 GB",
+        "consequence": "下次使用同一模型需重新下载，耗时与流量都不小"
+      }
+    },
+    {
+      "id": "storage.nuget-cache",
+      "domain": "storage",
+      "kind": "quarantine",
+      "tier": 1,
+      "risk": "low",
+      "evidence": "ev.nuget-cache",
+      "reversible": "full",
+      "requires": [],
+      "targetsProbe": "probe.cleanup-targets",
+      "verify": {
+        "kind": "path_absent"
+      },
+      "standalone": false,
+      "plain": {
+        "what": ".NET 包管理器 NuGet 的 HTTP 缓存",
+        "why": "缓存可重建，不影响已还原的包",
+        "consequence": "下次还原包需重新下载"
+      }
+    },
+    {
+      "id": "storage.gradle-cache",
+      "domain": "storage",
+      "kind": "quarantine",
+      "tier": 2,
+      "risk": "low",
+      "evidence": "ev.gradle-cache",
+      "reversible": "full",
+      "requires": [],
+      "targetsProbe": "probe.cleanup-targets",
+      "verify": {
+        "kind": "path_absent"
+      },
+      "standalone": false,
+      "plain": {
+        "what": "Gradle 下载的依赖与构建缓存",
+        "why": "可重新下载重建",
+        "consequence": "下次构建明显变慢，需要重新下载依赖"
+      }
+    },
+    {
+      "id": "storage.adobe-media-cache",
+      "domain": "storage",
+      "kind": "quarantine",
+      "tier": 2,
+      "risk": "low",
+      "evidence": "ev.adobe-media-cache",
+      "reversible": "full",
+      "requires": [
+        "process-not-running:Adobe Premiere Pro.exe"
+      ],
+      "targetsProbe": "probe.cleanup-targets",
+      "verify": {
+        "kind": "path_absent"
+      },
+      "standalone": false,
+      "plain": {
+        "what": "Premiere 等 Adobe 软件生成的媒体缓存",
+        "why": "可重建；缓存只用于实时预览",
+        "consequence": "下次打开工程需重新生成预媒体，首次预览变慢"
+      }
+    },
+    {
+      "id": "storage.chrome-service-worker",
+      "domain": "storage",
+      "kind": "quarantine",
+      "tier": 2,
+      "risk": "low",
+      "evidence": "ev.chrome-cache",
+      "reversible": "full",
+      "requires": [
+        "process-not-running:chrome.exe"
+      ],
+      "targetsProbe": "probe.cleanup-targets",
+      "verify": {
+        "kind": "path_absent"
+      },
+      "standalone": false,
+      "plain": {
+        "what": "Chrome 为离线网页保存的 Service Worker 缓存",
+        "why": "可重建",
+        "consequence": "部分离线网页与 PWA 需重新同步"
+      }
+    },
+    {
+      "id": "storage.edge-service-worker",
+      "domain": "storage",
+      "kind": "quarantine",
+      "tier": 2,
+      "risk": "low",
+      "evidence": "ev.edge-cache",
+      "reversible": "full",
+      "requires": [
+        "process-not-running:msedge.exe"
+      ],
+      "targetsProbe": "probe.cleanup-targets",
+      "verify": {
+        "kind": "path_absent"
+      },
+      "standalone": false,
+      "plain": {
+        "what": "Edge 为离线网页保存的 Service Worker 缓存",
+        "why": "可重建",
+        "consequence": "部分离线网页需重新同步"
+      }
+    },
+    {
+      "id": "storage.chrome-shader-cache",
+      "domain": "storage",
+      "kind": "quarantine",
+      "tier": 1,
+      "risk": "low",
+      "evidence": "ev.chrome-cache",
+      "reversible": "full",
+      "requires": [
+        "process-not-running:chrome.exe"
+      ],
+      "targetsProbe": "probe.cleanup-targets",
+      "verify": {
+        "kind": "path_absent"
+      },
+      "standalone": false,
+      "plain": {
+        "what": "Chrome 编译后的 GPU 着色器缓存",
+        "why": "可重建",
+        "consequence": "网页图形首次渲染略慢"
+      }
+    },
+    {
+      "id": "storage.edge-shader-cache",
+      "domain": "storage",
+      "kind": "quarantine",
+      "tier": 1,
+      "risk": "low",
+      "evidence": "ev.edge-cache",
+      "reversible": "full",
+      "requires": [
+        "process-not-running:msedge.exe"
+      ],
+      "targetsProbe": "probe.cleanup-targets",
+      "verify": {
+        "kind": "path_absent"
+      },
+      "standalone": false,
+      "plain": {
+        "what": "Edge 编译后的 GPU 着色器缓存",
+        "why": "可重建",
+        "consequence": "网页图形首次渲染略慢"
+      }
+    },
+    {
+      "id": "storage.webcache",
+      "domain": "storage",
+      "kind": "quarantine",
+      "tier": 2,
+      "risk": "low",
+      "evidence": "ev.inetcache",
+      "reversible": "full",
+      "requires": [],
+      "targetsProbe": "probe.cleanup-targets",
+      "verify": {
+        "kind": "path_absent"
+      },
+      "standalone": false,
+      "plain": {
+        "what": "系统外壳与内嵌浏览器共用的 Web 缓存数据库",
+        "why": "可重建，系统会自动重建",
+        "consequence": "个别内置页面（设置、商店）首次打开略慢"
+      }
     }
   ]
 }

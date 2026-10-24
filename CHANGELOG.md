@@ -5,6 +5,17 @@
 
 ## [Unreleased]
 
+## [3.5.0] - 2026-10-24
+
+### Added（G5 达标）
+- 清理目标扩到 **40 个动作**（本版 +11）：Teams、Slack、HuggingFace 模型缓存、NuGet、Gradle、Adobe 媒体缓存、Chrome/Edge Service Worker 缓存、Chrome/Edge 着色器缓存、系统 WebCache
+- 新增 6 条官方证据（Teams / Slack / HF / NuGet / Gradle / Adobe），其余复用已有证据
+
+### Verified（本机实测）
+- 目录校验：probes=40 actions=**40** evidence=27
+- 候选 32 项；体积 Top：Firefox 缓存 1.0 GB ×2、**Edge Service Worker 缓存 864 MB**、崩溃转储 190 MB、系统 WebCache 67 MB、pip 缓存 59 MB
+
+
 ## [3.4.0] - 2026-10-24
 
 ### Added（G5 覆盖扩容）

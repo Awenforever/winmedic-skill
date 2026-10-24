@@ -195,6 +195,60 @@
         "https://docs.npmjs.com/cli/v10/commands/npm-cache"
       ],
       "verifiedOn": "2026-10-24"
+    },
+    {
+      "id": "ev.teams-cache",
+      "strength": "official",
+      "quote": "Teams desktop stores a local cache that can be cleared to resolve loading issues.",
+      "links": [
+        "https://learn.microsoft.com/microsoftteams/clear-cache"
+      ],
+      "verifiedOn": "2026-10-24"
+    },
+    {
+      "id": "ev.slack-cache",
+      "strength": "official",
+      "quote": "Resetting the Slack cache clears locally stored data and reloads it from the server.",
+      "links": [
+        "https://slack.com/help/articles/202035138-Reset-your-Slack-cache-and-restart-the-app"
+      ],
+      "verifiedOn": "2026-10-24"
+    },
+    {
+      "id": "ev.hf-cache",
+      "strength": "official",
+      "quote": "huggingface_hub caches downloaded models and datasets locally; the cache can be managed or cleared.",
+      "links": [
+        "https://huggingface.co/docs/huggingface_hub/guides/manage-cache"
+      ],
+      "verifiedOn": "2026-10-24"
+    },
+    {
+      "id": "ev.nuget-cache",
+      "strength": "official",
+      "quote": "NuGet keeps an HTTP cache of downloaded packages that can be cleared.",
+      "links": [
+        "https://learn.microsoft.com/nuget/consume-packages/managing-the-global-packages-and-cache-folders"
+      ],
+      "verifiedOn": "2026-10-24"
+    },
+    {
+      "id": "ev.gradle-cache",
+      "strength": "official",
+      "quote": "Gradle caches downloaded dependencies and build outputs to speed up subsequent builds.",
+      "links": [
+        "https://docs.gradle.org/current/userguide/dependency_caching.html"
+      ],
+      "verifiedOn": "2026-10-24"
+    },
+    {
+      "id": "ev.adobe-media-cache",
+      "strength": "official",
+      "quote": "Premiere Pro creates media cache files to improve playback performance; they can be deleted and regenerated.",
+      "links": [
+        "https://helpx.adobe.com/premiere-pro/using/media-cache.html"
+      ],
+      "verifiedOn": "2026-10-24"
     }
   ]
 }

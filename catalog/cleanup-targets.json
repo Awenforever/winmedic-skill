@@ -290,6 +290,209 @@
         "why": "缓存可重建，会自动重新下载",
         "consequence": "局域网内分发更新时需重新下载，可能增加流量"
       }
+    },
+    {
+      "id": "clean.teams-cache",
+      "actionId": "storage.teams-cache",
+      "label": "Teams 客户端缓存",
+      "paths": [
+        "%APPDATA%\\Microsoft\\Teams\\Cache"
+      ],
+      "tier": 2,
+      "evidence": "ev.teams-cache",
+      "requires": [
+        "process-not-running:Teams.exe"
+      ],
+      "plain": {
+        "what": "Microsoft Teams 的本地缓存",
+        "why": "缓存可重建，聊天记录在云端",
+        "consequence": "Teams 首次加载与搜索略慢，可能需要重新登录"
+      },
+      "kind": "dir"
+    },
+    {
+      "id": "clean.slack-cache",
+      "actionId": "storage.slack-cache",
+      "label": "Slack 客户端缓存",
+      "paths": [
+        "%APPDATA%\\Slack\\Cache"
+      ],
+      "tier": 2,
+      "evidence": "ev.slack-cache",
+      "requires": [
+        "process-not-running:slack.exe"
+      ],
+      "plain": {
+        "what": "Slack 桌面客户端缓存",
+        "why": "缓存可重建，消息在服务器",
+        "consequence": "Slack 重启后首次加载略慢"
+      },
+      "kind": "dir"
+    },
+    {
+      "id": "clean.hf-cache",
+      "actionId": "storage.hf-cache",
+      "label": "HuggingFace 模型缓存",
+      "paths": [
+        "%USERPROFILE%\\.cache\\huggingface"
+      ],
+      "tier": 2,
+      "evidence": "ev.hf-cache",
+      "requires": [],
+      "plain": {
+        "what": "下载过的模型与数据集缓存（含大模型权重）",
+        "why": "可重新下载，但体积常达数十 GB",
+        "consequence": "下次使用同一模型需重新下载，耗时与流量都不小"
+      },
+      "kind": "dir"
+    },
+    {
+      "id": "clean.nuget-cache",
+      "actionId": "storage.nuget-cache",
+      "label": "NuGet 包缓存",
+      "paths": [
+        "%LOCALAPPDATA%\\NuGet\\v3-cache"
+      ],
+      "tier": 1,
+      "evidence": "ev.nuget-cache",
+      "requires": [],
+      "plain": {
+        "what": ".NET 包管理器 NuGet 的 HTTP 缓存",
+        "why": "缓存可重建，不影响已还原的包",
+        "consequence": "下次还原包需重新下载"
+      },
+      "kind": "dir"
+    },
+    {
+      "id": "clean.gradle-cache",
+      "actionId": "storage.gradle-cache",
+      "label": "Gradle 依赖缓存",
+      "paths": [
+        "%USERPROFILE%\\.gradle\\caches"
+      ],
+      "tier": 2,
+      "evidence": "ev.gradle-cache",
+      "requires": [],
+      "plain": {
+        "what": "Gradle 下载的依赖与构建缓存",
+        "why": "可重新下载重建",
+        "consequence": "下次构建明显变慢，需要重新下载依赖"
+      },
+      "kind": "dir"
+    },
+    {
+      "id": "clean.adobe-media-cache",
+      "actionId": "storage.adobe-media-cache",
+      "label": "Adobe 媒体缓存",
+      "paths": [
+        "%APPDATA%\\Adobe\\Common\\Media Cache Files"
+      ],
+      "tier": 2,
+      "evidence": "ev.adobe-media-cache",
+      "requires": [
+        "process-not-running:Adobe Premiere Pro.exe"
+      ],
+      "plain": {
+        "what": "Premiere 等 Adobe 软件生成的媒体缓存",
+        "why": "可重建；缓存只用于实时预览",
+        "consequence": "下次打开工程需重新生成预媒体，首次预览变慢"
+      },
+      "kind": "dir"
+    },
+    {
+      "id": "clean.chrome-service-worker",
+      "actionId": "storage.chrome-service-worker",
+      "label": "Chrome Service Worker 缓存",
+      "paths": [
+        "%LOCALAPPDATA%\\Google\\Chrome\\User Data\\Default\\Service Worker\\CacheStorage"
+      ],
+      "tier": 2,
+      "evidence": "ev.chrome-cache",
+      "requires": [
+        "process-not-running:chrome.exe"
+      ],
+      "plain": {
+        "what": "Chrome 为离线网页保存的 Service Worker 缓存",
+        "why": "可重建",
+        "consequence": "部分离线网页与 PWA 需重新同步"
+      },
+      "kind": "dir"
+    },
+    {
+      "id": "clean.edge-service-worker",
+      "actionId": "storage.edge-service-worker",
+      "label": "Edge Service Worker 缓存",
+      "paths": [
+        "%LOCALAPPDATA%\\Microsoft\\Edge\\User Data\\Default\\Service Worker\\CacheStorage"
+      ],
+      "tier": 2,
+      "evidence": "ev.edge-cache",
+      "requires": [
+        "process-not-running:msedge.exe"
+      ],
+      "plain": {
+        "what": "Edge 为离线网页保存的 Service Worker 缓存",
+        "why": "可重建",
+        "consequence": "部分离线网页需重新同步"
+      },
+      "kind": "dir"
+    },
+    {
+      "id": "clean.chrome-shader-cache",
+      "actionId": "storage.chrome-shader-cache",
+      "label": "Chrome 着色器缓存",
+      "paths": [
+        "%LOCALAPPDATA%\\Google\\Chrome\\User Data\\ShaderCache",
+        "%LOCALAPPDATA%\\Google\\Chrome\\User Data\\GrShaderCache"
+      ],
+      "tier": 1,
+      "evidence": "ev.chrome-cache",
+      "requires": [
+        "process-not-running:chrome.exe"
+      ],
+      "plain": {
+        "what": "Chrome 编译后的 GPU 着色器缓存",
+        "why": "可重建",
+        "consequence": "网页图形首次渲染略慢"
+      },
+      "kind": "dir"
+    },
+    {
+      "id": "clean.edge-shader-cache",
+      "actionId": "storage.edge-shader-cache",
+      "label": "Edge 着色器缓存",
+      "paths": [
+        "%LOCALAPPDATA%\\Microsoft\\Edge\\User Data\\ShaderCache",
+        "%LOCALAPPDATA%\\Microsoft\\Edge\\User Data\\GrShaderCache"
+      ],
+      "tier": 1,
+      "evidence": "ev.edge-cache",
+      "requires": [
+        "process-not-running:msedge.exe"
+      ],
+      "plain": {
+        "what": "Edge 编译后的 GPU 着色器缓存",
+        "why": "可重建",
+        "consequence": "网页图形首次渲染略慢"
+      },
+      "kind": "dir"
+    },
+    {
+      "id": "clean.webcache",
+      "actionId": "storage.webcache",
+      "label": "系统 WebCache",
+      "paths": [
+        "%LOCALAPPDATA%\\Microsoft\\Windows\\WebCache"
+      ],
+      "tier": 2,
+      "evidence": "ev.inetcache",
+      "requires": [],
+      "plain": {
+        "what": "系统外壳与内嵌浏览器共用的 Web 缓存数据库",
+        "why": "可重建，系统会自动重建",
+        "consequence": "个别内置页面（设置、商店）首次打开略慢"
+      },
+      "kind": "dir"
     }
   ]
 }
