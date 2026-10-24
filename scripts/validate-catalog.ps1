@@ -59,6 +59,17 @@ foreach ($a in $actions.actions) {
     }
 }
 
+# 每个动作必须有通俗说明（不可逆确认单依赖它）
+foreach ($a in $act.actions) {
+    if (-not ($a.PSObject.Properties.Name -contains 'plain') -or -not $a.plain) {
+        [void]$errors.Add('动作缺少 plain 通俗说明: ' + $a.id)
+        continue
+    }
+    foreach ($f in @('what', 'why', 'consequence')) {
+        if (-not $a.plain.$f) { [void]$errors.Add('动作 plain 缺少 ' + $f + ': ' + $a.id) }
+    }
+}
+
 # workloads 签名表
 $wl = Read-JsonFile (Join-Path $Root 'catalog\workloads.json')
 if (-not $wl) { [void]$errors.Add('缺少 catalog/workloads.json') }

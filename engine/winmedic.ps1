@@ -33,6 +33,7 @@ param(
     [string]$To,
     [switch]$AcceptRisk,
     [switch]$AcceptIrreversible,
+    [string]$ConfirmToken,
     [switch]$Remove,
     [switch]$Json,
     [Parameter(ValueFromRemainingArguments = $true)]
@@ -54,6 +55,7 @@ if (-not $script:WinMedicRoot) { $script:WinMedicRoot = (Resolve-Path (Join-Path
 . (Join-Path $PSScriptRoot 'lib\Summary.ps1')
 . (Join-Path $PSScriptRoot 'lib\Recommendations.ps1')
 . (Join-Path $PSScriptRoot 'lib\Relocation.ps1')
+. (Join-Path $PSScriptRoot 'lib\Explain.ps1')
 . (Join-Path $PSScriptRoot 'lib\Scan.ps1')
 . (Join-Path $PSScriptRoot 'probes\storage.ps1')
 . (Join-Path $PSScriptRoot 'probes\boot.ps1')
@@ -116,6 +118,7 @@ function Resolve-RestArguments {
                 'remove'      { $script:RemoveFlag = $true }
                 'accept-risk' { $script:AcceptRiskFlag = $true }
                     'accept-irreversible' { $script:AcceptIrrevFlag = $true }
+                    'confirm-token' { $i++; if ($i -lt $Rest.Count) { $script:ConfirmTokenValue = [string]$Rest[$i] } }
             }
         } else {
             if (-not $script:SubArg) { $script:SubArg = $tok }
@@ -140,6 +143,7 @@ $script:JsonFlag = [bool]$Json
 $script:RemoveFlag = [bool]$Remove
 $script:AcceptRiskFlag = [bool]$AcceptRisk
 $script:AcceptIrrevFlag = [bool]$AcceptIrreversible
+$script:ConfirmTokenValue = [string]$ConfirmToken
 Resolve-RestArguments -Tokens $Rest
 $Set = $script:SetArg
 $From = $script:FromArg
@@ -157,6 +161,7 @@ $Json = $script:JsonFlag
 $Remove = $script:RemoveFlag
 $AcceptRisk = $script:AcceptRiskFlag
 $AcceptIrreversible = $script:AcceptIrrevFlag
+$ConfirmToken = $script:ConfirmTokenValue
 
 function Get-StatePath {
     param([string]$Name)
@@ -383,6 +388,28 @@ function Invoke-Apply {
         return $script:EXIT.USAGE
     }
     if ($Purge) { Write-Log '已进入 purge 模式：删除不可回滚' -Level WARN }
+
+    if ($Purge) {
+        $sheetItems = @()
+        foreach ($t in $targetItems) {
+            $tAct = $cat.Actions[$t.actionId]
+            $sz = 0L
+            if ($t.PSObject.Properties.Name -contains 'sizeBytes') { $sz = [int64]$t.sizeBytes }
+            $sheetItems += [pscustomobject]@{ id = $t.id; actionId = $t.actionId; target = $t.target; sizeBytes = $sz; action = $tAct }
+        }
+        $token = New-PurgeConfirmationToken -PlanHash ([string]$integrity.Actual) -Ids @($targetItems | ForEach-Object { [string]$_.id })
+        Write-Host (Format-PurgeConfirmation -Items $sheetItems -PlanHash ([string]$integrity.Actual) -Token $token)
+        Write-Host ''
+        $given = ''
+        if ($ConfirmToken) { $given = $ConfirmToken.Trim().ToUpperInvariant() }
+        if ($given -ne $token) {
+            if ($given) { Write-Log ('确认令牌不匹配（收到 ' + $given + '，应为 ' + $token + '）') -Level ERROR }
+            else { Write-Log '未回填 --confirm-token，已中止；没有删除任何东西' -Level ERROR }
+            Write-Log '请把上面的确认单完整展示给用户，得到同意后再用单子末尾的令牌重跑。' -Level INFO
+            return $script:EXIT.USAGE
+        }
+        Write-Log '确认令牌校验通过，开始物理删除' -Level WARN
+    }
 
     $runId = if ($RunId) { $RunId } else { New-RunId }
     Write-Log ('开始执行，runId=' + $runId + '，共 ' + $targetItems.Count + ' 项')
@@ -737,7 +764,7 @@ function Show-Help {
     Write-Host '  diff --from a.json --to b.json         两次采集对比'
     Write-Host '  relocate                               迁移策略建议（缓存/数据该不该搬）'
     Write-Host '  apply --action <id> --yes              执行 standalone 动作（仅 Tier 1）'
-    Write-Host '  apply ... --purge --accept-irreversible 物理删除（不可回滚，需双确认）'
+    Write-Host '  apply ... --purge --accept-irreversible [--confirm-token X] 物理删除（不可回滚，需确认单令牌）'
     Write-Host '  version'
     return $script:EXIT.OK
 }

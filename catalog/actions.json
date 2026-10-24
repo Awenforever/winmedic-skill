@@ -17,7 +17,12 @@
           "path": "C:\\$Recycle.Bin",
           "bytes": 104857600
         }
-      ]
+      ],
+      "plain": {
+        "what": "回收站里已经被你删除的文件",
+        "why": "回收站只是暂存区，清空它不影响任何正在使用的文件",
+        "consequence": "清空后无法再从回收站找回这些文件；如需恢复要借助第三方恢复工具，且成功率不保证"
+      }
     },
     {
       "id": "storage.hiberfil-off",
@@ -41,7 +46,12 @@
           "kind": "system_file_absent",
           "path": "C:\\hiberfil.sys"
         }
-      ]
+      ],
+      "plain": {
+        "what": "休眠文件 hiberfil.sys，是系统休眠和快速启动时存放内存状态的快照",
+        "why": "关闭休眠功能后该文件会被系统删除，日常使用不受影响",
+        "consequence": "休眠功能不可用（合盖睡眠仍可用），快速启动失效、开机可能慢几秒；该文件不可恢复，但系统以后可以重新生成"
+      }
     },
     {
       "id": "storage.getcurrent-remove",
@@ -60,7 +70,12 @@
           "kind": "path_absent",
           "path": "C:\\$GetCurrent"
         }
-      ]
+      ],
+      "plain": {
+        "what": "Windows 升级过程中产生的临时安装文件",
+        "why": "升级已经完成，这些文件不再被使用",
+        "consequence": "无法再用「退回上一版本 Windows」一键回退；不影响个人文件与已装软件"
+      }
     },
     {
       "id": "storage.winreagent-remove",
@@ -79,7 +94,12 @@
           "kind": "path_absent",
           "path": "C:\\$WinREAgent"
         }
-      ]
+      ],
+      "plain": {
+        "what": "恢复环境里旧版本的更新组件",
+        "why": "更新完成后这些旧组件不再使用",
+        "consequence": "系统恢复环境仍可正常进入；如需旧版本回滚，需重新从新版本获取组件"
+      }
     },
     {
       "id": "storage.panther-remove",
@@ -98,7 +118,12 @@
           "kind": "path_absent",
           "path": "C:\\Windows\\Panther"
         }
-      ]
+      ],
+      "plain": {
+        "what": "Windows 安装和升级过程中写下的日志文件",
+        "why": "这些只是过程记录，不参与系统运行",
+        "consequence": "以后再排查安装失败时会少一份现场日志；对系统运行没有任何影响"
+      }
     },
     {
       "id": "storage.software-distribution-download",
@@ -119,7 +144,12 @@
           "path": "C:\\Windows\\SoftwareDistribution\\Download",
           "bytes": 524288000
         }
-      ]
+      ],
+      "plain": {
+        "what": "Windows 更新下载的安装包缓存",
+        "why": "更新装完后这些安装包就不再需要，需要时会重新下载",
+        "consequence": "以后再装同一个更新需要重新下载，会多花时间和流量"
+      }
     },
     {
       "id": "storage.edge-cache",
@@ -138,7 +168,12 @@
         {
           "kind": "free_space_increased"
         }
-      ]
+      ],
+      "plain": {
+        "what": "Edge 浏览器保存的网页缓存（图片、脚本等）",
+        "why": "缓存只用来加速，删掉后浏览器会自动重建",
+        "consequence": "网页第一次打开会略慢；部分网站可能需要重新登录"
+      }
     },
     {
       "id": "storage.office-file-cache",
@@ -157,7 +192,12 @@
         {
           "kind": "free_space_increased"
         }
-      ]
+      ],
+      "plain": {
+        "what": "Office 打开文档时生成的本地缓存副本",
+        "why": "缓存可以从原文档或云端重新生成",
+        "consequence": "若某个文档只存在缓存里（云端尚未同步完成），可能需要重新从云端下载；正常办公文档不受影响"
+      }
     },
     {
       "id": "storage.qqmusic-cache",
@@ -175,7 +215,12 @@
         {
           "kind": "free_space_increased"
         }
-      ]
+      ],
+      "plain": {
+        "what": "QQ音乐的在线播放缓存",
+        "why": "缓存可重建，不影响账号与歌单",
+        "consequence": "若你下载的歌曲正好存放在这个目录，会被一并删除、需要重新下载"
+      }
     },
     {
       "id": "storage.logi-cache",
@@ -194,7 +239,12 @@
         {
           "kind": "free_space_increased"
         }
-      ]
+      ],
+      "plain": {
+        "what": "罗技外设软件（Logi Options+ 等）的更新与安装缓存",
+        "why": "安装包缓存可以重新下载",
+        "consequence": "软件设置和配对信息不受影响；下次更新会重新下载安装包"
+      }
     },
     {
       "id": "storage.intel-driver-packages",
@@ -212,7 +262,12 @@
         {
           "kind": "free_space_increased"
         }
-      ]
+      ],
+      "plain": {
+        "what": "Intel 显卡/芯片组驱动的安装包缓存",
+        "why": "驱动已经安装好，安装包本身不再需要",
+        "consequence": "以后要回滚驱动时需要重新下载安装包；当前正在使用的驱动不受影响"
+      }
     },
     {
       "id": "storage.winsxs-cleanup",
@@ -236,7 +291,12 @@
         {
           "kind": "pending_reboot_hint"
         }
-      ]
+      ],
+      "plain": {
+        "what": "系统组件库（WinSxS）中被新版本取代的旧组件，通过 DISM 清理",
+        "why": "DISM 会自行判断哪些旧组件可以安全移除",
+        "consequence": "这是**全部动作里最重的一个**：清理后无法卸载已安装的更新，且**不能回滚**；过程可能 10-30 分钟，期间断电有风险，建议先建还原点"
+      }
     },
     {
       "id": "recovery.create-restore-point",
@@ -260,7 +320,12 @@
         {
           "kind": "restore_point_exists"
         }
-      ]
+      ],
+      "plain": {
+        "what": "创建一个系统还原点",
+        "why": "为后续的系统级操作提供一条退路",
+        "consequence": "会占用几百 MB 到数 GB 磁盘空间；不修改任何个人文件"
+      }
     }
   ]
 }
