@@ -15,7 +15,7 @@
 [CmdletBinding()]
 param(
     [Parameter(Position = 0)]
-    [ValidateSet('doctor', 'probe', 'plan', 'apply', 'verify', 'restore', 'journal', 'profile', 'report', 'explain', 'summary', 'diff', 'relocate', 'remote', 'trend', 'diagnose', 'tools', 'selftest', 'version', 'help')]
+    [ValidateSet('doctor', 'probe', 'plan', 'apply', 'verify', 'restore', 'journal', 'profile', 'report', 'explain', 'summary', 'diff', 'relocate', 'remote', 'trend', 'diagnose', 'tools', 'selftest', 'remote-apply', 'remote-restore', 'version', 'help')]
     [string]$Command = 'help',
     [string]$SubCommand,
     [string]$Set = '',
@@ -34,6 +34,7 @@ param(
     [switch]$AcceptRisk,
     [switch]$AcceptIrreversible,
     [string]$ConfirmToken,
+    [string]$AllowRemoteOrigin,
     [string]$Target,
     [string]$Via,
     [int]$TimeoutSec = 300,
@@ -120,6 +121,7 @@ function Resolve-RestArguments {
             switch ($key) {
                 'set'     { if ($val) { $script:SetArg = $val } }
                 'from'    { $script:FromArg = $val }
+                'allow-remote-origin' { $script:AllowRemoteOriginArg = $val }
                 'to'      { $script:ToArg = $val }
                 'plan'    { $script:PlanArg = $val }
                 'ids'     { if ($val) { $script:IdsArg = @($val -split ',') } }
@@ -154,6 +156,7 @@ function Resolve-RestArguments {
 
 $script:SetArg = $Set
 $script:FromArg = $From
+$script:AllowRemoteOriginArg = [string]$AllowRemoteOrigin
 $script:ToArg = $To
 $script:PlanArg = $PlanPath
 $script:IdsArg = $Ids
@@ -182,6 +185,7 @@ $script:CheckFlag = [bool]$Check
 Resolve-RestArguments -Tokens $Rest
 $Set = $script:SetArg
 $From = $script:FromArg
+$AllowRemoteOrigin = $script:AllowRemoteOriginArg
 $To = $script:ToArg
 $PlanPath = $script:PlanArg
 $Ids = $script:IdsArg
@@ -389,13 +393,36 @@ function Invoke-Apply {
         Write-Log ('找不到 plan：' + $p) -Level ERROR
         return $script:EXIT.USAGE
     }
+    # 远端来源的计划绝不能本地执行（在权限检查前就拦住，保证语义与权限无关）
+    if (Test-Path -LiteralPath $p) {
+        try {
+            $prePlan = Get-Content -LiteralPath $p -Raw -Encoding UTF8 | ConvertFrom-Json
+            $allowVal = [string]$AllowRemoteOrigin
+            $preRemote = @($prePlan.items | Where-Object {
+                if (-not ($_.PSObject.Properties.Name -contains 'origin')) { return $false }
+                $o = [string]$_.origin
+                if (-not $o) { return $false }
+                if ($o -eq 'local') { return $false }
+                if ($allowVal -and $o -eq $allowVal) { return $false }
+                return $true
+            })
+            if ($preRemote.Count -gt 0) {
+                Write-Log ('计划里有 ' + $preRemote.Count + ' 项来自远端（' + [string]$preRemote[0].origin + '），本地 apply 拒绝执行') -Level ERROR
+                Write-Log '请改用: winmedic.ps1 remote-apply --target <别名> --plan <本计划文件> --ids <ids> --yes' -Level INFO
+                return $script:EXIT.USAGE
+            }
+        } catch { }
+    }
+
     if (-not $Yes) {
         Write-Log 'apply 需要显式 --yes 才执行' -Level ERROR
         return $script:EXIT.USAGE
-    }    if (-not $Ids -or $Ids.Count -eq 0) {
+    }
+    if (-not $Ids -or $Ids.Count -eq 0) {
         Write-Log '未指定 --ids，拒绝执行（避免误清空）' -Level ERROR
         return $script:EXIT.USAGE
     }
+
     if (-not (Test-IsAdmin)) {
         Write-Log '需要管理员权限' -Level ERROR
         return $script:EXIT.NO_ADMIN
@@ -437,6 +464,7 @@ function Invoke-Apply {
     }
     if ($gate.reason -ne '无可回滚风险项') { Write-Log ('风险门: ' + $gate.reason) -Level WARN }
 
+    
     $purgeGate = Test-PurgeAllowed -Purge:$Purge -AcceptIrreversible:$AcceptIrreversible
     if (-not $purgeGate.allow) {
         Write-Log ('不可逆操作被拒绝: ' + $purgeGate.reason) -Level ERROR
@@ -928,6 +956,34 @@ function Invoke-SelfTestCmd {
     if ($res.ok) { return $script:EXIT.OK } else { return $script:EXIT.FAIL }
 }
 
+function Invoke-RemoteApplyCmd {
+    if (-not $Target) { Write-Log 'remote-apply 需要 --target <ssh 别名>' -Level ERROR; return $script:EXIT.USAGE }
+    if (-not $PlanPath) { Write-Log 'remote-apply 需要 --plan <本地计划文件>' -Level ERROR; return $script:EXIT.USAGE }
+    if (-not $Ids -or $Ids.Count -eq 0) { Write-Log 'remote-apply 需要 --ids <R2,R3>' -Level ERROR; return $script:EXIT.USAGE }
+    if (-not $Yes) { Write-Log 'remote-apply 需要显式 --yes' -Level ERROR; return $script:EXIT.USAGE }
+    $res = Invoke-RemoteApplySession -Target $Target -PlanPath $PlanPath -Ids $Ids -TimeoutSec $TimeoutSec -Keep:$Keep
+    if ($Json) { Write-JsonResult -Object $res | Out-Null; if ($null -ne $res.exitCode) { return $res.exitCode } else { return $script:EXIT.REMOTE } }
+    if (-not $res.ok) { Write-Log ('远端执行失败: ' + $res.output) -Level ERROR; if ($null -ne $res.exitCode) { return $res.exitCode } else { return $script:EXIT.REMOTE } }
+    Write-Log ('远端执行完成，runId=' + $res.runId) -Level OK
+    Write-Host ('  远端输出:')
+    ($res.output -split "`r?`n") | Select-Object -Last 5 | ForEach-Object { Write-Host ('    ' + $_.Trim()) }
+    if ($res.journalPath) { Write-Host ('  审计日志已拉回: ' + $res.journalPath) }
+    if ($res.dir) { Write-Host ('  远端暂存目录已清理: ' + $res.dir) }
+    return $script:EXIT.OK
+}
+
+function Invoke-RemoteRestoreCmd {
+    if (-not $Target) { Write-Log 'remote-restore 需要 --target <ssh 别名>' -Level ERROR; return $script:EXIT.USAGE }
+    if (-not $Journal) { Write-Log 'remote-restore 需要 --journal <runId>' -Level ERROR; return $script:EXIT.USAGE }
+    if (-not $Yes) { Write-Log 'remote-restore 需要显式 --yes' -Level ERROR; return $script:EXIT.USAGE }
+    $res = Invoke-RemoteRestoreSession -Target $Target -Journal $Journal -TimeoutSec $TimeoutSec
+    if ($Json) { Write-JsonResult -Object $res | Out-Null; if ($null -ne $res.exitCode) { return $res.exitCode } else { return $script:EXIT.REMOTE } }
+    if (-not $res.ok) { Write-Log ('远端还原失败: ' + $res.output) -Level ERROR; if ($null -ne $res.exitCode) { return $res.exitCode } else { return $script:EXIT.REMOTE } }
+    Write-Log ('远端还原完成（journal=' + $Journal + '）') -Level OK
+    ($res.output -split "`r?`n") | Select-Object -Last 4 | ForEach-Object { Write-Host ('    ' + $_.Trim()) }
+    return $script:EXIT.OK
+}
+
 function Show-Help {
     Write-Host 'WinMedic 引擎'
     Write-Host '  doctor                     环境自检'
@@ -953,6 +1009,10 @@ function Show-Help {
     Write-Host '    [--from <findings.json>]              指定数据来源（例如远端采集结果）'
     Write-Host '  tools [--json]                          器械台：外部工具可用性与风险级别'
     Write-Host '  selftest [--keep]                       沙箱自检：证明隔离/还原逐字节一致'
+    Write-Host '  remote-apply --target <别名> --plan <plan.json> --ids R2 --yes'
+    Write-Host '                                          远端执行处置（同一套护栏；计划 origin 必须匹配）'
+    Write-Host '  remote-restore --target <别名> --journal <runId> --yes'
+    Write-Host '                                          远端还原（把隔离项移回远端原位）'
     Write-Host '  apply --action <id> --yes              执行 standalone 动作（仅 Tier 1）'
     Write-Host '  apply ... --purge --accept-irreversible [--confirm-token X] 物理删除（不可回滚，需确认单令牌）'
     Write-Host '  version'
@@ -978,6 +1038,8 @@ switch ($Command) {
     'diagnose' { $code = Invoke-DiagnoseCmd }
     'tools'   { $code = Invoke-ToolsCmd }
     'selftest' { $code = Invoke-SelfTestCmd }
+    'remote-apply' { $code = Invoke-RemoteApplyCmd }
+    'remote-restore' { $code = Invoke-RemoteRestoreCmd }
     'version' { Write-Host ('winmedic ' + (Get-Content (Join-Path $script:WinMedicRoot 'VERSION') -Raw).Trim()); $code = $script:EXIT.OK }
     default   { $code = Show-Help }
 }

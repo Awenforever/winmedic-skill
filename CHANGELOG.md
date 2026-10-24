@@ -5,6 +5,29 @@
 
 ## [Unreleased]
 
+## [3.3.0] - 2026-10-24
+
+### Added
+- **远端处置**：`remote-apply --target <别名> --plan <plan.json> --ids R2 --yes` 与 `remote-restore --target <别名> --journal <runId> --yes`
+- 计划项级 `origin` 标记（`plan.origin` + 每个 item 的 `origin`），本地 `apply` 在**权限检查之前**即拒绝 `origin != local` 的计划（退出码 2，并提示改用 remote-apply）
+- `apply --allow-remote-origin <值>`：仅允许对应该来源的计划在本机执行（远端引擎自用）
+- 远端**持久状态目录** `C:\ProgramData\winmedic-remote-state`：隔离区与审计日志不随暂存目录清理
+- 审计日志自动拉回本地：`state/remote-<别名>-journal-<runId>.jsonl`
+
+### Fixed（G3 暴露）
+1. **远端隔离数据会被销毁**：隔离区原本建在临时暂存目录里，暂存清理会连带删除隔离数据，远端还原不可能成功 → 改为独立持久状态目录，只清理引擎包
+2. **远端引擎被自己的来源守卫拦住**：远端执行时计划 origin 恰为 `remote:<自己>`，被判定为他人计划 → 新增 `--allow-remote-origin`
+3. 计划项 `origin` 为空（计算位置在 item 循环之后）→ 前移
+4. 重复的来源守卫（3 份）与审计日志路径多一层 `cdrive` → 清理/修正
+
+### Verified（G3 / win11-test VM）
+- `remote --set storage` → `plan --from <远端 findings>`：plan.origin 与每个 item.origin 均为 `remote:win11-test`
+- 本地 `apply --ids R2 --yes` → **拒绝**（exit 2，提示改用 remote-apply）
+- `remote-apply` → **真实把 120 MB Edge 缓存移入远端持久隔离区**，目录消失，runId=20261024-214602-9f6442
+- `remote-restore` → **目录恢复，3 个文件 SHA256 与原负载完全一致**
+- 重复 `remote-restore` → 正确报「隔离区文件已不存在」；审计日志已拉回本地（1059 bytes）
+
+
 ## [3.2.1] - 2026-10-24
 
 ### Fixed

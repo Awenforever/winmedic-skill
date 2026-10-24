@@ -55,6 +55,14 @@ function New-CdrivePlan {
         [string]$CatalogDir
     )
     $cat = Import-CdriveCatalog -CatalogDir $CatalogDir
+
+    $originSet = @()
+    foreach ($pr in @($Findings.probes)) { if ($pr -and ($pr.PSObject.Properties.Name -contains 'origin') -and $pr.origin) { $originSet += [string]$pr.origin } }
+    $planOrigin = 'local'
+    if ($originSet.Count -gt 0) {
+        $uniq = @($originSet | Select-Object -Unique)
+        $planOrigin = if ($uniq.Count -eq 1) { $uniq[0] } else { 'mixed' }
+    }
     $items = New-Object System.Collections.ArrayList
     $excluded = New-Object System.Collections.ArrayList
     $idx = 0
@@ -95,6 +103,7 @@ function New-CdrivePlan {
         }
         [void]$items.Add([ordered]@{
             id            = ('R' + $idx)
+            origin        = $planOrigin
             actionId      = $act.id
             target        = $cand.target
             kind          = $act.kind
@@ -111,6 +120,7 @@ function New-CdrivePlan {
         })
     }
 
+
     $recs = @()
     try { $recs = @(Get-Recommendations -Findings $Findings) } catch { $recs = @() }
 
@@ -118,6 +128,7 @@ function New-CdrivePlan {
         schemaVersion = 1
         generatedAt   = (Get-IsoTimestamp)
         host          = $Findings.host
+        origin        = $planOrigin
         items         = @($items)
         excluded        = @($excluded)
         recommendations = @($recs)
