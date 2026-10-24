@@ -1,7 +1,7 @@
 ---
 name: winmedic
 description: Windows 电脑维修：诊断、清理、迁移、修复。覆盖磁盘空间、开机与性能、应用生命周期、更新与驱动、网络、安全态势、恢复分诊。只读优先，破坏性动作走隔离区并支持回滚，每条建议附证据。
-whenToUse: 用户说 C 盘爆满/变红、电脑卡顿、开机慢、软件卸不干净、想把微信或应用到 D 盘、大目录治理、更新失败、驱动异常、断网、蓝屏、误删文件、新机验收等需要「检查或改动本机 Windows」的请求。 迁移相关：把缓存搬到 D 盘、C 盘装不下、新软件装哪个盘、微信文件太大、暂存盘。 English keywords: why is my disk filling up, disk growing, move cache to another drive, which drive to install, disk full, low disk space, slow boot, startup bloat, uninstall leftovers, migrate app or data to another drive, Windows Update failure, driver or device problem, no internet, proxy/VPN issue, printer offline, backup check, recover deleted files, new PC intake.
+whenToUse: 用户说 C 盘爆满/变红、电脑卡顿、开机慢、软件卸不干净、想把微信或应用到 D 盘、大目录治理、更新失败、驱动异常、断网、蓝屏、误删文件、新机验收等需要「检查或改动本机 Windows」的请求。 迁移相关：把缓存搬到 D 盘、C 盘装不下、新软件装哪个盘、微信文件太大、暂存盘。 English keywords: remote PC troubleshooting, driver update failed, why is my disk filling up, disk growing, move cache to another drive, which drive to install, disk full, low disk space, slow boot, startup bloat, uninstall leftovers, migrate app or data to another drive, Windows Update failure, driver or device problem, no internet, proxy/VPN issue, printer offline, backup check, recover deleted files, new PC intake.
 version: 1.16.0
 ---
 
@@ -192,6 +192,14 @@ winmedic.ps1 diagnose --case dx.cdisk-full
 `source` 含 `trend` 的是变化量；标 `low` 的不能推算速率；标 `insufficient` 的没有值。
 
 需要外部工具时先看器械台：`winmedic.ps1 tools`（只检测，不自动执行 Tier≥3）。
+
+## 病例库（经验沉淀）
+
+`cases/` 下是七段式病例：症状 / 环境 / 采集 / 假设与排除 / 处置 / 结果 / 教训。
+
+- 遇到**同类问题**先查病例，能省掉一整轮排查
+- 解决**新问题**后按 `cases/_template.md` 写一条，否则下次还得重头来
+- 标 `pending` 的是**尚无现场证据**的待查项，不得当结论引用
 
 ## 证据查询
 

@@ -26,10 +26,10 @@ Describe 'MCP 协议' {
         ($out[0].result.capabilities.PSObject.Properties.Name -contains 'tools') | Should -BeTrue
     }
 
-    It 'tools/list 返回 10 个工具且都带 schema' {
+    It 'tools/list 返回 14 个工具且都带 schema' {
         $out = Invoke-Mcp -Lines2 @('{"jsonrpc":"2.0","id":1,"method":"tools/list"}')
         $tools = @($out[0].result.tools)
-        $tools.Count | Should -Be 10
+        $tools.Count | Should -Be 14
         foreach ($t in $tools) {
             $t.name | Should -Not -BeNullOrEmpty
             $t.description | Should -Not -BeNullOrEmpty

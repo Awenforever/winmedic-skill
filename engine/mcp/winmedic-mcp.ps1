@@ -135,6 +135,48 @@ $script:Tools = @(
         }
     },
     [ordered]@{
+        name = 'winmedic_remote'
+        description = '远端只读采集（SSH）。把探针送到远端机器，结果打 origin 标记。'
+        inputSchema = [ordered]@{
+            type = 'object'
+            properties = [ordered]@{
+                target = [ordered]@{ type = 'string'; description = 'SSH 别名或 user@host' }
+                set = [ordered]@{ type = 'string'; description = '探针集，默认 intake' }
+                via = [ordered]@{ type = 'string'; description = 'ssh（默认）或 local（loopback 自测）' }
+            }
+            required = @('target')
+            additionalProperties = $false
+        }
+    },
+    [ordered]@{
+        name = 'winmedic_trend'
+        description = '病程：记录快照或查看变化。样本不足时会明确说明，不外推。'
+        inputSchema = [ordered]@{
+            type = 'object'
+            properties = [ordered]@{
+                record = [ordered]@{ type = 'boolean' }
+                set = [ordered]@{ type = 'string' }
+                days = [ordered]@{ type = 'integer' }
+                top = [ordered]@{ type = 'integer' }
+            }
+            additionalProperties = $false
+        }
+    },
+    [ordered]@{
+        name = 'winmedic_diagnose'
+        description = '鉴别诊断：给出假设×指标×信号表，不含结论。'
+        inputSchema = [ordered]@{
+            type = 'object'
+            properties = [ordered]@{ case = [ordered]@{ type = 'string'; description = '用例 id，如 dx.cdisk-full' } }
+            additionalProperties = $false
+        }
+    },
+    [ordered]@{
+        name = 'winmedic_tools'
+        description = '器械台：外部工具可用性与风险级别（只检测，不执行）。'
+        inputSchema = [ordered]@{ type = 'object'; properties = [ordered]@{}; additionalProperties = $false }
+    },
+    [ordered]@{
         name = 'winmedic_journal'
         description = '列出审计批次。只读。'
         inputSchema = [ordered]@{ type = 'object'; properties = [ordered]@{}; additionalProperties = $false }
@@ -229,6 +271,33 @@ function Invoke-Tool {
             $args2 = @('restore', '--journal', [string]$a['journal'])
             if ($a.ContainsKey('item') -and $a['item']) { $args2 += @('--item', [string]$a['item']) }
             $r = Invoke-Engine -EngineArgs $args2
+            return @{ ok = ($r.code -eq 0); text = $r.text }
+        }
+        'winmedic_remote' {
+            if (-not ($a.ContainsKey('target') -and $a['target'])) { return @{ ok = $false; text = 'remote 需要 target。' } }
+            $args2 = @('remote', '--target', [string]$a['target'])
+            if ($a.ContainsKey('set') -and $a['set']) { $args2 += @('--set', [string]$a['set']) }
+            if ($a.ContainsKey('via') -and $a['via']) { $args2 += @('--via', [string]$a['via']) }
+            $r = Invoke-Engine -EngineArgs $args2
+            return @{ ok = ($r.code -eq 0); text = $r.text }
+        }
+        'winmedic_trend' {
+            $args2 = @('trend')
+            if ($a.ContainsKey('record') -and $a['record'] -eq $true) { $args2 += @('--record') }
+            if ($a.ContainsKey('set') -and $a['set']) { $args2 += @('--set', [string]$a['set']) }
+            if ($a.ContainsKey('days')) { $args2 += @('--days', [string]$a['days']) }
+            if ($a.ContainsKey('top')) { $args2 += @('--top', [string]$a['top']) }
+            $r = Invoke-Engine -EngineArgs $args2
+            return @{ ok = ($r.code -eq 0); text = $r.text }
+        }
+        'winmedic_diagnose' {
+            $args2 = @('diagnose')
+            if ($a.ContainsKey('case') -and $a['case']) { $args2 += @('--case', [string]$a['case']) } else { $args2 += @('--list') }
+            $r = Invoke-Engine -EngineArgs $args2
+            return @{ ok = ($r.code -eq 0); text = $r.text }
+        }
+        'winmedic_tools' {
+            $r = Invoke-Engine -EngineArgs @('tools')
             return @{ ok = ($r.code -eq 0); text = $r.text }
         }
         'winmedic_journal' {

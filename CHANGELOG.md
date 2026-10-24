@@ -5,6 +5,23 @@
 
 ## [Unreleased]
 
+## [3.0.0] - 2026-10-24
+
+### Added
+- **病例库** `cases/`：七段式模板 + 4 个病例
+  - `0001-proxy-port-drift`（代理层不一致导致 git 失败）
+  - `0002-bitlocker-home-false-positive`（家庭版误报）
+  - `0003-remote-executionpolicy-blocked`（远端执行策略）
+  - `0000-pending-nvidia-driver-update-failed`（**待补证据**，明确标注不得当结论）
+- `docs/POSITIONING.md`：主治医生模型、四层职责、超越判据、不做什么
+- README 与 SKILL.md 定位改写：从「清理工具」改为「给 AI 用的诊断层」
+- MCP 增加 4 个只读工具（`winmedic_remote` / `winmedic_trend` / `winmedic_diagnose` / `winmedic_tools`），共 14 个
+
+### Notes
+- 远端验收（`remote` 真实 SSH 链路）仍未完成：目标机 192.168.0.103 持续离线
+- 病例原则：**没有现场证据就标 pending，不编结论**
+
+
 ## [2.9.0] - 2026-10-24
 
 ### Added
