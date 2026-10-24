@@ -363,6 +363,27 @@ function Invoke-Plan {
 }
 
 function Invoke-Apply {
+    # standalone 动作（仅 Tier 1 且 catalog 显式标注）：不依赖 plan，必须先于 plan 校验
+    if ($Action) {
+        if (-not $Yes) { Write-Log 'apply 需要显式 --yes 才执行' -Level ERROR; return $script:EXIT.USAGE }
+        $sCat = Import-CdriveCatalog
+        $sAct = $sCat.Actions[$Action]
+        if (-not $sAct) { Write-Log ('未知动作: ' + $Action) -Level ERROR; return $script:EXIT.USAGE }
+        if (-not $sAct.standalone) { Write-Log ('该动作不是 standalone，必须通过 plan 执行: ' + $Action) -Level ERROR; return $script:EXIT.USAGE }
+        if ([int]$sAct.tier -ge 2) { Write-Log ('standalone 动作必须为 Tier 1: ' + $Action) -Level ERROR; return $script:EXIT.USAGE }
+        if (-not (Test-IsAdmin)) { Write-Log '需要管理员权限' -Level ERROR; return $script:EXIT.NO_ADMIN }
+        $ridS = if ($RunId) { $RunId } else { New-RunId }
+        Write-Log ('执行 standalone 动作 ' + $sAct.id + '，runId=' + $ridS)
+        $pseudo = [pscustomobject]@{ id = 'S1'; target = '(standalone)'; actionId = $sAct.id }
+        Write-JournalRecord -RunId $ridS -Record @{ itemId = 'S1'; actionId = $sAct.id; target = '(standalone)'; kind = $sAct.kind; phase = 'begin' }
+        $rrS = Invoke-CdriveAction -Item $pseudo -Action $sAct -RunId $ridS
+        $vvS = Invoke-ActionVerify -Action $sAct
+        Write-JournalRecord -RunId $ridS -Record @{ itemId = 'S1'; actionId = $sAct.id; target = '(standalone)'; kind = $sAct.kind; mode = $rrS.mode; ok = $rrS.ok; error = $rrS.error; outputSha256 = $rrS.outputSha256; verifyAllOk = $vvS.allOk; pendingReboot = $vvS.pendingReboot; phase = 'done' }
+        if ($rrS.ok) { Write-Log ('完成: ' + $sAct.id) -Level OK } else { Write-Log ('失败: ' + $rrS.error) -Level ERROR }
+        Write-Host ('  回滚: 该动作不可自动回滚，效果见 verify；runId=' + $ridS)
+        if ($rrS.ok) { return $script:EXIT.OK } else { return $script:EXIT.PARTIAL }
+    }
+
     $p = if ($PlanPath) { $PlanPath } else { Get-StatePath 'plan.json' }
     if (-not (Test-Path -LiteralPath $p)) {
         Write-Log ('找不到 plan：' + $p) -Level ERROR
@@ -398,22 +419,6 @@ function Invoke-Apply {
         return $script:EXIT.USAGE
     }
 
-    # standalone 动作（仅 Tier 1，且 catalog 显式标注）
-    if ($Action) {
-        $act = $cat.Actions[$Action]
-        if (-not $act) { Write-Log ('未知动作: ' + $Action) -Level ERROR; return $script:EXIT.USAGE }
-        if (-not $act.standalone) { Write-Log ('该动作不是 standalone，必须通过 plan 执行: ' + $Action) -Level ERROR; return $script:EXIT.USAGE }
-        if ([int]$act.tier -ge 2) { Write-Log ('standalone 动作必须为 Tier 1: ' + $Action) -Level ERROR; return $script:EXIT.USAGE }
-        $rid0 = if ($RunId) { $RunId } else { New-RunId }
-        Write-Log ('执行 standalone 动作 ' + $act.id + '，runId=' + $rid0)
-        $pseudo = [pscustomobject]@{ id = 'S1'; target = '(standalone)'; actionId = $act.id }
-        $rr = Invoke-CdriveAction -Item $pseudo -Action $act -RunId $rid0
-        $vv = Invoke-ActionVerify -Action $act
-        Write-JournalRecord -RunId $rid0 -Record @{ itemId = 'S1'; actionId = $act.id; target = '(standalone)'; kind = $act.kind; mode = $rr.mode; ok = $rr.ok; error = $rr.error; exitCode = $rr.exitCode; outputSha256 = $rr.outputSha256; freeBefore = $rr.freeBefore; freeAfter = $rr.freeAfter; verifyAllOk = $vv.allOk; pendingReboot = $vv.pendingReboot; verify = $vv.results; result = 'ok' }
-        if ($rr.ok) { Write-Log ('完成: ' + $act.id) -Level OK } else { Write-Log ('失败: ' + $rr.error) -Level ERROR }
-        Write-Host ('  回滚: 该动作不可自动回滚，效果见 verify')
-        if ($rr.ok) { return $script:EXIT.OK } else { return $script:EXIT.PARTIAL }
-    }
 
     # 风险门：恢复能力不足时拦截 Tier 3+
     $recoveryLevel = 'unknown'

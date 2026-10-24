@@ -5,6 +5,18 @@
 
 ## [Unreleased]
 
+## [3.2.1] - 2026-10-24
+
+### Fixed
+- **`apply --action`（standalone 动作）永远无法执行**：`Invoke-Apply` 在 standalone 分支之前就先要求 `plan.json` 与 `--ids`，于是唯一的 Tier 1 standalone 动作 `recovery.create-restore-point` 100% 失败——而建议层一直在推荐它。现已把 standalone 分支提到函数最前（只要求 `--yes` + 管理员），并补 `begin/done` 预写日志
+
+### Verified（G2 / win11-test VM）
+- `apply --action recovery.create-restore-point --yes` **真实成功**（67 秒，退出码 0），journal 记录 begin 21:10:03 → done 21:11:10
+- `apply --action storage.winsxs-cleanup --yes` **被正确拒绝**：「该动作不是 standalone，必须通过 plan 执行」，退出码 2
+- 非 standalone 动作（panther-remove）同样被拒
+- `dism /Online /Cleanup-Image /AnalyzeComponentStore` 只读分析退出码 0
+
+
 ## [3.2.0] - 2026-10-24
 
 ### Fixed（真实处置演练暴露的 2 个致命缺陷）
