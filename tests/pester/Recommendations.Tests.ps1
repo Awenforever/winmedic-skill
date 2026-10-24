@@ -87,6 +87,30 @@ Describe '建议生成' {
         @(Get-Recommendations -Findings $ok).Count | Should -Be 0
     }
 
+    It '软件缓存超 1 GB 产出 workload 建议（最多 3 条）' {
+        $f = New-Findings -Probes @((New-Probe 'probe.workloads' ([pscustomobject]@{
+            workloads = @(
+                [pscustomobject]@{ id = 'workload.steam'; name = 'Steam'; installed = $true; cacheBytes = 3GB; dataBytes = 0; playbook = 'playbooks/apps-steam-triage.md' },
+                [pscustomobject]@{ id = 'workload.latex'; name = 'TeX Live'; installed = $true; cacheBytes = 500MB; dataBytes = 0; playbook = 'playbooks/apps-latex-triage.md' }
+            )
+        })))
+        $r = @(Get-Recommendations -Findings $f)
+        @($r | Where-Object { $_.id -like 'rec.workload-cache:*' }).Count | Should -Be 1
+        ($r | Where-Object { $_.id -eq 'rec.workload-cache:workload.steam' }).severity | Should -Be 'low'
+    }
+    It 'Steam 游戏库超 100 GB 额外提示' {
+        $f = New-Findings -Probes @((New-Probe 'probe.workloads' ([pscustomobject]@{
+            workloads = @([pscustomobject]@{ id = 'workload.steam'; name = 'Steam'; installed = $true; cacheBytes = 0; dataBytes = 200GB; playbook = 'playbooks/apps-steam-triage.md' })
+        })))
+        @(@(Get-Recommendations -Findings $f) | Where-Object { $_.id -eq 'rec.steam-library' }).Count | Should -Be 1
+    }
+    It '代理链路不一致产出网络建议' {
+        $f = New-Findings -Probes @((New-Probe 'probe.proxy-chain' ([pscustomobject]@{ consistent = $false; conflicts = @('system=8136', 'git=7890') })))
+        $r = @(Get-Recommendations -Findings $f)[0]
+        $r.id | Should -Be 'rec.proxy-chain'
+        $r.detail | Should -Match '7890'
+    }
+
     It 'Outlook 数据文件偏大或加载项异常时给出邮件建议' {
         $f = New-Findings -Probes @((New-Probe 'probe.mail-clients' ([pscustomobject]@{
             dataFiles = @([pscustomobject]@{ name = 'a.ost'; verdict = 'oversize' });

@@ -59,6 +59,22 @@ tests/                  Pester 单测、路由测试、fixtures、真机 lab
 docs/                   设计、安全模型、证据契约、难例、路线图
 ```
 
+## 具体软件覆盖（软件负载域）
+
+不是每个软件都写一套代码，而是一张**签名表**（`catalog/workloads.json`）：
+
+| 软件 | 缓存（可清） | 数据（不可删） |
+|---|---|---|
+| TeX Live | `texmf-var`（字体/luatex 缓存） | `texmf-dist` 发行版本体 |
+| JetBrains IDE | `caches` / `index` / `log` | `%APPDATA%\JetBrains` 配置与插件 |
+| Steam | `shadercache` / `appcache` / `depotcache` | `steamapps\common` 游戏本体 |
+| Zotero | — | `storage` 附件、`zotero.sqlite` |
+| Office / Word | `OfficeFileCache` | `Normal.dotm` 模板 |
+
+另有 `probe.proxy-chain`：比对 system / WinHTTP / git / npm / pip 五层代理，检出「关了代理反而全断」的根因。
+
+**加新软件 = 加一条签名**，不用改探针代码。
+
 ## MCP（可选）
 
 宿主不方便直接跑脚本时，可用内置 MCP 服务器（stdio JSON-RPC，PowerShell 实现，零依赖）：

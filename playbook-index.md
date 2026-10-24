@@ -24,6 +24,12 @@
 | PB-301 | [apps-uninstall-residue](playbooks/apps-uninstall-residue.md) | 卸载残留、删不干净、卸载后还在 | apps |
 | PB-302 | [apps-migrate-to-another-drive](playbooks/apps-migrate-to-another-drive.md) | 把微信迁到 D 盘、软件搬到别的盘、下载目录搬家 | apps |
 | PB-303 | [apps-large-app-audit](playbooks/apps-large-app-audit.md) | 哪个软件占空间、装了太多软件 | apps |
+| PB-905 | [apps-latex-triage](playbooks/apps-latex-triage.md) | TeX Live 占空间、宏包找不到、字体缓存坏 | workloads |
+| PB-906 | [apps-jetbrains-triage](playbooks/apps-jetbrains-triage.md) | PyCharm 卡、索引重建、IDE 配置占空间 | workloads |
+| PB-907 | [apps-steam-triage](playbooks/apps-steam-triage.md) | Steam 占几百 G、游戏装错盘、着色器缓存 | workloads |
+| PB-908 | [apps-zotero-triage](playbooks/apps-zotero-triage.md) | Zotero 数据大、同步失败、换机迁移 | workloads |
+| PB-909 | [apps-word-triage](playbooks/apps-word-triage.md) | Word 启动报错、模板损坏、加载项冲突 | workloads |
+| PB-910 | [apps-proxy-chain](playbooks/apps-proxy-chain.md) | 关了代理反而全断、git/npm 不走代理、多加速器冲突 | workloads |
 | PB-903 | [outlook-troubleshooting](playbooks/outlook-troubleshooting.md) | Outlook 打不开、收不到邮件、一直提示配置、加载项冲突 | mail |
 | PB-904 | [mail-connectivity-triage](playbooks/mail-connectivity-triage.md) | 邮箱密码对但连不上、发不出去、企业邮箱配置 | mail |
 | PB-901 | [windows-new-device-intake](playbooks/windows-new-device-intake.md) | 新机验收、刚买的电脑、帮忙体检 | intake |

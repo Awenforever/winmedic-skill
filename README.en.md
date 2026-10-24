@@ -85,6 +85,22 @@ Storage · Boot & performance · Applications · Updates & drivers · Network ·
 
 21 playbooks, 36 probes, 13 actions, 14 evidence entries.
 
+## Per-application coverage
+
+Instead of one script per app, a single **signature table** (`catalog/workloads.json`) describes how to locate each app and which directories are cache vs data:
+
+| App | Cache (cleanable) | Data (never delete) |
+|---|---|---|
+| TeX Live | `texmf-var` | `texmf-dist` distribution |
+| JetBrains IDEs | `caches` / `index` / `log` | `%APPDATA%\JetBrains` config & plugins |
+| Steam | `shadercache` / `appcache` / `depotcache` | `steamapps\common` games |
+| Zotero | — | `storage` attachments, `zotero.sqlite` |
+| Office / Word | `OfficeFileCache` | `Normal.dotm` template |
+
+`probe.proxy-chain` compares five proxy layers (system / WinHTTP / git / npm / pip) and surfaces the classic "turning the proxy off breaks everything" mismatch.
+
+**Adding an app is a catalog edit, not a code change.**
+
 ## MCP (optional)
 
 When the host cannot run scripts directly, use the built-in MCP server (stdio JSON-RPC, PowerShell, no dependencies):

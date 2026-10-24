@@ -222,6 +222,18 @@
       "domain": "mail",
       "cost": "medium",
       "returns": "MailClients"
+    },
+    {
+      "id": "probe.workloads",
+      "domain": "workloads",
+      "cost": "medium",
+      "returns": "Workloads"
+    },
+    {
+      "id": "probe.proxy-chain",
+      "domain": "workloads",
+      "cost": "fast",
+      "returns": "ProxyChain"
     }
   ]
 }

@@ -1,0 +1,213 @@
+{
+  "schemaVersion": 1,
+  "note": "签名表：每条描述一个软件如何定位、有哪些缓存/数据目录。探针通用，不为软件写代码。",
+  "workloads": [
+    {
+      "id": "workload.latex",
+      "name": "TeX Live / LaTeX",
+      "playbook": "playbooks/apps-latex-triage.md",
+      "detect": [
+        {
+          "type": "command",
+          "name": "pdflatex.exe",
+          "as": "texRoot",
+          "trim": 3
+        },
+        {
+          "type": "path",
+          "path": "C:\\texlive",
+          "as": "texRoot"
+        },
+        {
+          "type": "path",
+          "path": "D:\\Programs\\texlive",
+          "as": "texRoot"
+        }
+      ],
+      "measure": [
+        {
+          "path": "{texRoot}\\texmf-var",
+          "kind": "cache",
+          "label": "TeX 缓存(texmf-var: 字体/luatex)"
+        },
+        {
+          "path": "{texRoot}\\texmf-dist",
+          "kind": "data",
+          "label": "TeX 发行版(勿删)",
+          "skipSize": true
+        }
+      ],
+      "cautions": [
+        "texmf-dist 是发行版本体，删了就得重装",
+        "清 texmf-var 后首次编译会变慢（重建缓存）"
+      ]
+    },
+    {
+      "id": "workload.jetbrains",
+      "name": "JetBrains IDE (PyCharm / IntelliJ)",
+      "playbook": "playbooks/apps-jetbrains-triage.md",
+      "detect": [
+        {
+          "type": "path",
+          "path": "%APPDATA%\\JetBrains",
+          "as": "jbRoaming"
+        },
+        {
+          "type": "path",
+          "path": "%LOCALAPPDATA%\\JetBrains",
+          "as": "jbLocal"
+        }
+      ],
+      "measure": [
+        {
+          "path": "{jbLocal}\\*\\caches",
+          "kind": "cache",
+          "label": "IDE 索引缓存"
+        },
+        {
+          "path": "{jbLocal}\\*\\index",
+          "kind": "cache",
+          "label": "IDE 索引"
+        },
+        {
+          "path": "{jbLocal}\\*\\log",
+          "kind": "cache",
+          "label": "IDE 日志"
+        },
+        {
+          "path": "{jbRoaming}\\*",
+          "kind": "config",
+          "label": "IDE 配置与插件"
+        }
+      ],
+      "cautions": [
+        "caches/index 删了会重建（首次打开项目变慢）",
+        "config 里是插件与设置，不要当缓存删"
+      ]
+    },
+    {
+      "id": "workload.steam",
+      "name": "Steam",
+      "playbook": "playbooks/apps-steam-triage.md",
+      "detect": [
+        {
+          "type": "registry",
+          "path": "HKCU:\\Software\\Valve\\Steam",
+          "name": "SteamPath",
+          "as": "steamRoot"
+        },
+        {
+          "type": "command",
+          "name": "steam.exe",
+          "as": "steamRoot",
+          "trim": 1
+        }
+      ],
+      "measure": [
+        {
+          "path": "{steamRoot}\\steamapps\\shadercache",
+          "kind": "cache",
+          "label": "着色器缓存"
+        },
+        {
+          "path": "{steamRoot}\\appcache",
+          "kind": "cache",
+          "label": "应用缓存"
+        },
+        {
+          "path": "{steamRoot}\\depotcache",
+          "kind": "cache",
+          "label": "下载缓存"
+        },
+        {
+          "path": "{steamRoot}\\steamapps\\common",
+          "kind": "data",
+          "label": "游戏库(勿删)"
+        }
+      ],
+      "cautions": [
+        "shadercache 删了会让游戏首次加载变慢",
+        "游戏本体要挪就移到别的库文件夹，不要删"
+      ]
+    },
+    {
+      "id": "workload.zotero",
+      "name": "Zotero",
+      "playbook": "playbooks/apps-zotero-triage.md",
+      "detect": [
+        {
+          "type": "path",
+          "path": "%USERPROFILE%\\Zotero",
+          "as": "zoteroData"
+        },
+        {
+          "type": "path",
+          "path": "%APPDATA%\\Zotero",
+          "as": "zoteroProfile"
+        }
+      ],
+      "measure": [
+        {
+          "path": "{zoteroData}\\storage",
+          "kind": "data",
+          "label": "附件存储"
+        },
+        {
+          "path": "{zoteroData}\\zotero.sqlite",
+          "kind": "data",
+          "label": "文献数据库文件"
+        },
+        {
+          "path": "{zoteroProfile}\\*",
+          "kind": "config",
+          "label": "配置与插件"
+        }
+      ],
+      "cautions": [
+        "storage 里是 PDF 附件本体，删了文献就断链",
+        "zotero.sqlite 是数据库，动之前必须备份"
+      ]
+    },
+    {
+      "id": "workload.office-word",
+      "name": "Microsoft Office / Word",
+      "playbook": "playbooks/apps-word-triage.md",
+      "detect": [
+        {
+          "type": "registry",
+          "path": "HKCU:\\Software\\Microsoft\\Office\\16.0\\Word",
+          "name": "Options",
+          "as": "wordOpt",
+          "optional": true
+        },
+        {
+          "type": "path",
+          "path": "%APPDATA%\\Microsoft\\Templates",
+          "as": "officeTemplates"
+        }
+      ],
+      "measure": [
+        {
+          "path": "{officeTemplates}\\Normal.dotm",
+          "kind": "config",
+          "label": "Word 默认模板(损坏会导致每次启动异常)"
+        },
+        {
+          "path": "%LOCALAPPDATA%\\Microsoft\\Office\\16.0\\OfficeFileCache",
+          "kind": "cache",
+          "label": "Office 文档缓存"
+        },
+        {
+          "path": "%LOCALAPPDATA%\\Microsoft\\Office\\Unsupported",
+          "kind": "cache",
+          "label": "Office 兼容性缓存",
+          "optional": true
+        }
+      ],
+      "cautions": [
+        "Normal.dotm 损坏时删除即可重建，但会丢自定义样式",
+        "改模板前先关掉所有 Office 程序"
+      ]
+    }
+  ]
+}

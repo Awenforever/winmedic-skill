@@ -114,6 +114,30 @@ function Get-Recommendations {
         }
     }
 
+    # 12 软件负载缓存（按体积取前 3）
+    $wl = Get-RecProbeData -Findings $Findings -ProbeId 'probe.workloads'
+    if ($wl -and $wl.workloads) {
+        $heavy = @($wl.workloads | Where-Object { $_.installed -and [int64]$_.cacheBytes -ge 1GB } | Sort-Object -Property { [int64]$_.cacheBytes } -Descending | Select-Object -First 3)
+        foreach ($w in $heavy) {
+            $sev = if ([int64]$w.cacheBytes -ge 5GB) { 'medium' } else { 'low' }
+            [void]$recs.Add((New-Recommendation -Id ('rec.workload-cache:' + $w.id) -Domain 'workloads' -Severity $sev -Title ($w.name + ' 缓存 ' + [math]::Round([double]$w.cacheBytes / 1GB, 2) + ' GB') -Detail '缓存可重建，清理前请先退出该程序' -Playbook $w.playbook))
+        }
+        $steam = @($wl.workloads | Where-Object { $_.id -eq 'workload.steam' -and [int64]$_.dataBytes -ge 100GB }) | Select-Object -First 1
+        if ($steam) {
+            [void]$recs.Add((New-Recommendation -Id 'rec.steam-library' -Domain 'workloads' -Severity 'low' -Title ('Steam 游戏库 ' + [math]::Round([double]$steam.dataBytes / 1GB, 0) + ' GB') -Detail '确认游戏库所在盘符；不在系统盘则无需处理，不在玩的游戏可卸载或迁移库' -Playbook 'playbooks/apps-steam-triage.md'))
+        }
+        $zot = @($wl.workloads | Where-Object { $_.id -eq 'workload.zotero' -and [int64]$_.dataBytes -ge 5GB }) | Select-Object -First 1
+        if ($zot) {
+            [void]$recs.Add((New-Recommendation -Id 'rec.zotero-data' -Domain 'workloads' -Severity 'medium' -Title ('Zotero 数据 ' + [math]::Round([double]$zot.dataBytes / 1GB, 2) + ' GB') -Detail '文献与附件是用户数据，只备份/迁移，不要删' -Playbook 'playbooks/apps-zotero-triage.md'))
+        }
+    }
+
+    # 13 代理链路
+    $pc = Get-RecProbeData -Findings $Findings -ProbeId 'probe.proxy-chain'
+    if ($pc -and -not $pc.consistent) {
+        [void]$recs.Add((New-Recommendation -Id 'rec.proxy-chain' -Domain 'network' -Severity 'medium' -Title '代理配置在多层之间不一致' -Detail ((@($pc.conflicts)) -join '；') -Playbook 'playbooks/apps-proxy-chain.md'))
+    }
+
     return @($recs)
 }
 

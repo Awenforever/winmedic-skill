@@ -113,6 +113,24 @@ winmedic.ps1 diff --from a.json --to b.json   # 两次采集对比
 winmedic.ps1 summary --json > status.json
 ```
 
+## 具体软件（软件负载域）
+
+用户点名某个软件时（LaTeX、PyCharm、Steam、Zotero、Word、代理工具……）先跑：
+
+```powershell
+winmedic.ps1 probe --set workloads
+```
+
+它按 `catalog/workloads.json` 的签名表测量各软件的**缓存**与**数据**体积，并检查代理链路一致性。
+
+关键区分：
+
+- `kind=cache`（着色器缓存、IDE 索引、texmf-var、OfficeFileCache）→ 可清理，代价是重建
+- `kind=data`（游戏本体、Zotero 附件、texmf-dist）→ **绝不删**，只能迁移
+- `probe.proxy-chain` 列出 system/WinHTTP/git/npm/pip 五层代理值，`consistent=false` 就是冲突
+
+加新软件不需要改代码：在 `catalog/workloads.json` 加一条签名（detect + measure + playbook）即可。
+
 ## 证据查询
 
 任何动作执行前，若用户问「为什么」「依据是什么」，直接查：

@@ -59,6 +59,32 @@ foreach ($a in $actions.actions) {
     }
 }
 
+# workloads 签名表
+$wl = Read-JsonFile (Join-Path $Root 'catalog\workloads.json')
+if (-not $wl) { [void]$errors.Add('缺少 catalog/workloads.json') }
+else {
+    $wlIds = @{}
+    foreach ($w in $wl.workloads) {
+        if (-not $w.id) { [void]$errors.Add('workload 缺少 id'); continue }
+        if ($wlIds.ContainsKey($w.id)) { [void]$errors.Add('workload id 重复: ' + $w.id) }
+        $wlIds[$w.id] = $true
+        if (-not $w.name) { [void]$errors.Add('workload 缺少 name: ' + $w.id) }
+        $declared = @($w.detect | Where-Object { $_.as } | ForEach-Object { [string]$_.as })
+        if ($w.playbook) {
+            $pb = Join-Path $Root ($w.playbook -replace '/', '\')
+            if (-not (Test-Path -LiteralPath $pb)) { [void]$errors.Add('workload 引用的 playbook 不存在: ' + $w.id + ' -> ' + $w.playbook) }
+        }
+        foreach ($m in @($w.measure)) {
+            if (-not $m.path) { [void]$errors.Add('workload measure 缺少 path: ' + $w.id); continue }
+            if ($m.kind -notin @('cache', 'data', 'config')) { [void]$errors.Add('workload measure kind 非法: ' + $w.id + ' -> ' + $m.kind) }
+            foreach ($mm in [regex]::Matches([string]$m.path, '\{([A-Za-z0-9_]+)\}')) {
+                $key = $mm.Groups[1].Value
+                if ($declared -notcontains $key) { [void]$errors.Add('workload 引用了未声明的占位符: ' + $w.id + ' -> {' + $key + '}') }
+            }
+        }
+    }
+}
+
 # playbook-index 里的链接必须存在
 $idxPath = Join-Path $Root 'playbook-index.md'
 if (Test-Path -LiteralPath $idxPath) {

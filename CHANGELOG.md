@@ -5,6 +5,22 @@
 
 ## [Unreleased]
 
+## [2.1.0] - 2026-10-24
+
+### Added
+- **软件负载域**：`probe --set workloads`，按签名表测量具体软件的缓存/数据体积
+- `catalog/workloads.json`：TeX Live / JetBrains / Steam / Zotero / Office-Word 五条签名，含 detect 规则（注册表 / PATH 命令 / 固定路径）与 measure 规则（cache / data / config）
+- `probe.proxy-chain`：比对 system / WinHTTP / git / npm / pip 五层代理，列出本机已装的代理与加速器客户端
+- 6 个 playbook：LaTeX、JetBrains IDE、Steam、Zotero、Word、代理链路一致性
+- `validate-catalog.ps1` 增加 workloads 校验：id 唯一、playbook 存在、kind 合法、占位符必须已声明
+- 建议规则：软件缓存 ≥1 GB（取前 3）、Steam 库 ≥100 GB、Zotero 数据 ≥5 GB、代理链路不一致
+
+### Notes
+- 实测本机：TeX 缓存 323 MB、Steam 游戏库 225.76 GB（在 D 盘）、JetBrains 配置 865 MB、Office 缓存 125 MB、已装 8 个代理/加速器客户端
+
+### Tests
+- 新增 12 个负载用例 + 3 个建议用例，总计 180 个 Pester + 6 个路由用例；回归 38 项
+
 ## [2.0.0] - 2026-10-24
 
 ### Added
