@@ -2,7 +2,7 @@
 name: winmedic
 description: Windows 电脑维修：诊断、清理、迁移、修复。覆盖磁盘空间、开机与性能、应用生命周期、更新与驱动、网络、安全态势、恢复分诊。只读优先，破坏性动作走隔离区并支持回滚，每条建议附证据。
 whenToUse: 用户说 C 盘爆满/变红、电脑卡顿、开机慢、软件卸不干净、想把微信或应用到 D 盘、大目录治理、更新失败、驱动异常、断网、蓝屏、误删文件、新机验收等需要「检查或改动本机 Windows」的请求。 English keywords: disk full, low disk space, slow boot, startup bloat, uninstall leftovers, migrate app or data to another drive, Windows Update failure, driver or device problem, no internet, proxy/VPN issue, printer offline, backup check, recover deleted files, new PC intake.
-version: 1.14.0
+version: 1.15.0
 ---
 
 # WinMedic
@@ -50,6 +50,15 @@ winmedic.ps1 plan --from state\findings.json
 ```
 
 输出 `plan.json` + `plan.md` + `planHash`。**把 plan.md 原文呈现给用户**，不要自己复述成模糊描述。
+
+plan.md 现在含两段：
+
+1. **建议（按优先级）** —— 跨域处置建议，`high` 先处理（待重启、无还原点、安全风险、磁盘告急）
+   - `处置` 列写 `可执行: <action>` 的，可直接 `winmedic.ps1 apply --action <action> --yes`
+   - 写 `人工: <playbook>` 的，按该 playbook 逐条处置，**不要自己发明步骤**
+2. **明细** —— 引擎可执行的清理项（按 id 执行）
+
+建议段的来源是确定性规则（不是模型猜测），证据指向 playbook 或 catalog 证据条目。
 
 ### 5. 确认
 

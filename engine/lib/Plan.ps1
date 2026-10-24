@@ -101,12 +101,16 @@ function New-CdrivePlan {
         })
     }
 
+    $recs = @()
+    try { $recs = @(Get-Recommendations -Findings $Findings) } catch { $recs = @() }
+
     $plan = [ordered]@{
         schemaVersion = 1
         generatedAt   = (Get-IsoTimestamp)
         host          = $Findings.host
         items         = @($items)
-        excluded      = @($excluded)
+        excluded        = @($excluded)
+        recommendations = @($recs)
         planHash      = (Get-PlanHash -Items $items)
     }
     return $plan
@@ -127,6 +131,12 @@ function Format-PlanMarkdown {
     $total = 0L
     foreach ($it in $Plan.items) { $total += [int64]$it.size }
     [void]$sb.AppendLine(('**合计可释放：' + [math]::Round($total / 1GB, 2) + ' GB**'))
+    [void]$sb.AppendLine('')
+    $recs = @()
+    if ($Plan.recommendations) { $recs = @($Plan.recommendations) }
+    [void]$sb.AppendLine('## 建议（按优先级）')
+    [void]$sb.AppendLine('')
+    [void]$sb.AppendLine((Format-RecommendationsMarkdown -Recommendations $recs))
     [void]$sb.AppendLine('')
     [void]$sb.AppendLine('## 汇总（按动作）')
     [void]$sb.AppendLine('')

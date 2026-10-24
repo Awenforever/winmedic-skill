@@ -75,6 +75,13 @@ function Format-WinMedicReport {
     }
     [void]$sb.AppendLine('')
 
+    if ($Plan -and $Plan.recommendations -and @($Plan.recommendations).Count -gt 0) {
+        [void]$sb.AppendLine('')
+        [void]$sb.AppendLine('### 处置建议')
+        [void]$sb.AppendLine('')
+        [void]$sb.AppendLine((Format-RecommendationsMarkdown -Recommendations @($Plan.recommendations)))
+    }
+
     # 3 做了什么
     [void]$sb.AppendLine('## 3. 做了什么')
     if (@($JournalRecords).Count -eq 0) {

@@ -32,6 +32,18 @@ verify -> 复核可用空间与目标状态
 restore-> 从隔离区移回原路径
 ```
 
+## 四种输出，各自职责
+
+| 产物 | 内容 | 谁能执行 |
+|---|---|---|
+| plan.items | 引擎动作（有 actionId） | `apply --ids` |
+| plan.recommendations | 跨域处置建议（可能只能人工） | `apply --action`（仅 standalone）或按 playbook 人工 |
+| findings | 原始取证 | 只读 |
+| journal | 已执行动作的审计 | `verify` / `restore` |
+
+**建议层只做确定性规则**：每条建议绑定一个探针结论与一个 playbook，不含模型判断，也不做打分。
+这样「为什么给我这条建议」永远可回答。
+
 ## 为什么用 JSON 而不是 YAML 存 catalog
 
 PowerShell 5.1 没有内置 YAML 解析器，引入模块会给目标机增加依赖。JSON 原生支持、可被 schema 校验、CI 友好。

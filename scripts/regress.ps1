@@ -117,6 +117,7 @@ if (-not $SkipCli) {
         @{ name = 'apply 非 standalone 动作 -> 2'; args = @('apply', '--action', 'storage.hiberfil-off', '--yes'); expect = 2 },
         @{ name = 'apply 未知动作 -> 2'; args = @('apply', '--action', 'no.such', '--yes'); expect = 2 },
         @{ name = 'summary'; args = @('summary'); expect = 0 },
+        @{ name = 'plan 多域采集'; args = @('plan', '--set', 'intake'); expect = 0 },
         @{ name = 'diff 缺参数 -> 2'; args = @('diff', '--from', 'a.json'); expect = 2 },
         @{ name = 'diff 文件不存在 -> 2'; args = @('diff', '--from', 'a.json', '--to', 'b.json'); expect = 2 }
     )

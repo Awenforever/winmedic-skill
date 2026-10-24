@@ -4,6 +4,7 @@ BeforeAll {
     . (Join-Path $repo 'engine\lib\Common.ps1')
     . (Join-Path $repo 'engine\lib\Safety.ps1')
     . (Join-Path $repo 'engine\lib\Profile.ps1')
+    . (Join-Path $repo 'engine\lib\Recommendations.ps1')
     . (Join-Path $repo 'engine\lib\Plan.ps1')
     $script:WinMedicRoot = $repo
 
@@ -52,6 +53,17 @@ Describe '方案生成' {
         $plan = New-CdrivePlan -Findings (New-TestFindings)
         $plan.items[0]['size'] = 999GB
         (Test-PlanIntegrity -Plan $plan).Ok | Should -BeFalse
+    }
+
+    It '方案对象带 recommendations 字段' {
+        $plan = New-CdrivePlan -Findings (New-TestFindings)
+        $plan.Keys -contains 'recommendations' | Should -BeTrue
+        @($plan.recommendations).Count | Should -Be 0
+    }
+
+    It 'markdown 含建议段' {
+        $plan = New-CdrivePlan -Findings (New-TestFindings)
+        (Format-PlanMarkdown -Plan $plan) | Should -Match '建议（按优先级）'
     }
 
     It 'markdown 包含汇总、明细、证据三段' {

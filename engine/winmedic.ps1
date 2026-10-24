@@ -51,6 +51,7 @@ if (-not $script:WinMedicRoot) { $script:WinMedicRoot = (Resolve-Path (Join-Path
 . (Join-Path $PSScriptRoot 'lib\Action.ps1')
 . (Join-Path $PSScriptRoot 'lib\Report.ps1')
 . (Join-Path $PSScriptRoot 'lib\Summary.ps1')
+. (Join-Path $PSScriptRoot 'lib\Recommendations.ps1')
 . (Join-Path $PSScriptRoot 'lib\Scan.ps1')
 . (Join-Path $PSScriptRoot 'probes\storage.ps1')
 . (Join-Path $PSScriptRoot 'probes\boot.ps1')

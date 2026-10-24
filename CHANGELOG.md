@@ -5,6 +5,21 @@
 
 ## [Unreleased]
 
+## [1.15.0] - 2026-10-24
+
+### Added
+- **建议层** `engine/lib/Recommendations.ps1`：把只读探针结论翻译成跨域处置建议（10 条确定性规则）
+- `plan.json` 新增 `recommendations` 字段；`plan.md` 新增「建议（按优先级）」段，标注「可执行 / 人工 playbook」
+- `report` 第 2 段附带处置建议表
+- 建议来源全部可回答：每条绑定探针结论 + playbook 或 catalog 证据
+
+### Fixed
+- `int + string` 拼接在 PowerShell 中走数值转换导致建议生成抛异常（被 try/catch 吞掉后表现为「无建议」）；改为字符串前置拼接
+
+### Tests
+- 新增 14 个建议用例 + 2 个方案断言，总计 145 个 Pester + 6 个路由用例；CLI 契约增至 31 项，回归 35 项
+
+
 ## [1.14.0] - 2026-10-24
 
 ### Added
