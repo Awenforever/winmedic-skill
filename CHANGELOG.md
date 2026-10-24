@@ -5,6 +5,21 @@
 
 ## [Unreleased]
 
+## [1.17.0] - 2026-10-24
+
+### Added
+- 邮件域（只读）：`probe --set mail`，覆盖第 10 个领域
+- `probe.mail-clients`：Outlook 是否安装/版本、配置文件与默认配置、OST/PST 列表与体积、加载项状态（含 LoadBehavior 语义）、新版 Outlook 检测
+- 纯函数 `Get-OstSizeVerdict`（empty/small/normal/large/oversize）与 `Get-AddinLoadVerdict`（0/1/2/3/8/9/16 语义）
+- 建议规则：数据文件 ≥25 GB 或存在未加载/已禁用加载项 → `rec.mail-outlook`
+- playbook：`outlook-troubleshooting`、`mail-connectivity-triage`
+
+### Notes
+- 邮件域不做网络测试，端口与连通性仍由宿主 Agent 用 `Test-NetConnection` 显式执行（保持引擎不联网不变量）
+
+### Tests
+- 新增 9 个用例（邮件 7 + 建议 2），总计 158 个 Pester + 6 个路由用例
+
 ## [1.16.0] - 2026-10-24
 
 ### Added

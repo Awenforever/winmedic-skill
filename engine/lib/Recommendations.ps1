@@ -101,6 +101,19 @@ function Get-Recommendations {
         [void]$recs.Add((New-Recommendation -Id 'rec.app-residue' -Domain 'apps' -Severity 'low' -Title (('' + $ar.suspectCount + ' 项疑似应用残留')) -Detail ('合计 ' + [math]::Round([double]$ar.suspectBytes / 1GB, 2) + ' GB，需逐项确认，引擎不自动删除') -Playbook 'playbooks/apps-uninstall-residue.md'))
     }
 
+    # 11 邮件客户端
+    $mc = Get-RecProbeData -Findings $Findings -ProbeId 'probe.mail-clients'
+    if ($mc) {
+        $big = @($mc.dataFiles | Where-Object { $_.verdict -in @('oversize', 'large') })
+        $badAddin = [int]$mc.problemAddinCount
+        if ($big.Count -gt 0 -or $badAddin -gt 0) {
+            $bits = @()
+            if ($big.Count -gt 0) { $bits += ('' + $big.Count + ' 个数据文件偏大（≥25 GB）') }
+            if ($badAddin -gt 0) { $bits += ('' + $badAddin + ' 个加载项未加载或已禁用') }
+            [void]$recs.Add((New-Recommendation -Id 'rec.mail-outlook' -Domain 'mail' -Severity 'medium' -Title '检查 Outlook 数据文件与加载项' -Detail (($bits) -join '；') -Playbook 'playbooks/outlook-troubleshooting.md'))
+        }
+    }
+
     return @($recs)
 }
 

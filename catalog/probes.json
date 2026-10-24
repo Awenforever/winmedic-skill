@@ -216,6 +216,12 @@
       "domain": "backup",
       "cost": "medium",
       "returns": "BackupStatus"
+    },
+    {
+      "id": "probe.mail-clients",
+      "domain": "mail",
+      "cost": "medium",
+      "returns": "MailClients"
     }
   ]
 }

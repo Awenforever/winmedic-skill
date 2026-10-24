@@ -104,6 +104,7 @@ if (-not $SkipCli) {
         @{ name = 'journal 列表'; args = @('journal'); expect = 0 },
         @{ name = 'probe storage'; args = @('probe', '--set', 'storage'); expect = 0 },
         @{ name = 'probe 未知探针集 -> 2'; args = @('probe', '--set', 'nope'); expect = 2 },
+        @{ name = 'probe mail'; args = @('probe', '--set', 'mail'); expect = 0 },
         @{ name = 'plan'; args = @('plan', '--set', 'storage'); expect = 0 },
         @{ name = 'apply 缺 --yes -> 2'; args = @('apply', '--ids', 'R1'); expect = 2 },
         @{ name = 'apply 缺 --ids -> 2'; args = @('apply', '--yes'); expect = 2 },

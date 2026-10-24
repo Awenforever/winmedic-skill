@@ -87,6 +87,22 @@ Describe '建议生成' {
         @(Get-Recommendations -Findings $ok).Count | Should -Be 0
     }
 
+    It 'Outlook 数据文件偏大或加载项异常时给出邮件建议' {
+        $f = New-Findings -Probes @((New-Probe 'probe.mail-clients' ([pscustomobject]@{
+            dataFiles = @([pscustomobject]@{ name = 'a.ost'; verdict = 'oversize' });
+            problemAddinCount = 2
+        })))
+        $r = @(Get-Recommendations -Findings $f)[0]
+        $r.id | Should -Be 'rec.mail-outlook'
+        $r.severity | Should -Be 'medium'
+        $r.detail | Should -Match '1 个数据文件偏大'
+        $r.detail | Should -Match '2 个加载项'
+    }
+    It 'Outlook 正常时不产生建议' {
+        $f = New-Findings -Probes @((New-Probe 'probe.mail-clients' ([pscustomobject]@{ dataFiles = @(); problemAddinCount = 0 })))
+        @(Get-Recommendations -Findings $f).Count | Should -Be 0
+    }
+
     It '疑似残留给出「引擎不自动删除」的说明' {
         $f = New-Findings -Probes @((New-Probe 'probe.app-residue' ([pscustomobject]@{ suspectCount = 2; suspectBytes = 1GB })))
         $r = Get-Recommendations -Findings $f

@@ -24,6 +24,8 @@
 | PB-301 | [apps-uninstall-residue](playbooks/apps-uninstall-residue.md) | 卸载残留、删不干净、卸载后还在 | apps |
 | PB-302 | [apps-migrate-to-another-drive](playbooks/apps-migrate-to-another-drive.md) | 把微信迁到 D 盘、软件搬到别的盘、下载目录搬家 | apps |
 | PB-303 | [apps-large-app-audit](playbooks/apps-large-app-audit.md) | 哪个软件占空间、装了太多软件 | apps |
+| PB-903 | [outlook-troubleshooting](playbooks/outlook-troubleshooting.md) | Outlook 打不开、收不到邮件、一直提示配置、加载项冲突 | mail |
+| PB-904 | [mail-connectivity-triage](playbooks/mail-connectivity-triage.md) | 邮箱密码对但连不上、发不出去、企业邮箱配置 | mail |
 | PB-901 | [windows-new-device-intake](playbooks/windows-new-device-intake.md) | 新机验收、刚买的电脑、帮忙体检 | intake |
 
 ## 路由规则
