@@ -1,0 +1,83 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "title": "tools",
+  "type": "object",
+  "required": [
+    "schemaVersion",
+    "tools"
+  ],
+  "properties": {
+    "schemaVersion": {
+      "type": "integer"
+    },
+    "tools": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "required": [
+          "id",
+          "name",
+          "detect",
+          "risk"
+        ],
+        "properties": {
+          "id": {
+            "type": "string"
+          },
+          "name": {
+            "type": "string"
+          },
+          "category": {
+            "type": "string"
+          },
+          "detect": {
+            "type": "object",
+            "required": [
+              "type",
+              "value"
+            ],
+            "properties": {
+              "type": {
+                "enum": [
+                  "command",
+                  "path",
+                  "registry"
+                ]
+              },
+              "value": {
+                "type": "string"
+              }
+            }
+          },
+          "silent": {
+            "type": "object",
+            "properties": {
+              "args": {
+                "type": "string"
+              }
+            }
+          },
+          "risk": {
+            "type": "object",
+            "required": [
+              "tier"
+            ],
+            "properties": {
+              "tier": {
+                "type": "integer",
+                "minimum": 1,
+                "maximum": 4
+              },
+              "reversible": {
+                "type": "boolean"
+              }
+            }
+          },
+          "notes": {
+            "type": "string"
+          }
+        }
+      }
+    }
+  }
+}

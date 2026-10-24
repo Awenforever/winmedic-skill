@@ -24,6 +24,7 @@
 | PB-301 | [apps-uninstall-residue](playbooks/apps-uninstall-residue.md) | 卸载残留、删不干净、卸载后还在 | apps |
 | PB-302 | [apps-migrate-to-another-drive](playbooks/apps-migrate-to-another-drive.md) | 把微信迁到 D 盘、软件搬到别的盘、下载目录搬家 | apps |
 | PB-303 | [apps-large-app-audit](playbooks/apps-large-app-audit.md) | 哪个软件占空间、装了太多软件 | apps |
+| PB-915 | [differential-cdisk-full](playbooks/differential-cdisk-full.md) | C 盘满：按假设逐条排除，区分治标/治本 | diagnosis |
 | PB-913 | [apps-relocate-cache](playbooks/apps-relocate-cache.md) | 想把缓存都搬到非 C 盘、已知文件夹迁移、缺该不该搬 | workloads |
 | PB-914 | [apps-adobe-triage](playbooks/apps-adobe-triage.md) | PS 暂存盘已满、Premiere 预览卡、Adobe 缓存 | workloads |
 | PB-911 | [apps-sync-clients-triage](playbooks/apps-sync-clients-triage.md) | OneDrive/网盘/会议/播放器缓存能不能删 | workloads |

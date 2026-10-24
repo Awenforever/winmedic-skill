@@ -1,0 +1,161 @@
+{
+  "schemaVersion": 1,
+  "note": "鉴别诊断：只描述「要看什么」，不写结论。结论由 Agent 结合事实判断。",
+  "diagnoses": [
+    {
+      "id": "dx.cdisk-full",
+      "title": "C 盘空间不足：鉴别诊断",
+      "requiredProbes": [
+        "probe.host",
+        "probe.drive-space",
+        "probe.system-files",
+        "probe.recycle-bin",
+        "probe.browser-cache",
+        "probe.app-caches",
+        "probe.workloads",
+        "probe.recovery-readiness"
+      ],
+      "hypotheses": [
+        {
+          "id": "h.hiberfil",
+          "name": "休眠文件占用",
+          "why": "hiberfil.sys 通常等于内存的 40-100%，关闭休眠即可释放",
+          "checks": [
+            {
+              "metric": "storage.hiberfilGB",
+              "signal": ">4 GB 视为显著"
+            }
+          ],
+          "evidence": [
+            "ev.hiberfil"
+          ]
+        },
+        {
+          "id": "h.recycle",
+          "name": "回收站堆积",
+          "why": "删除但未清空，长期累积",
+          "checks": [
+            {
+              "metric": "storage.recycleGB",
+              "signal": ">2 GB"
+            }
+          ],
+          "evidence": [
+            "ev.recycle"
+          ]
+        },
+        {
+          "id": "h.browser-cache",
+          "name": "浏览器缓存",
+          "why": "可重建，长期不清理会堆积",
+          "checks": [
+            {
+              "metric": "storage.browserCacheGB",
+              "signal": ">1 GB"
+            }
+          ],
+          "evidence": [
+            "ev.browser-cache"
+          ]
+        },
+        {
+          "id": "h.app-caches",
+          "name": "应用缓存（腾讯系/OneDrive 等）",
+          "why": "日志、更新包、同步缓存",
+          "checks": [
+            {
+              "metric": "storage.appCachesGB",
+              "signal": ">2 GB"
+            }
+          ],
+          "evidence": [
+            "ev.app-caches"
+          ]
+        },
+        {
+          "id": "h.workload-cache",
+          "name": "具体软件缓存（TeX/IDE/Steam 等）",
+          "why": "可重建，但部分目录混合用户数据，需先确认",
+          "checks": [
+            {
+              "metric": "workloads.totalCacheGB",
+              "signal": ">5 GB"
+            }
+          ],
+          "evidence": [
+            "ev.workloads"
+          ]
+        },
+        {
+          "id": "h.growth",
+          "name": "近期异常增长（真正的病因）",
+          "why": "若某指标 7 天内涨了几 GB，清缓存治标不治本",
+          "checks": [
+            {
+              "metric": "volume.freeGB",
+              "signal": "7 天内下降 >5 GB",
+              "days": 7
+            }
+          ],
+          "evidence": [
+            "ev.trend"
+          ]
+        },
+        {
+          "id": "h.shadow",
+          "name": "还原点/卷影副本堆积",
+          "why": "系统保护占用可能达几十 GB",
+          "checks": [
+            {
+              "metric": "recovery.shadowGB",
+              "signal": ">20 GB"
+            }
+          ],
+          "evidence": [
+            "ev.restore-point"
+          ]
+        }
+      ]
+    },
+    {
+      "id": "dx.proxy-unreachable",
+      "title": "网络异常：代理与连通性鉴别诊断",
+      "requiredProbes": [
+        "probe.network-adapters",
+        "probe.dns-config",
+        "probe.proxy-config",
+        "probe.proxy-chain"
+      ],
+      "hypotheses": [
+        {
+          "id": "h.proxy-mismatch",
+          "name": "多层代理配置不一致",
+          "why": "系统层与 git/npm/pip 层端口不同，表现为「关了代理反而全断」",
+          "checks": [
+            {
+              "metric": "proxy.consistent",
+              "signal": "false"
+            }
+          ],
+          "evidence": [
+            "ev.proxy-chain"
+          ]
+        },
+        {
+          "id": "h.dns",
+          "name": "DNS 解析异常",
+          "why": "解析失败时表现为「网站打不开」而非「没网」",
+          "checks": [
+            {
+              "metric": "network.proxyClientCount",
+              "signal": "多个代理客户端共存时易互相覆盖"
+            }
+          ],
+          "evidence": [
+            "ev.dns"
+          ]
+        }
+      ]
+    }
+  ]
+}

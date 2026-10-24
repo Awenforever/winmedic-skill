@@ -179,6 +179,20 @@ winmedic.ps1 trend --days 14     # 看变化与速率
 
 用途：C 盘满时先看趋势，再决定是清缓存还是查某个软件在疯狂写日志。
 
+## 鉴别诊断（C 盘满 / 网络异常这类「要查病因」的场景）
+
+```powershell
+winmedic.ps1 diagnose --list
+winmedic.ps1 diagnose --case dx.cdisk-full
+```
+
+输出是**事实表**（假设 × 指标 × 当前值 × 判读信号 × 数据来源），**没有结论**。
+
+必须做的：逐条判断、说明哪些假设被排除、哪些被支持，再给方案。
+`source` 含 `trend` 的是变化量；标 `low` 的不能推算速率；标 `insufficient` 的没有值。
+
+需要外部工具时先看器械台：`winmedic.ps1 tools`（只检测，不自动执行 Tier≥3）。
+
 ## 证据查询
 
 任何动作执行前，若用户问「为什么」「依据是什么」，直接查：

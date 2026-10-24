@@ -15,7 +15,7 @@
 [CmdletBinding()]
 param(
     [Parameter(Position = 0)]
-    [ValidateSet('doctor', 'probe', 'plan', 'apply', 'verify', 'restore', 'journal', 'profile', 'report', 'explain', 'summary', 'diff', 'relocate', 'remote', 'trend', 'version', 'help')]
+    [ValidateSet('doctor', 'probe', 'plan', 'apply', 'verify', 'restore', 'journal', 'profile', 'report', 'explain', 'summary', 'diff', 'relocate', 'remote', 'trend', 'diagnose', 'tools', 'version', 'help')]
     [string]$Command = 'help',
     [string]$SubCommand,
     [string]$Set = '',
@@ -41,6 +41,9 @@ param(
     [switch]$Record,
     [int]$Days = 14,
     [int]$Top = 10,
+    [string]$Case,
+    [switch]$List,
+    [switch]$Check,
     [switch]$Remove,
     [switch]$Json,
     [Parameter(ValueFromRemainingArguments = $true)]
@@ -65,6 +68,8 @@ if (-not $script:WinMedicRoot) { $script:WinMedicRoot = (Resolve-Path (Join-Path
 . (Join-Path $PSScriptRoot 'lib\Explain.ps1')
 . (Join-Path $PSScriptRoot 'lib\Remote.ps1')
 . (Join-Path $PSScriptRoot 'lib\Trend.ps1')
+. (Join-Path $PSScriptRoot 'lib\Diagnose.ps1')
+. (Join-Path $PSScriptRoot 'lib\Tools.ps1')
 . (Join-Path $PSScriptRoot 'lib\Scan.ps1')
 . (Join-Path $PSScriptRoot 'probes\storage.ps1')
 . (Join-Path $PSScriptRoot 'probes\boot.ps1')
@@ -88,7 +93,7 @@ function Resolve-RestArguments {
         if ($tok.StartsWith('--')) {
             $key = $tok.Substring(2).ToLowerInvariant()
             # 布尔开关不消费后续 token
-            if (@('yes', 'purge', 'json', 'remove', 'accept-risk', 'acceptrisk', 'accept-irreversible', 'acceptirreversible', 'keep', 'record') -contains $key) {
+            if (@('yes', 'purge', 'json', 'remove', 'accept-risk', 'acceptrisk', 'accept-irreversible', 'acceptirreversible', 'keep', 'record', 'list', 'check') -contains $key) {
                 switch ($key) {
                     'yes'                { $script:YesFlag = $true }
                     'purge'              { $script:PurgeFlag = $true }
@@ -100,6 +105,8 @@ function Resolve-RestArguments {
                     'acceptirreversible' { $script:AcceptIrrevFlag = $true }
                     'keep'               { $script:KeepFlag = $true }
                     'record'             { $script:RecordFlag = $true }
+                    'list'               { $script:ListFlag = $true }
+                    'check'              { $script:CheckFlag = $true }
                 }
                 $i++
                 continue
@@ -126,6 +133,7 @@ function Resolve-RestArguments {
                 'timeout' { if ($val) { $script:TimeoutValue = [int]$val } }
                 'days'    { if ($val) { $script:DaysValue = [int]$val } }
                 'top'     { if ($val) { $script:TopValue = [int]$val } }
+                'case'    { if ($val) { $script:CaseValue = $val } }
                 default   { Write-Log ('未知参数: ' + $tok) -Level ERROR; exit $script:EXIT.USAGE }
             }
         } elseif ($tok -match '^-(yes|purge|json|remove|accept-risk)$') {
@@ -167,6 +175,9 @@ $script:KeepFlag = [bool]$Keep
 $script:RecordFlag = [bool]$Record
 $script:DaysValue = [int]$Days
 $script:TopValue = [int]$Top
+$script:CaseValue = [string]$Case
+$script:ListFlag = [bool]$List
+$script:CheckFlag = [bool]$Check
 Resolve-RestArguments -Tokens $Rest
 $Set = $script:SetArg
 $From = $script:FromArg
@@ -192,6 +203,9 @@ $Keep = $script:KeepFlag
 $Record = $script:RecordFlag
 $Days = $script:DaysValue
 $Top = $script:TopValue
+$Case = $script:CaseValue
+$List = $script:ListFlag
+$Check = $script:CheckFlag
 
 function Get-StatePath {
     param([string]$Name)
@@ -859,6 +873,36 @@ function Invoke-TrendCmd {
     return $script:EXIT.OK
 }
 
+function Invoke-DiagnoseCmd {
+    $catalog = @(Get-DiagnosisCatalog)
+    if ($List -or -not $Case) {
+        if ($Json) { Write-JsonResult -Object @{ cases = @($catalog | ForEach-Object { @{ id = $_.id; title = $_.title; hypotheses = @($_.hypotheses).Count } }) } | Out-Null; return $script:EXIT.OK }
+        Write-Host (Format-DiagnosisList -Diagnoses $catalog)
+        if (-not $Case) { Write-Host ''; Write-Host '用法: winmedic.ps1 diagnose --case <id>' }
+        return $script:EXIT.OK
+    }
+    $one = Get-DiagnosisById -Id $Case
+    if (-not $one) { Write-Log ('未知诊断用例: ' + $Case) -Level ERROR; return $script:EXIT.USAGE }
+    $picked = Resolve-FindingsForDiagnosis -RequiredProbes @($one.requiredProbes)
+    if (-not $picked) { Write-Log '没有 findings，请先 probe' -Level ERROR; return $script:EXIT.PRECONDITION }
+    $findings = $picked.findings
+    if ($picked.coverage -lt $picked.total) {
+        Write-Log ('选用的 findings 覆盖 ' + $picked.coverage + '/' + $picked.total + ' 个所需探针：' + [IO.Path]::GetFileName($picked.path)) -Level WARN
+    }
+    $trend = @((Get-TrendRecords).records)
+    $res = Resolve-DiagnosisFacts -Diagnosis $one -Findings $findings -TrendRecords $trend
+    if ($Json) { Write-JsonResult -Object $res | Out-Null; return $script:EXIT.OK }
+    Write-Host (Format-DiagnosisReport -Result $res)
+    return $script:EXIT.OK
+}
+
+function Invoke-ToolsCmd {
+    $status = @(Get-ToolsStatus)
+    if ($Json) { Write-JsonResult -Object @{ tools = @($status); availableCount = @($status | Where-Object { $_.available }).Count; total = @($status).Count } | Out-Null; return $script:EXIT.OK }
+    Write-Host (Format-ToolsReport -Status $status)
+    return $script:EXIT.OK
+}
+
 function Show-Help {
     Write-Host 'WinMedic 引擎'
     Write-Host '  doctor                     环境自检'
@@ -879,6 +923,9 @@ function Show-Help {
     Write-Host '  trend                                   病程：看谁在涨（样本不足会明说）'
     Write-Host '  trend --record [--set storage]           记录一条快照（建议每日计划任务）'
     Write-Host '    [--days 14] [--top 10]'
+    Write-Host '  diagnose --list                         列出鉴别诊断用例'
+    Write-Host '  diagnose --case dx.cdisk-full           鉴别诊断：只给事实与信号，不给结论'
+    Write-Host '  tools [--json]                          器械台：外部工具可用性与风险级别'
     Write-Host '  apply --action <id> --yes              执行 standalone 动作（仅 Tier 1）'
     Write-Host '  apply ... --purge --accept-irreversible [--confirm-token X] 物理删除（不可回滚，需确认单令牌）'
     Write-Host '  version'
@@ -901,6 +948,8 @@ switch ($Command) {
     'relocate' { $code = Invoke-Relocate }
     'remote'  { $code = Invoke-RemoteCmd }
     'trend'   { $code = Invoke-TrendCmd }
+    'diagnose' { $code = Invoke-DiagnoseCmd }
+    'tools'   { $code = Invoke-ToolsCmd }
     'version' { Write-Host ('winmedic ' + (Get-Content (Join-Path $script:WinMedicRoot 'VERSION') -Raw).Trim()); $code = $script:EXIT.OK }
     default   { $code = Show-Help }
 }

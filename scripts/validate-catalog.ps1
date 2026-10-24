@@ -70,6 +70,43 @@ foreach ($a in $act.actions) {
     }
 }
 
+# 鉴别诊断目录
+$dx = Read-JsonFile (Join-Path $Root 'catalog\diagnoses.json')
+if (-not $dx) { [void]$errors.Add('缺少 catalog/diagnoses.json') }
+else {
+    $dxIds = @{}
+    foreach ($d in $dx.diagnoses) {
+        if (-not $d.id) { [void]$errors.Add('诊断缺少 id'); continue }
+        if ($dxIds.ContainsKey($d.id)) { [void]$errors.Add('诊断 id 重复: ' + $d.id) }
+        $dxIds[$d.id] = $true
+        if (@($d.hypotheses).Count -eq 0) { [void]$errors.Add('诊断没有假设: ' + $d.id) }
+        foreach ($h in @($d.hypotheses)) {
+            if (-not $h.id -or -not $h.name) { [void]$errors.Add('假设缺少 id/name: ' + $d.id) }
+            if (@($h.checks).Count -eq 0) { [void]$errors.Add('假设没有检查项: ' + $h.id) }
+            foreach ($c in @($h.checks)) {
+                if (-not $c.metric -or -not $c.signal) { [void]$errors.Add('检查项缺少 metric/signal: ' + $h.id) }
+            }
+        }
+    }
+}
+
+# 器械台
+$tl = Read-JsonFile (Join-Path $Root 'catalog\tools.json')
+if (-not $tl) { [void]$errors.Add('缺少 catalog/tools.json') }
+else {
+    $tlIds = @{}
+    foreach ($t in $tl.tools) {
+        if (-not $t.id) { [void]$errors.Add('器械缺少 id'); continue }
+        if ($tlIds.ContainsKey($t.id)) { [void]$errors.Add('器械 id 重复: ' + $t.id) }
+        $tlIds[$t.id] = $true
+        if ($t.detect.type -notin @('command', 'path', 'registry')) { [void]$errors.Add('器械 detect.type 非法: ' + $t.id) }
+        if (-not $t.detect.value) { [void]$errors.Add('器械 detect.value 为空: ' + $t.id) }
+        $tier = 0
+        try { $tier = [int]$t.risk.tier } catch { }
+        if ($tier -lt 1 -or $tier -gt 4) { [void]$errors.Add('器械 risk.tier 必须在 1-4: ' + $t.id) }
+    }
+}
+
 # workloads 签名表
 $wl = Read-JsonFile (Join-Path $Root 'catalog\workloads.json')
 if (-not $wl) { [void]$errors.Add('缺少 catalog/workloads.json') }

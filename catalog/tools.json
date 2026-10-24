@@ -1,0 +1,142 @@
+{
+  "schemaVersion": 1,
+  "note": "器械台：外部工具的检测方式、静默参数与风险级别。只登记，不自动执行高危操作。",
+  "tools": [
+    {
+      "id": "tool.wiztree",
+      "name": "WizTree",
+      "category": "analysis",
+      "detect": {
+        "type": "path",
+        "value": "C:\\Program Files\\WizTree\\WizTree64.exe"
+      },
+      "silent": {
+        "args": "/export=\"<out>\" /admin=0"
+      },
+      "risk": {
+        "tier": 1,
+        "reversible": true
+      },
+      "notes": "磁盘占用分析；导出 CSV 供引擎解析"
+    },
+    {
+      "id": "tool.dism",
+      "name": "DISM",
+      "category": "system",
+      "detect": {
+        "type": "command",
+        "value": "dism.exe"
+      },
+      "silent": {
+        "args": "/Online /Cleanup-Image /AnalyzeComponentStore"
+      },
+      "risk": {
+        "tier": 3,
+        "reversible": false
+      },
+      "notes": "组件库分析；StartComponentCleanup 属 Tier 3，需管理员"
+    },
+    {
+      "id": "tool.pnputil",
+      "name": "PnPUtil",
+      "category": "driver",
+      "detect": {
+        "type": "command",
+        "value": "pnputil.exe"
+      },
+      "silent": {
+        "args": "/enum-drivers"
+      },
+      "risk": {
+        "tier": 1,
+        "reversible": true
+      },
+      "notes": "驱动枚举与安装日志排查"
+    },
+    {
+      "id": "tool.netsh",
+      "name": "netsh",
+      "category": "network",
+      "detect": {
+        "type": "command",
+        "value": "netsh.exe"
+      },
+      "silent": {
+        "args": "winhttp show proxy"
+      },
+      "risk": {
+        "tier": 1,
+        "reversible": true
+      },
+      "notes": "WinHTTP 代理层；set proxy 需管理员"
+    },
+    {
+      "id": "tool.winget",
+      "name": "winget",
+      "category": "package",
+      "detect": {
+        "type": "command",
+        "value": "winget.exe"
+      },
+      "silent": {
+        "args": "list --accept-source-agreements"
+      },
+      "risk": {
+        "tier": 2,
+        "reversible": true
+      },
+      "notes": "包管理与升级"
+    },
+    {
+      "id": "tool.ssh",
+      "name": "OpenSSH 客户端",
+      "category": "transport",
+      "detect": {
+        "type": "command",
+        "value": "ssh.exe"
+      },
+      "silent": {
+        "args": "-o BatchMode=yes -o ConnectTimeout=8 <target> echo ok"
+      },
+      "risk": {
+        "tier": 1,
+        "reversible": true
+      },
+      "notes": "远程会话层传输；只读探测"
+    },
+    {
+      "id": "tool.scp",
+      "name": "SCP",
+      "category": "transport",
+      "detect": {
+        "type": "command",
+        "value": "scp.exe"
+      },
+      "silent": {
+        "args": "-o BatchMode=yes <src> <dst>"
+      },
+      "risk": {
+        "tier": 1,
+        "reversible": true
+      },
+      "notes": "远程文件传输"
+    },
+    {
+      "id": "tool.wevtutil",
+      "name": "事件日志查询",
+      "category": "diagnosis",
+      "detect": {
+        "type": "command",
+        "value": "wevtutil.exe"
+      },
+      "silent": {
+        "args": "qe System /c:50 /rd:true /f:text"
+      },
+      "risk": {
+        "tier": 1,
+        "reversible": true
+      },
+      "notes": "驱动/更新失败的第一现场证据"
+    }
+  ]
+}

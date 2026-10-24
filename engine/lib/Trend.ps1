@@ -29,6 +29,20 @@ function Get-TrendNumber {
     return 0
 }
 
+function Test-TrendMetric {
+    <#  指标是否存在：同时支持 hashtable / OrderedDictionary / PSCustomObject。  #>
+    param($Metrics = $null, [string]$Name = '')
+    if (-not $Metrics -or -not $Name) { return $false }
+    if ($Metrics -is [System.Collections.IDictionary]) { return $Metrics.Contains($Name) }
+    return ($Metrics.PSObject.Properties.Name -contains $Name)
+}
+
+function Get-TrendMetricValue {
+    param($Metrics = $null, [string]$Name = '')
+    if (-not (Test-TrendMetric -Metrics $Metrics -Name $Name)) { return $null }
+    return $Metrics[$Name]
+}
+
 function Get-TrendSnapshot {
     <#
       纯函数：从一次 findings 生成快照。

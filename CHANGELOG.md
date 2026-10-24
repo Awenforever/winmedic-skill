@@ -5,6 +5,23 @@
 
 ## [Unreleased]
 
+## [2.9.0] - 2026-10-24
+
+### Added
+- **鉴别诊断**：`catalog/diagnoses.json`（`dx.cdisk-full` 7 个假设、`dx.proxy-unreachable`）与 `diagnose` 命令
+  - 输出事实表：假设 × 指标 × 当前值 × 判读信号 × 数据来源；**不含 verdict/status**（有单测断言）
+  - 按「对本次诊断覆盖最全」挑 findings，覆盖不足会告警并列出缺失探针
+  - 趋势类检查在 `low` 置信度下只给变化量、`insufficient` 时明确无值
+- **器械台**：`catalog/tools.json`（WizTree/DISM/PnPUtil/netsh/winget/ssh/scp/wevtutil）+ `tools` 命令
+  - 每条登记检测方式、静默参数、Tier、可回滚性；只检测不执行
+- `playbooks/differential-cdisk-full.md`（PB-915）与 `docs/DIAGNOSIS.md`
+- `validate-catalog.ps1` 扩展：诊断与器械目录结构强制校验
+- 10 个用例（诊断 6 + 器械 4）+ 3 个契约用例
+
+### Fixed
+- 指标访问缺陷：`[ordered]` 字典的 `.PSObject.Properties` 不返回键名，导致诊断所有指标显示「无数据」；改为 `Test-TrendMetric` / `Get-TrendMetricValue` 统一访问
+
+
 ## [2.8.0] - 2026-10-24
 
 ### Added
