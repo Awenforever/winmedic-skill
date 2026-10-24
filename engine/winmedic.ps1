@@ -32,6 +32,7 @@ param(
     [string]$Action,
     [string]$To,
     [switch]$AcceptRisk,
+    [switch]$AcceptIrreversible,
     [switch]$Remove,
     [switch]$Json,
     [Parameter(ValueFromRemainingArguments = $true)]
@@ -76,7 +77,7 @@ function Resolve-RestArguments {
         if ($tok.StartsWith('--')) {
             $key = $tok.Substring(2).ToLowerInvariant()
             # 布尔开关不消费后续 token
-            if (@('yes', 'purge', 'json', 'remove', 'accept-risk', 'acceptrisk') -contains $key) {
+            if (@('yes', 'purge', 'json', 'remove', 'accept-risk', 'acceptrisk', 'accept-irreversible', 'acceptirreversible') -contains $key) {
                 switch ($key) {
                     'yes'                { $script:YesFlag = $true }
                     'purge'              { $script:PurgeFlag = $true }
@@ -84,6 +85,7 @@ function Resolve-RestArguments {
                     'remove'             { $script:RemoveFlag = $true }
                     'accept-risk'        { $script:AcceptRiskFlag = $true }
                     'acceptrisk'         { $script:AcceptRiskFlag = $true }
+                    'acceptirreversible' { $script:AcceptIrrevFlag = $true }
                 }
                 $i++
                 continue
@@ -113,6 +115,7 @@ function Resolve-RestArguments {
                 'json'        { $script:JsonFlag = $true }
                 'remove'      { $script:RemoveFlag = $true }
                 'accept-risk' { $script:AcceptRiskFlag = $true }
+                    'accept-irreversible' { $script:AcceptIrrevFlag = $true }
             }
         } else {
             if (-not $script:SubArg) { $script:SubArg = $tok }
@@ -136,6 +139,7 @@ $script:PurgeFlag = [bool]$Purge
 $script:JsonFlag = [bool]$Json
 $script:RemoveFlag = [bool]$Remove
 $script:AcceptRiskFlag = [bool]$AcceptRisk
+$script:AcceptIrrevFlag = [bool]$AcceptIrreversible
 Resolve-RestArguments -Tokens $Rest
 $Set = $script:SetArg
 $From = $script:FromArg
@@ -152,6 +156,7 @@ $Purge = $script:PurgeFlag
 $Json = $script:JsonFlag
 $Remove = $script:RemoveFlag
 $AcceptRisk = $script:AcceptRiskFlag
+$AcceptIrreversible = $script:AcceptIrrevFlag
 
 function Get-StatePath {
     param([string]$Name)
@@ -372,6 +377,13 @@ function Invoke-Apply {
     }
     if ($gate.reason -ne '无可回滚风险项') { Write-Log ('风险门: ' + $gate.reason) -Level WARN }
 
+    $purgeGate = Test-PurgeAllowed -Purge:$Purge -AcceptIrreversible:$AcceptIrreversible
+    if (-not $purgeGate.allow) {
+        Write-Log ('不可逆操作被拒绝: ' + $purgeGate.reason) -Level ERROR
+        return $script:EXIT.USAGE
+    }
+    if ($Purge) { Write-Log '已进入 purge 模式：删除不可回滚' -Level WARN }
+
     $runId = if ($RunId) { $RunId } else { New-RunId }
     Write-Log ('开始执行，runId=' + $runId + '，共 ' + $targetItems.Count + ' 项')
     $fail = 0
@@ -385,6 +397,10 @@ function Invoke-Apply {
             Write-JournalRecord -RunId $runId -Record @{ itemId = $it.id; actionId = $it.actionId; target = $it.target; result = 'skipped'; reason = 'user-exclude' }
             continue
         }
+        if (Test-StateDirPath -Path $it.target) {
+            Write-Log ('拒绝清理引擎自身目录: ' + $it.target) -Level ERROR
+            $fail++; continue
+        }
         if (Test-RedlinePath -Path $it.target) {
             Write-Log ('红线拒绝: ' + $it.target + ' (' + (Get-RedlineReason -Path $it.target) + ')') -Level ERROR
             $fail++; continue
@@ -397,6 +413,7 @@ function Invoke-Apply {
             continue
         }
         Write-Log ('执行 ' + $it.id + ' ' + $it.actionId + ' -> ' + $it.target)
+        Write-JournalRecord -RunId $runId -Record @{ itemId = $it.id; actionId = $it.actionId; target = $it.target; kind = $act.kind; phase = 'begin' }
         $r = Invoke-CdriveAction -Item $it -Action $act -RunId $runId -Purge:$Purge
         $ver = Invoke-ActionVerify -Action $act
         $recResult = if ($r.alreadyAbsent) { 'skipped' } else { 'ok' }
@@ -437,6 +454,15 @@ function Invoke-VerifyCmd {
         $delta = [math]::Round($o.freeDelta / 1GB, 3)
         Write-Host ('  ' + $o.itemId + '  ' + $o.actionId + '  ok=' + $o.ok + '  可用空间变化 ' + $delta + ' GB' + $(if ($o.pendingReboot) { '  [需重启生效]' } else { '' }))
     }
+    $orphans = @(Get-JournalOrphans -RunId $Journal)
+    if ($orphans.Count -gt 0) {
+        Write-Host ''
+        Write-Log ('发现 ' + $orphans.Count + ' 个中断残留（有 begin 无 done）') -Level WARN
+        foreach ($o in $orphans) {
+            $hint = if ($o.hasQuarantine) { '隔离区有文件，可 restore 救回' } else { '隔离区为空，可能未实际移动' }
+            Write-Host ('  ' + $o.itemId + ' ' + $o.actionId + ' -> ' + $o.target + '  [' + $hint + ']')
+        }
+    }
     $sp = Get-DriveSpaceProbe
     if ($sp.ok) { Write-Host ('  C: 当前可用 ' + [math]::Round($sp.data.free / 1GB, 2) + ' GB') }
     return $script:EXIT.OK
@@ -458,6 +484,26 @@ function Invoke-Restore {
             Write-JournalRecord -RunId $Journal -Record @{ itemId = $r.itemId; actionId = $r.actionId; target = $res.target; result = 'restored' }
         } else {
             Write-Log ('恢复失败: ' + $res.target + ' -> ' + $res.detail) -Level ERROR
+            $failed++
+        }
+    }
+    foreach ($o in @(Get-JournalOrphans -RunId $Journal)) {
+        if ($Item -and $o.itemId -ne $Item) { continue }
+        if (-not $o.hasQuarantine) { continue }
+        $children = @(Get-ChildItem -LiteralPath $o.quarantinePath -Force -ErrorAction SilentlyContinue)
+        if ($children.Count -ne 1) {
+            Write-Log ('中断项 ' + $o.itemId + ' 的隔离目录内容不唯一，需人工确认: ' + $o.quarantinePath) -Level WARN
+            $failed++
+            continue
+        }
+        $rec = [pscustomobject]@{ itemId = $o.itemId; target = $o.target; quarantinePath = $children[0].FullName }
+        $res = Restore-JournalQuarantine -Record $rec
+        if ($res.ok) {
+            Write-Log ('已救回中断项: ' + $res.target) -Level OK
+            $restored++
+            Write-JournalRecord -RunId $Journal -Record @{ itemId = $o.itemId; target = $res.target; result = 'restored-orphan' }
+        } else {
+            Write-Log ('救回失败: ' + $res.detail) -Level ERROR
             $failed++
         }
     }
@@ -691,6 +737,7 @@ function Show-Help {
     Write-Host '  diff --from a.json --to b.json         两次采集对比'
     Write-Host '  relocate                               迁移策略建议（缓存/数据该不该搬）'
     Write-Host '  apply --action <id> --yes              执行 standalone 动作（仅 Tier 1）'
+    Write-Host '  apply ... --purge --accept-irreversible 物理删除（不可回滚，需双确认）'
     Write-Host '  version'
     return $script:EXIT.OK
 }

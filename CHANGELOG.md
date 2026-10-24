@@ -5,6 +5,21 @@
 
 ## [Unreleased]
 
+## [2.5.0] - 2026-10-24
+
+### Changed
+- 把「**只能帮用户变得更好，不能造成不可逆损害**」写为最高约束（docs/SAFETY-MODEL.md），**不提供任何绕过开关**
+
+### Added
+- **预写日志（WAL）**：动作执行前写 `phase=begin`，完成后写 `phase=done`；解决「移动到一半进程被杀 → 隔离区有文件但无记录」的恢复盲区
+- `Get-JournalOrphans`：识别「有 begin 无 done」的中断项，并判断隔离区是否真有内容
+- `verify` 显示中断残留并提示可 `restore` 救回；`restore` 支持救回孤儿项（内容不唯一时拒绝并转人工）
+- `--purge` 双闸：必须同时 `--accept-irreversible` 才是显式确认物理删除（`Test-PurgeAllowed`）
+- 引擎自身状态/隔离目录加入红线（`Test-StateDirPath`）
+
+### Tests
+- 新增 8 个护栏用例（双闸 3 + 状态目录 2 + 中断恢复 3），总计 203 Pester + 6 路由
+
 ## [2.4.0] - 2026-10-24
 
 ### Changed（架构）

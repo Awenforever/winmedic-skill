@@ -80,3 +80,38 @@ function Restore-JournalQuarantine {
         return @{ ok = $false; detail = $_.Exception.Message; target = $dest }
     }
 }
+
+function Get-QuarantineDirFor {
+    param([string]$RunId, [string]$ItemId)
+    return (Join-Path (Join-Path (Get-QuarantineRoot) $RunId) $ItemId)
+}
+
+function Get-JournalOrphans {
+    <#
+      预写日志里「有 begin、没有 done」的条目 = 上次执行中途中断。
+      若隔离区里确有内容，说明文件已被移走但没记账 —— 这是可以救回来的。
+      返回 @{ itemId; actionId; target; quarantinePath; hasQuarantine }
+    #>
+    param([Parameter(Mandatory)][string]$RunId)
+    $records = Get-JournalRecords -RunId $RunId
+    $begun = [ordered]@{}
+    $done = @{}
+    foreach ($r in $records) {
+        $phase = ''
+        if ($r.PSObject.Properties.Name -contains 'phase') { $phase = [string]$r.phase }
+        if ($phase -eq 'begin') { if (-not $begun.Contains([string]$r.itemId)) { $begun[[string]$r.itemId] = $r } }
+        elseif ($phase -eq 'done') { $done[[string]$r.itemId] = $true }
+    }
+    $orphans = @()
+    foreach ($id in $begun.Keys) {
+        if ($done.ContainsKey($id)) { continue }
+        $r = $begun[$id]
+        $qdir = Get-QuarantineDirFor -RunId $RunId -ItemId $id
+        $has = $false
+        if (Test-Path -LiteralPath $qdir) {
+            if (@(Get-ChildItem -LiteralPath $qdir -Force -ErrorAction SilentlyContinue).Count -gt 0) { $has = $true }
+        }
+        $orphans += [pscustomobject]@{ itemId = $id; actionId = [string]$r.actionId; target = [string]$r.target; quarantinePath = $qdir; hasQuarantine = $has }
+    }
+    return $orphans
+}

@@ -129,3 +129,24 @@ function Test-RiskGate {
     }
     return @{ allow = $false; reason = ('含不可回滚项，但恢复能力为 ' + $RecoveryLevel + '；请先建还原点，或加 --accept-risk 显式承担') }
 }
+
+function Test-PurgeAllowed {
+    <#
+      不可逆操作的第二道闸：--purge 会真的删除，必须显式接受不可逆。
+      返回 @{ allow; reason }
+    #>
+    param([switch]$Purge, [switch]$AcceptIrreversible)
+    if (-not $Purge) { return @{ allow = $true; reason = '非 purge 模式（走隔离区）' } }
+    if ($AcceptIrreversible) { return @{ allow = $true; reason = '用户已显式接受不可逆' } }
+    return @{ allow = $false; reason = '--purge 是物理删除且不可回滚；需同时加 --accept-irreversible 才算显式确认' }
+}
+
+function Test-StateDirPath {
+    <#  引擎自己的状态/隔离区目录绝不允许被当作清理目标。  #>
+    param([string]$Path = '')
+    if (-not $Path) { return $false }
+    $root = (Get-CdriveRoot).TrimEnd('\').ToLowerInvariant()
+    $p = $Path.TrimEnd('\').ToLowerInvariant()
+    if ($p -eq $root) { return $true }
+    return $p.StartsWith($root + '\')
+}
