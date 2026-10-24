@@ -1,7 +1,7 @@
 ---
 name: winmedic
 description: Windows 电脑维修：诊断、清理、迁移、修复。覆盖磁盘空间、开机与性能、应用生命周期、更新与驱动、网络、安全态势、恢复分诊。只读优先，破坏性动作走隔离区并支持回滚，每条建议附证据。
-whenToUse: 用户说 C 盘爆满/变红、电脑卡顿、开机慢、软件卸不干净、想把微信或应用到 D 盘、大目录治理、更新失败、驱动异常、断网、蓝屏、误删文件、新机验收等需要「检查或改动本机 Windows」的请求。 迁移相关：把缓存搬到 D 盘、C 盘装不下、新软件装哪个盘、微信文件太大、暂存盘。 English keywords: move cache to another drive, which drive to install, disk full, low disk space, slow boot, startup bloat, uninstall leftovers, migrate app or data to another drive, Windows Update failure, driver or device problem, no internet, proxy/VPN issue, printer offline, backup check, recover deleted files, new PC intake.
+whenToUse: 用户说 C 盘爆满/变红、电脑卡顿、开机慢、软件卸不干净、想把微信或应用到 D 盘、大目录治理、更新失败、驱动异常、断网、蓝屏、误删文件、新机验收等需要「检查或改动本机 Windows」的请求。 迁移相关：把缓存搬到 D 盘、C 盘装不下、新软件装哪个盘、微信文件太大、暂存盘。 English keywords: why is my disk filling up, disk growing, move cache to another drive, which drive to install, disk full, low disk space, slow boot, startup bloat, uninstall leftovers, migrate app or data to another drive, Windows Update failure, driver or device problem, no internet, proxy/VPN issue, printer offline, backup check, recover deleted files, new PC intake.
 version: 1.16.0
 ---
 
@@ -163,6 +163,21 @@ winmedic.ps1 relocate --json     # 同上，结构化
 - 引擎不代你迁移；你的 job 是给出**带理由的方案**
 
 详见 playbook `apps-relocate-cache`（PB-913）。
+
+## 病程（谁在涨，而不只是谁最大）
+
+```powershell
+winmedic.ps1 trend --record      # 记录一条快照（建议每日一次）
+winmedic.ps1 trend --days 14     # 看变化与速率
+```
+
+判读规则：
+
+- `confidence=insufficient`（<2 条样本）→ **不许下结论**，先记录
+- `confidence=low`（间隔 <0.5 天）→ 只看变化量，**没有每日速率**
+- `confidence=ok` → 才能说「每天涨 X GB」
+
+用途：C 盘满时先看趋势，再决定是清缓存还是查某个软件在疯狂写日志。
 
 ## 证据查询
 

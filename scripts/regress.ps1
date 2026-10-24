@@ -105,6 +105,8 @@ if (-not $SkipCli) {
         @{ name = 'probe storage'; args = @('probe', '--set', 'storage'); expect = 0 },
         @{ name = 'probe 未知探针集 -> 2'; args = @('probe', '--set', 'nope'); expect = 2 },
         @{ name = 'probe mail'; args = @('probe', '--set', 'mail'); expect = 0 },
+        @{ name = 'trend 记录'; args = @('trend', '--record', '--set', 'storage'); expect = 0 },
+        @{ name = 'trend 报告'; args = @('trend'); expect = 0 },
         @{ name = 'remote 缺 target'; args = @('remote'); expect = 2 },
         @{ name = 'remote loopback'; args = @('remote', '--target', 'loopback-ci', '--via', 'local', '--set', 'storage'); expect = 0 },
         @{ name = 'remote 不可达'; args = @('remote', '--target', 'winmedic-no-such-host', '--timeout', '4'); expect = 8 },

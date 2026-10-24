@@ -15,7 +15,7 @@
 [CmdletBinding()]
 param(
     [Parameter(Position = 0)]
-    [ValidateSet('doctor', 'probe', 'plan', 'apply', 'verify', 'restore', 'journal', 'profile', 'report', 'explain', 'summary', 'diff', 'relocate', 'remote', 'version', 'help')]
+    [ValidateSet('doctor', 'probe', 'plan', 'apply', 'verify', 'restore', 'journal', 'profile', 'report', 'explain', 'summary', 'diff', 'relocate', 'remote', 'trend', 'version', 'help')]
     [string]$Command = 'help',
     [string]$SubCommand,
     [string]$Set = '',
@@ -38,6 +38,9 @@ param(
     [string]$Via,
     [int]$TimeoutSec = 300,
     [switch]$Keep,
+    [switch]$Record,
+    [int]$Days = 14,
+    [int]$Top = 10,
     [switch]$Remove,
     [switch]$Json,
     [Parameter(ValueFromRemainingArguments = $true)]
@@ -61,6 +64,7 @@ if (-not $script:WinMedicRoot) { $script:WinMedicRoot = (Resolve-Path (Join-Path
 . (Join-Path $PSScriptRoot 'lib\Relocation.ps1')
 . (Join-Path $PSScriptRoot 'lib\Explain.ps1')
 . (Join-Path $PSScriptRoot 'lib\Remote.ps1')
+. (Join-Path $PSScriptRoot 'lib\Trend.ps1')
 . (Join-Path $PSScriptRoot 'lib\Scan.ps1')
 . (Join-Path $PSScriptRoot 'probes\storage.ps1')
 . (Join-Path $PSScriptRoot 'probes\boot.ps1')
@@ -84,7 +88,7 @@ function Resolve-RestArguments {
         if ($tok.StartsWith('--')) {
             $key = $tok.Substring(2).ToLowerInvariant()
             # 布尔开关不消费后续 token
-            if (@('yes', 'purge', 'json', 'remove', 'accept-risk', 'acceptrisk', 'accept-irreversible', 'acceptirreversible', 'keep') -contains $key) {
+            if (@('yes', 'purge', 'json', 'remove', 'accept-risk', 'acceptrisk', 'accept-irreversible', 'acceptirreversible', 'keep', 'record') -contains $key) {
                 switch ($key) {
                     'yes'                { $script:YesFlag = $true }
                     'purge'              { $script:PurgeFlag = $true }
@@ -95,6 +99,7 @@ function Resolve-RestArguments {
                     'accept-irreversible' { $script:AcceptIrrevFlag = $true }
                     'acceptirreversible' { $script:AcceptIrrevFlag = $true }
                     'keep'               { $script:KeepFlag = $true }
+                    'record'             { $script:RecordFlag = $true }
                 }
                 $i++
                 continue
@@ -119,6 +124,8 @@ function Resolve-RestArguments {
                 'target'  { if ($val) { $script:TargetValue = $val } }
                 'via'     { if ($val) { $script:ViaValue = $val } }
                 'timeout' { if ($val) { $script:TimeoutValue = [int]$val } }
+                'days'    { if ($val) { $script:DaysValue = [int]$val } }
+                'top'     { if ($val) { $script:TopValue = [int]$val } }
                 default   { Write-Log ('未知参数: ' + $tok) -Level ERROR; exit $script:EXIT.USAGE }
             }
         } elseif ($tok -match '^-(yes|purge|json|remove|accept-risk)$') {
@@ -157,6 +164,9 @@ $script:TargetValue = [string]$Target
 $script:ViaValue = [string]$Via
 $script:TimeoutValue = [int]$TimeoutSec
 $script:KeepFlag = [bool]$Keep
+$script:RecordFlag = [bool]$Record
+$script:DaysValue = [int]$Days
+$script:TopValue = [int]$Top
 Resolve-RestArguments -Tokens $Rest
 $Set = $script:SetArg
 $From = $script:FromArg
@@ -179,6 +189,9 @@ $Target = $script:TargetValue
 $Via = $script:ViaValue
 $TimeoutSec = $script:TimeoutValue
 $Keep = $script:KeepFlag
+$Record = $script:RecordFlag
+$Days = $script:DaysValue
+$Top = $script:TopValue
 
 function Get-StatePath {
     param([string]$Name)
@@ -791,6 +804,61 @@ function Invoke-RemoteCmd {
     return $script:EXIT.OK
 }
 
+function Invoke-TrendCmd {
+    if ($Record) {
+        $stateDir = Join-Path (Get-CdriveStateDir) 'state'
+        $files = @()
+        if ($Set) {
+            $one = Join-Path $stateDir ($Set.ToLower() + '-findings.json')
+            if (Test-Path -LiteralPath $one) { $files = @(Get-Item -LiteralPath $one) }
+        } else {
+            $files = @(Get-ChildItem -LiteralPath $stateDir -Filter '*-findings.json' -File -ErrorAction SilentlyContinue |
+                Where-Object { $_.Name -notlike 'remote-*' } |
+                Group-Object { ($_.BaseName -replace '-findings$', '') } |
+                ForEach-Object { $_.Group | Sort-Object LastWriteTime -Descending | Select-Object -First 1 })
+        }
+        if (@($files).Count -eq 0) {
+            Write-Log '没有可用的 findings，请先 probe' -Level ERROR
+            return $script:EXIT.PRECONDITION
+        }
+        $count = 0
+        foreach ($f in @($files)) {
+            $j = Get-Content -LiteralPath $f.FullName -Raw -Encoding UTF8 | ConvertFrom-Json
+            $origin = 'local'
+            foreach ($pr in @($j.probes)) { if ($pr.PSObject.Properties.Name -contains 'origin' -and $pr.origin) { $origin = [string]$pr.origin; break } }
+            $snap = Get-TrendSnapshot -Findings $j -Origin $origin
+            [void](Add-TrendRecord -Snapshot $snap)
+            $count++
+        }
+        $path = Get-TrendFile
+        if ($Json) { Write-JsonResult -Object @{ recorded = $count; path = $path } | Out-Null }
+        else { Write-Log ('已记录 ' + $count + ' 条快照') -Level OK; Write-Host ('  ' + $path) }
+        return $script:EXIT.OK
+    }
+
+    $loaded = Get-TrendRecords
+    $records = @($loaded.records)
+    if ($loaded.badLines -gt 0) { Write-Log ('跳过 ' + $loaded.badLines + ' 行损坏记录') -Level WARN }
+    if ($Days -gt 0) {
+        $cut = (Get-Date).AddDays(-1 * $Days)
+        $records = @($records | Where-Object { try { [datetime]$_.ts -ge $cut } catch { $false } })
+    }
+    $names = @(Get-TrendMetricNames -Records $records)
+    $growth = @()
+    foreach ($n in $names) {
+        $series = @()
+        foreach ($r in $records) {
+            if (-not $r.metrics) { continue }
+            if (-not ($r.metrics.PSObject.Properties.Name -contains $n)) { continue }
+            $series += [pscustomobject]@{ ts = [string]$r.ts; value = [double]$r.metrics.$n }
+        }
+        $growth += (Get-TrendGrowth -Series $series -Metric $n)
+    }
+    if ($Json) { Write-JsonResult -Object @{ records = $records.Count; badLines = $loaded.badLines; growth = @($growth) } | Out-Null; return $script:EXIT.OK }
+    Write-Host (Format-TrendReport -Growth $growth -Top $Top -RecordCount $records.Count)
+    return $script:EXIT.OK
+}
+
 function Show-Help {
     Write-Host 'WinMedic 引擎'
     Write-Host '  doctor                     环境自检'
@@ -808,6 +876,9 @@ function Show-Help {
     Write-Host '  relocate                               迁移策略建议（缓存/数据该不该搬）'
     Write-Host '  remote --target <别名> --set intake      远端只读采集（SSH），结果打 origin 标记'
     Write-Host '    [--via ssh|local] [--keep] [--timeout 秒]'
+    Write-Host '  trend                                   病程：看谁在涨（样本不足会明说）'
+    Write-Host '  trend --record [--set storage]           记录一条快照（建议每日计划任务）'
+    Write-Host '    [--days 14] [--top 10]'
     Write-Host '  apply --action <id> --yes              执行 standalone 动作（仅 Tier 1）'
     Write-Host '  apply ... --purge --accept-irreversible [--confirm-token X] 物理删除（不可回滚，需确认单令牌）'
     Write-Host '  version'
@@ -829,6 +900,7 @@ switch ($Command) {
     'diff'    { $code = Invoke-Diff }
     'relocate' { $code = Invoke-Relocate }
     'remote'  { $code = Invoke-RemoteCmd }
+    'trend'   { $code = Invoke-TrendCmd }
     'version' { Write-Host ('winmedic ' + (Get-Content (Join-Path $script:WinMedicRoot 'VERSION') -Raw).Trim()); $code = $script:EXIT.OK }
     default   { $code = Show-Help }
 }
