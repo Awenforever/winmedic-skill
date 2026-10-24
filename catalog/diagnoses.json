@@ -156,6 +156,197 @@
           ]
         }
       ]
+    },
+    {
+      "id": "dx.browser-derived-cache",
+      "title": "浏览器衍生缓存：鉴别诊断",
+      "requiredProbes": [
+        "probe.cleanup-targets"
+      ],
+      "hypotheses": [
+        {
+          "id": "h.svc-worker",
+          "name": "Service Worker 缓存",
+          "why": "离线网页与 PWA 会在本地保留可观的缓存副本",
+          "checks": [
+            {
+              "metric": "cleanup.edge-service-worker.GB",
+              "signal": ">1 GB 视为显著"
+            },
+            {
+              "metric": "cleanup.chrome-service-worker.GB",
+              "signal": ">1 GB 视为显著"
+            }
+          ],
+          "evidence": [
+            "ev.edge-cache",
+            "ev.chrome-cache"
+          ]
+        },
+        {
+          "id": "h.shader",
+          "name": "着色器缓存",
+          "why": "GPU 编译结果可重建，长期积累可达数百 MB",
+          "checks": [
+            {
+              "metric": "cleanup.chrome-shader-cache.GB",
+              "signal": ">0.3 GB"
+            },
+            {
+              "metric": "cleanup.edge-shader-cache.GB",
+              "signal": ">0.3 GB"
+            }
+          ],
+          "evidence": [
+            "ev.chrome-cache",
+            "ev.edge-cache"
+          ]
+        },
+        {
+          "id": "h.code-cache",
+          "name": "代码缓存",
+          "why": "编译后的 JS 缓存，删掉只会让首次加载变慢",
+          "checks": [
+            {
+              "metric": "cleanup.chrome-code-cache.GB",
+              "signal": ">0.2 GB"
+            },
+            {
+              "metric": "cleanup.edge-code-cache.GB",
+              "signal": ">0.2 GB"
+            }
+          ],
+          "evidence": [
+            "ev.chrome-cache",
+            "ev.edge-cache"
+          ]
+        }
+      ]
+    },
+    {
+      "id": "dx.dev-cache-bloat",
+      "title": "开发缓存堆积：鉴别诊断",
+      "requiredProbes": [
+        "probe.cleanup-targets"
+      ],
+      "hypotheses": [
+        {
+          "id": "h.py",
+          "name": "Python 包缓存",
+          "why": "pip 会缓存下载过的 wheel，长期可达数 GB",
+          "checks": [
+            {
+              "metric": "cleanup.pip-cache.GB",
+              "signal": ">1 GB"
+            }
+          ],
+          "evidence": [
+            "ev.pip-cache"
+          ]
+        },
+        {
+          "id": "h.js",
+          "name": "Node 包缓存",
+          "why": "npm 缓存 tarball，反复安装会持续增长",
+          "checks": [
+            {
+              "metric": "cleanup.npm-cache.GB",
+              "signal": ">1 GB"
+            }
+          ],
+          "evidence": [
+            "ev.npm-cache"
+          ]
+        },
+        {
+          "id": "h.dotnet",
+          "name": ".NET / JVM 缓存",
+          "why": "NuGet 与 Gradle 都保留下载缓存",
+          "checks": [
+            {
+              "metric": "cleanup.nuget-cache.GB",
+              "signal": ">0.5 GB"
+            },
+            {
+              "metric": "cleanup.gradle-cache.GB",
+              "signal": ">2 GB"
+            }
+          ],
+          "evidence": [
+            "ev.nuget-cache",
+            "ev.gradle-cache"
+          ]
+        },
+        {
+          "id": "h.model",
+          "name": "模型缓存",
+          "why": "HuggingFace 模型权重常达数十 GB，是最容易被忽视的大头",
+          "checks": [
+            {
+              "metric": "cleanup.hf-cache.GB",
+              "signal": ">10 GB"
+            }
+          ],
+          "evidence": [
+            "ev.hf-cache"
+          ]
+        }
+      ]
+    },
+    {
+      "id": "dx.crash-log-bloat",
+      "title": "崩溃与日志堆积：鉴别诊断",
+      "requiredProbes": [
+        "probe.cleanup-targets"
+      ],
+      "hypotheses": [
+        {
+          "id": "h.dumps",
+          "name": "崩溃转储",
+          "why": "每个转储可能数百 MB，且很少再被查看",
+          "checks": [
+            {
+              "metric": "cleanup.crash-dumps.GB",
+              "signal": ">0.5 GB"
+            }
+          ],
+          "evidence": [
+            "ev.wer"
+          ]
+        },
+        {
+          "id": "h.wer",
+          "name": "错误报告",
+          "why": "用户级与系统级 WER 会长期累积",
+          "checks": [
+            {
+              "metric": "cleanup.wer-reports.GB",
+              "signal": ">0.2 GB"
+            },
+            {
+              "metric": "cleanup.wer-machine.GB",
+              "signal": ">0.2 GB"
+            }
+          ],
+          "evidence": [
+            "ev.wer"
+          ]
+        },
+        {
+          "id": "h.cbs",
+          "name": "组件安装日志",
+          "why": "CBS 日志随更新持续增长，排查时才需要",
+          "checks": [
+            {
+              "metric": "cleanup.cbs-logs.GB",
+              "signal": ">0.3 GB"
+            }
+          ],
+          "evidence": [
+            "ev.cbs-logs"
+          ]
+        }
+      ]
     }
   ]
 }

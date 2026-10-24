@@ -5,6 +5,18 @@
 
 ## [Unreleased]
 
+## [3.6.1] - 2026-10-25
+
+### Added（诊断扩容）
+- 新增 3 个鉴别诊断：`dx.browser-derived-cache`（Service Worker / 着色器 / 代码缓存）、`dx.dev-cache-bloat`（pip / npm / NuGet / Gradle / HF）、`dx.crash-log-bloat`（转储 / WER / CBS 日志）
+- 诊断全部基于 `cleanup.*` 指标，不输出 verdict/status，只给「指标 + 信号 + 当前值」
+- Diagnose 测试 8/8
+
+### Verified（浏览器衍生目标 6/6 / win11-test VM）
+- Chrome GPU / Code、Edge GPU / Code / Dawn、Firefox startupCache：移走 + 还原 + 哈希一致
+- 累计已验证 **24 / 40**
+
+
 ## [3.6.0] - 2026-10-25
 
 ### Fixed（元数据不实）

@@ -2,7 +2,7 @@
 
 > 只有真机跑过 `apply → restore` 且**字节一致**的目标才算「已验证」。
 
-## 已验证（18 个 / 40）
+## 已验证（24 个 / 40）
 
 | 动作 | 环境 | 结果 |
 |---|---|---|
@@ -24,12 +24,18 @@
 | storage.delivery-optimization | win11-test VM | 系统类 4/4 |
 | storage.office-file-cache | win11-test VM | 系统类 4/4 |
 | storage.recycle-bin-empty | win11-test VM | 构造计划验证，移走+还原+一致 |
+| storage.chrome-gpu-cache | win11-test VM | 批量 6/6 |
+| storage.chrome-code-cache | win11-test VM | 批量 6/6 |
+| storage.edge-gpu-cache | win11-test VM | 批量 6/6 |
+| storage.edge-code-cache | win11-test VM | 批量 6/6 |
+| storage.edge-dawn-cache | win11-test VM | 批量 6/6 |
+| storage.firefox-startup-cache | win11-test VM | 批量 6/6 |
 
-## 未验证（22 个）
+## 未验证（16 个）
 
 其余动作仅在 catalog 中存在，未做真机闭环。其中：
 
-- 浏览器类（Edge/Chrome 缓存与 GPU/Dawn 缓存）：与已验证的同类路径同构，风险低但未逐一跑
+- 其余浏览器类：与已验证路径同构
 - 系统类：休眠文件（不可回滚，只做只读探测）、WINSXS（不可逆）
 - 回收站：已用「构造计划」方式验证（见下）
 - 开发类（HuggingFace、Slack、Adobe 媒体缓存）：依赖对应软件安装

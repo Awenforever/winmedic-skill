@@ -18,6 +18,22 @@ BeforeAll {
 }
 AfterAll { Remove-Item Env:\CDRIVE_HOME -ErrorAction SilentlyContinue }
 
+Describe '新增鉴别诊断用例' {
+    It '三个新用例都在 catalog 里' {
+        $cat = Get-Content (Join-Path (Split-Path -Parent (Split-Path -Parent $PSScriptRoot)) 'catalog\diagnoses.json') -Raw -Encoding UTF8 | ConvertFrom-Json
+        @($cat.diagnoses | Where-Object { $_.id -in @('dx.browser-derived-cache','dx.dev-cache-bloat','dx.crash-log-bloat') }).Count | Should -Be 3
+    }
+    It '假设都引用了可用指标' {
+        $cat = Get-Content (Join-Path (Split-Path -Parent (Split-Path -Parent $PSScriptRoot)) 'catalog\diagnoses.json') -Raw -Encoding UTF8 | ConvertFrom-Json
+        foreach ($d in @($cat.diagnoses | Where-Object { $_.id -like 'dx.*cache*' -or $_.id -eq 'dx.crash-log-bloat' })) {
+            foreach ($h in $d.hypotheses) {
+                @($h.checks).Count | Should -BeGreaterThan 0
+                foreach ($c in $h.checks) { $c.metric | Should -Match '^cleanup\.' }
+            }
+        }
+    }
+}
+
 Describe '诊断目录' {
     It '能按 id 取出并列出' {
         @(Get-DiagnosisCatalog).Count | Should -BeGreaterThan 1
