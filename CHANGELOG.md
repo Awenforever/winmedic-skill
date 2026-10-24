@@ -5,6 +5,23 @@
 
 ## [Unreleased]
 
+## [3.5.1] - 2026-10-24
+
+### Added
+- 来源守卫抽成纯函数 `Test-PlanOriginAllowed`（含 6 个用例：本地/无字段/远端拒绝/精确放行/放行不匹配/混合来源）
+- 数据驱动目标探针用例 2 个（命中与未命中）
+- 契约用例 2 个（`remote-apply` / `remote-restore` 缺参数 = 2）
+- 三个真实病例：`0005-plan-hash-json-roundtrip`、`0006-standalone-action-blocked`、`0007-remote-quarantine-destroyed`
+
+### Docs
+- `docs/REMOTE.md` 新增「远端处置与还原」章节（用法、5 条安全不变式、实测记录）
+- `docs/SAFETY-MODEL.md` 新增「远端处置的额外约束」表
+
+### Verified
+- 回归 50/50；Origins 8/8
+- `Get-RemoteNewestJournal` 实测返回 `20261024-214602-9f6442`（此前 runId 提取为空的问题已修复）
+
+
 ## [3.5.0] - 2026-10-24
 
 ### Added（G5 达标）

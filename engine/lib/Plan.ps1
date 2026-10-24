@@ -30,6 +30,30 @@ function Import-CdriveCatalog {
     return @{ Actions = $actions; Evidence = $evidence }
 }
 
+function Test-PlanOriginAllowed {
+    <#
+      纯函数：判断计划能否在当前机器执行。
+      返回 @{ allowed; offending; origin }
+      - origin 为空或 local -> 允许
+      - origin 等于 -AllowRemoteOrigin -> 允许（远端引擎自用）
+      - 其他 -> 拒绝，offending 为首个不匹配来源
+    #>
+    param([Parameter(Mandatory)]$Plan, [string]$AllowRemoteOrigin = '')
+    $items = @($Plan.items)
+    $offending = @()
+    $origins = @()
+    foreach ($it in $items) {
+        if (-not ($it.PSObject.Properties.Name -contains 'origin')) { continue }
+        $o = [string]$it.origin
+        if (-not $o) { continue }
+        if ($origins -notcontains $o) { $origins += $o }
+        if ($o -eq 'local') { continue }
+        if ($AllowRemoteOrigin -and $o -eq $AllowRemoteOrigin) { continue }
+        $offending += $o
+    }
+    return @{ allowed = ($offending.Count -eq 0); offending = $offending; origin = ($origins -join ',') }
+}
+
 function Get-PlanHash {
     <#
       规范化后再哈希：先显式转成字符串/int64，避免 JSON 往返后类型变化（Int64 -> Int32）

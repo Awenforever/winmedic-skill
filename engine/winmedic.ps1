@@ -397,17 +397,9 @@ function Invoke-Apply {
     if (Test-Path -LiteralPath $p) {
         try {
             $prePlan = Get-Content -LiteralPath $p -Raw -Encoding UTF8 | ConvertFrom-Json
-            $allowVal = [string]$AllowRemoteOrigin
-            $preRemote = @($prePlan.items | Where-Object {
-                if (-not ($_.PSObject.Properties.Name -contains 'origin')) { return $false }
-                $o = [string]$_.origin
-                if (-not $o) { return $false }
-                if ($o -eq 'local') { return $false }
-                if ($allowVal -and $o -eq $allowVal) { return $false }
-                return $true
-            })
-            if ($preRemote.Count -gt 0) {
-                Write-Log ('计划里有 ' + $preRemote.Count + ' 项来自远端（' + [string]$preRemote[0].origin + '），本地 apply 拒绝执行') -Level ERROR
+            $originCheck = Test-PlanOriginAllowed -Plan $prePlan -AllowRemoteOrigin ([string]$AllowRemoteOrigin)
+            if (-not $originCheck.allowed) {
+                Write-Log ('计划里有来自远端的项（' + ($originCheck.offending -join ',') + '），本地 apply 拒绝执行') -Level ERROR
                 Write-Log '请改用: winmedic.ps1 remote-apply --target <别名> --plan <本计划文件> --ids <ids> --yes' -Level INFO
                 return $script:EXIT.USAGE
             }

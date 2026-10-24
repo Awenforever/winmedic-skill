@@ -112,6 +112,8 @@ if (-not $SkipCli) {
         @{ name = 'tools'; args = @('tools'); expect = 0 },
         @{ name = 'trend 记录'; args = @('trend', '--record', '--set', 'storage'); expect = 0 },
         @{ name = 'trend 报告'; args = @('trend'); expect = 0 },
+        @{ name = 'remote-apply 缺参数'; args = @('remote-apply'); expect = 2 },
+        @{ name = 'remote-restore 缺参数'; args = @('remote-restore'); expect = 2 },
         @{ name = 'remote 缺 target'; args = @('remote'); expect = 2 },
         @{ name = 'remote loopback'; args = @('remote', '--target', 'loopback-ci', '--via', 'local', '--set', 'storage'); expect = 0 },
         @{ name = 'remote 不可达'; args = @('remote', '--target', 'winmedic-no-such-host', '--timeout', '4'); expect = 8 },

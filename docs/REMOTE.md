@@ -61,3 +61,34 @@
 | probe 跑完但没有 findings | -File 用单引号，cmd 不剥单引号，路径带引号导致脚本没执行 | 路径无空格时裸写（Format-RemotePathArg） |
 
 教训：远端默认 shell 可能是 cmd / Git Bash / 其他，不能假设 POSIX 引号语义。
+## 远端处置与还原
+
+只读诊断之外，确需在远端动手时：
+
+```powershell
+# 1) 远端采集 -> 2) 基于远端 findings 本地出计划
+.\engine\winmedic.ps1 remote --target <别名> --set storage
+.\engine\winmedic.ps1 plan --from C:\ProgramData\cdrive\state\remote-<别名>-storage-findings.json
+
+# 3) 本地执行会被拒绝（安全不变式）
+.\engine\winmedic.ps1 apply --ids R2 --yes        # exit 2
+
+# 4) 远端执行
+.\engine\winmedic.ps1 remote-apply --target <别名> --plan <plan.json> --ids R2 --yes
+
+# 5) 远端还原
+.\engine\winmedic.ps1 remote-restore --target <别名> --journal <runId> --yes
+```
+
+### 安全不变式
+
+1. **计划带来源**：`plan.origin` 与每个 item 的 `origin` 都会记录（`local` 或 `remote:<别名>`）
+2. **本地拒绝**：含非 local 来源的计划，本地 `apply` 在权限检查**之前**即拒绝（退出码 2）
+3. **远端放行**：远端引擎需要 `--allow-remote-origin remote:<自己>` 才执行，其他来源照样拒绝
+4. **持久隔离区**：远端隔离区与审计日志存放在 `C:\ProgramData\winmedic-remote-state`，**不随暂存目录清理**
+5. **审计可回收**：执行后自动把远端 journal 拉回本地 `state/remote-<别名>-journal-<runId>.jsonl`
+
+### 实测记录（win11-test VM）
+
+- 120 MB Edge 缓存：远端移入隔离区（目录消失）→ `remote-restore` → 3 个文件 SHA256 与原负载一致
+- 重复 restore 正确报「隔离区文件已不存在」

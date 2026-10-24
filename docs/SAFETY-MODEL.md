@@ -75,3 +75,12 @@
 
 - `pendingReboot` 为真时必须说明「重启后才生效」，不得谎报成功。
 - 部分失败返回退出码 7，并提示可用 `restore` 回滚。
+## 远端处置的额外约束
+
+| 约束 | 实现 |
+|---|---|
+| 计划必须标来源 | `plan.origin` + 每个 item 的 `origin` |
+| 本地不得执行远端计划 | `Test-PlanOriginAllowed`，在权限检查前拦截 |
+| 远端只放行自己 | `--allow-remote-origin remote:<别名>`，值不匹配照样拒绝 |
+| 隔离数据必须持久 | 远端状态目录 `C:\ProgramData\winmedic-remote-state`，不随暂存清理 |
+| 审计必须可回收 | 执行后自动拉回 journal 到本地 `state/` |
