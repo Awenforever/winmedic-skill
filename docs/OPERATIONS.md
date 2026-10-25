@@ -1,4 +1,4 @@
-# 运维与远程注意事项
+﻿# 运维与远程注意事项
 
 ## 远程执行（SSH）
 
@@ -53,3 +53,14 @@ GitHub 直连通常不通，git 的 http.proxy 端口会随代理软件漂移。
 2. `winmedic.ps1 doctor` 现在会检查 `engine/MANIFEST.txt`：文件缺失或为空会直接提示「可能是安全软件隔离」
 
 `MANIFEST.txt` 由发布脚本生成，列出引擎全部 `.ps1`；加文件后记得同步清单（或跑 `scripts/refresh-manifest.ps1`）。
+
+## 推送：端口会漂移，别写死
+
+系统代理端口会变（实测从 8136 漂到 50575）。写死端口或用 `-c http.proxy=` 绕过配置，都会表现为「推送失败」。
+
+```powershell
+.\scripts\push.ps1                 # 自动同步系统代理 → 推送 → ls-remote 校验
+.\scripts\gh-setup.ps1 -Show       # 只看当前系统代理与 git 配置
+```
+
+`push.ps1` 会重试并在最后用 `ls-remote` 确认远端 HEAD 与本地一致，避免「以为推上去了」。

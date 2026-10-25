@@ -5,6 +5,18 @@
 
 ## [Unreleased]
 
+## [3.11.1] - 2026-10-26
+
+### Added
+- `scripts/push.ps1`：自动同步系统代理 → 推送 → **用 ls-remote 校验远端 HEAD**，并识别 non-fast-forward
+- `docs/OPERATIONS.md` 增补「端口会漂移，别写死」
+
+### Fixed（今晚推送失败的真正原因）
+- 系统代理端口从 **8136 漂移到 50575**；我此前写死端口、并用 `-c http.proxy=` 绕过配置，于是每次推送都失败
+- `gh-setup.ps1` 本来就是自动读 WinINET 的，问题在调用方式；现统一走 `push.ps1`
+- 顺带修正历史分叉：v3.11.0 之前被 amend 成与远端并行的新提交，已 `reset --soft` 重建在线性历史上（044d739 → 597f56b）
+
+
 ## [3.11.0] - 2026-10-26
 
 ### Added（P1 收尾）
