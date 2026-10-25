@@ -5,6 +5,19 @@
 
 ## [Unreleased]
 
+## [3.7.1] - 2026-10-25
+
+### Verified（G4 真实多日样本，终于闭环）
+- 计划任务 `WinMedicTrend` 于 **2026-10-25 12:00:01 自动执行，Last Result=0**
+- `trend.jsonl` 现含 **53 条快照，跨度 23.5 小时**（0.98 天）
+- `trend --days 2` 首次给出真实速率：`volume.freeGB -16.674 GB/天`、`cleanup.totalGB +0.009 GB/天`
+- 结论：`perDay` 计算与「跨度不足则不给速率」两项行为均已在真实跨天数据上验证
+
+### Changed（判断层铺开）
+- `PB-001 清理协议` 新增「先看『已排除』，再谈方案」：被排除 ≠ 不该动；三种原因要区分；认为排除错了要由 DSH 判断并说明
+- 5 份会动手的 playbook 加指针：`storage-large-folder-management`、`apps-dev-cache-triage`、`apps-uninstall-residue`、`apps-large-app-audit`、`windows-new-device-intake`
+
+
 ## [3.7.0] - 2026-10-25（判断层迭代：本轮不加动作）
 
 ### Changed
