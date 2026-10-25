@@ -141,16 +141,29 @@ function Get-TrendFile {
 }
 
 function Add-TrendRecord {
+    <#  追加一条快照；已存在 (origin, ts, probeSet) 时跳过，返回是否新增。  #>
     param([Parameter(Mandatory)]$Snapshot)
-    $file = Get-TrendFile
-    $line = ($Snapshot | ConvertTo-Json -Depth 8 -Compress)
-    Add-Content -LiteralPath $file -Value $line -Encoding UTF8
-    return $file
+    $path = Get-TrendFile
+    $dir = Split-Path -Parent $path
+    if (-not (Test-Path -LiteralPath $dir)) { New-Item -ItemType Directory -Force -Path $dir | Out-Null }
+    $key = ([string]$Snapshot.origin) + '|' + ([string]$Snapshot.ts) + '|' + ([string]$Snapshot.probeSet)
+    if (Test-Path -LiteralPath $path) {
+        foreach ($line in (Get-Content -LiteralPath $path -Encoding UTF8)) {
+            if (-not $line.Trim()) { continue }
+            try {
+                $r = $line | ConvertFrom-Json
+                $k = ([string]$r.origin) + '|' + ([string]$r.ts) + '|' + ([string]$r.probeSet)
+                if ($k -eq $key) { return $false }
+            } catch { }
+        }
+    }
+    ($Snapshot | ConvertTo-Json -Depth 8 -Compress) | Add-Content -LiteralPath $path -Encoding UTF8
+    return $true
 }
 
 function Get-TrendRecords {
     <#  返回 @{ records; badLines; path }，坏行跳过不抛错。  #>
-    param([string]$Path = '')
+    param([string]$Path = '', [string]$Origin = 'local')
     if (-not $Path) { $Path = Get-TrendFile }
     $records = @()
     $bad = 0
@@ -158,6 +171,13 @@ function Get-TrendRecords {
     foreach ($line in (Get-Content -LiteralPath $Path -Encoding UTF8)) {
         if (-not $line.Trim()) { continue }
         try { $records += ($line | ConvertFrom-Json) } catch { $bad++ }
+    }
+    if ($Origin -and $Origin -ne 'all') {
+        $records = @($records | Where-Object {
+            $o = [string]$_.origin
+            if (-not $o) { $o = 'local' }   # 老记录没有 origin 字段，按本机处理
+            $o -eq $Origin
+        })
     }
     return @{ records = $records; badLines = $bad; path = $Path }
 }

@@ -39,6 +39,27 @@ Describe '快照生成' {
     }
 }
 
+Describe '病程数据的完整性' {
+    It '序列按来源隔离，不混机' {
+        $recs = @(
+            [pscustomobject]@{ ts='2026-10-24T10:00:00+08:00'; origin='local'; probeSet='storage'; metrics=[pscustomobject]@{ 'volume.freeGB'=90 } },
+            [pscustomobject]@{ ts='2026-10-24T10:05:00+08:00'; origin='remote:vm1'; probeSet='storage'; metrics=[pscustomobject]@{ 'volume.freeGB'=22 } }
+        )
+        $local = @($recs | Where-Object { $_.origin -eq 'local' })
+        $local.Count | Should -Be 1
+        $local[0].metrics.'volume.freeGB' | Should -Be 90
+    }
+    It '同一 (origin, ts, probeSet) 只记录一次' {
+        $dir = Join-Path $TestDrive 'cdrive'
+        New-Item -ItemType Directory -Force -Path (Join-Path $dir 'state') | Out-Null
+        $env:CDRIVE_HOME = $dir
+        $snap = [pscustomobject]@{ ts='2026-10-24T10:00:00+08:00'; host='H'; origin='local'; probeSet='storage'; metrics=[pscustomobject]@{ 'volume.freeGB'=90 } }
+        (Add-TrendRecord -Snapshot $snap) | Should -BeTrue
+        (Add-TrendRecord -Snapshot $snap) | Should -BeFalse
+        @(Get-TrendRecords -Origin 'local' -Path (Join-Path $dir 'state\trend.jsonl')).Count | Should -Be 1
+    }
+}
+
 Describe '清理目标纳入病程' {
     It '每个目标与合计都进快照' {
         $f = [pscustomobject]@{ probeSet = 'storage'; probes = @(

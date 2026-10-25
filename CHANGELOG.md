@@ -5,6 +5,22 @@
 
 ## [Unreleased]
 
+## [3.8.0] - 2026-10-25（病程数据完整性修复）
+
+### Fixed
+1. **远端记录混入本机序列**：VM 的 22.9 GB 被当成宿主机「暴跌 54 GB」→ 新增 `-Origin` 过滤，报告默认只看 `origin=local`，另加 `--origin all`
+2. **记录时刻冒充测量时刻**：`trend --record` 复用 findings 却按记录时刻打点，导致 10-23 的旧测量被当成 10-25 12:00 的新样本 → 改为 `ts = findings.generatedAt`，并按 `(origin, ts, probeSet)` 去重
+
+### Added
+- `trend --rebuild`：以 findings 的测量时间为唯一依据重建序列，自动备份旧文件
+- `scripts/trend-daily.ps1`：先 `probe` 再 `record`；计划任务 `WinMedicTrend` 已改为调用它
+- Trend 测试新增 3 项（来源隔离、去重、老记录兼容），共 12/12
+
+### Corrected（对 G4 结论的更正）
+- 此前「宿主机一天掉 16.3 GB」是**假象**：一条 VM 记录 + 旧测量新时间戳
+- 重建后的真实序列（10-23 23:05 → 10-25 17:28，1.67 天）：`volume.freeGB` 77.2 → 88.9 GB，**+11.7 GB（+6.99 GB/天）**，即空间在变多（更新清理）
+
+
 ## [3.7.1] - 2026-10-25
 
 ### Verified（G4 真实多日样本，终于闭环）

@@ -48,3 +48,23 @@ schtasks /create /tn WinMedicTrend /tr "powershell -NoProfile -ExecutionPolicy B
 - 目录级增长需要 WizTree 导出（`scans/`），当前版本只到「域级」与「软件缓存级」
 - 样本跨度不足时不会硬凑结论
 - 远端快照需先在远端跑 `probe` 再 `trend --record`（或等远端趋势合并能力）
+## 数据完整性（2026-10-25 修正）
+
+病程序列曾出现两个会让结论失真的问题，现已修复：
+
+| 问题 | 后果 | 修复 |
+|---|---|---|
+| 远端记录混入本机序列 | VM 的 22.9 GB 被当成宿主机的「暴跌」 | `Get-TrendRecords -Origin`；报告默认只看 `origin=local` |
+| 记录时刻冒充测量时刻 | 10-23 的旧 findings 被盖上 10-25 12:00 的时间戳，看起来像当天暴跌 | `ts = findings.generatedAt`；`(origin, ts, probeSet)` 去重 |
+
+### 查看与修复
+
+```powershell
+winmedic.ps1 trend --days 5                 # 默认只看本机
+winmedic.ps1 trend --days 5 --origin all    # 含远端（会混机，仅供对照）
+winmedic.ps1 trend --rebuild                # 以 findings 的测量时间为准重建序列（自动备份）
+```
+
+### 每日任务要「先采集再记录」
+
+`scripts/trend-daily.ps1` 会先跑一次 `probe --set storage`，再 `trend --record`。直接 `trend --record` 只会复用旧 findings。

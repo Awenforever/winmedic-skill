@@ -35,6 +35,8 @@ param(
     [switch]$AcceptIrreversible,
     [string]$ConfirmToken,
     [string]$AllowRemoteOrigin,
+    [string]$Origin,
+    [switch]$Rebuild,
     [string]$Target,
     [string]$Via,
     [int]$TimeoutSec = 300,
@@ -122,6 +124,8 @@ function Resolve-RestArguments {
                 'set'     { if ($val) { $script:SetArg = $val } }
                 'from'    { $script:FromArg = $val }
                 'allow-remote-origin' { $script:AllowRemoteOriginArg = $val }
+                'origin'  { $script:OriginArg = $val }
+                'rebuild' { $script:RebuildArg = $true }
                 'to'      { $script:ToArg = $val }
                 'plan'    { $script:PlanArg = $val }
                 'ids'     { if ($val) { $script:IdsArg = @($val -split ',') } }
@@ -157,6 +161,7 @@ function Resolve-RestArguments {
 $script:SetArg = $Set
 $script:FromArg = $From
 $script:AllowRemoteOriginArg = [string]$AllowRemoteOrigin
+$script:OriginArg = [string]$Origin
 $script:ToArg = $To
 $script:PlanArg = $PlanPath
 $script:IdsArg = $Ids
@@ -186,6 +191,8 @@ Resolve-RestArguments -Tokens $Rest
 $Set = $script:SetArg
 $From = $script:FromArg
 $AllowRemoteOrigin = $script:AllowRemoteOriginArg
+$Origin = $script:OriginArg
+$Rebuild = [bool]$script:RebuildArg
 $To = $script:ToArg
 $PlanPath = $script:PlanArg
 $Ids = $script:IdsArg
@@ -852,6 +859,35 @@ function Invoke-RemoteCmd {
 }
 
 function Invoke-TrendCmd {
+    if ($Rebuild) {
+        $stateDir = Join-Path (Get-CdriveStateDir) 'state'
+        $trendPath = Get-TrendFile
+        if (Test-Path -LiteralPath $trendPath) {
+            $bak = $trendPath + '.bak.' + (Get-Date).ToString('yyyyMMdd-HHmmss')
+            Copy-Item -LiteralPath $trendPath -Destination $bak -Force
+            Write-Log ('已备份旧序列: ' + $bak) -Level OK
+        }
+        $files = @(Get-ChildItem -LiteralPath $stateDir -Filter '*-findings.json' -File -ErrorAction SilentlyContinue)
+        if (@($files).Count -eq 0) { Write-Log '没有 findings 可重建' -Level ERROR; return $script:EXIT.PRECONDITION }
+        $n = 0; $dup = 0
+        foreach ($f in $files) {
+            try {
+                $j = Get-Content -LiteralPath $f.FullName -Raw -Encoding UTF8 | ConvertFrom-Json
+                $origin = 'local'
+                foreach ($pr in @($j.probes)) { if ($pr.PSObject.Properties.Name -contains 'origin' -and $pr.origin) { $origin = [string]$pr.origin; break } }
+                $snap = Get-TrendSnapshot -Findings $j -Origin $origin
+                $measured = $null
+                if ($j.PSObject.Properties.Name -contains 'generatedAt' -and $j.generatedAt) { $measured = [string]$j.generatedAt }
+                if (-not $measured) { $measured = $f.LastWriteTime.ToString('o') }
+                $snap.ts = $measured
+                if (Add-TrendRecord -Snapshot $snap) { $n++ } else { $dup++ }
+            } catch { }
+        }
+        if ($Json) { Write-JsonResult -Object @{ rebuilt = $n; skippedDuplicate = $dup; path = $trendPath } | Out-Null }
+        else { Write-Log ('重建完成：写入 ' + $n + ' 条，跳过重复 ' + $dup + ' 条') -Level OK; Write-Host ('  ' + $trendPath) }
+        return $script:EXIT.OK
+    }
+
     if ($Record) {
         $stateDir = Join-Path (Get-CdriveStateDir) 'state'
         $files = @()
@@ -869,17 +905,26 @@ function Invoke-TrendCmd {
             return $script:EXIT.PRECONDITION
         }
         $count = 0
+        $dup = 0
         foreach ($f in @($files)) {
             $j = Get-Content -LiteralPath $f.FullName -Raw -Encoding UTF8 | ConvertFrom-Json
             $origin = 'local'
             foreach ($pr in @($j.probes)) { if ($pr.PSObject.Properties.Name -contains 'origin' -and $pr.origin) { $origin = [string]$pr.origin; break } }
             $snap = Get-TrendSnapshot -Findings $j -Origin $origin
-            [void](Add-TrendRecord -Snapshot $snap)
-            $count++
+            # 关键：时间戳必须是『测量时刻』，不能用记录时刻，否则旧数据会被当成新样本
+            $measured = $null
+            if ($j.PSObject.Properties.Name -contains 'generatedAt' -and $j.generatedAt) { $measured = [string]$j.generatedAt }
+            if (-not $measured) { $measured = $f.LastWriteTime.ToString('o') }
+            $snap.ts = $measured
+            $added = Add-TrendRecord -Snapshot $snap
+            if ($added) { $count++ } else { $dup++ }
         }
         $path = Get-TrendFile
         if ($Json) { Write-JsonResult -Object @{ recorded = $count; path = $path } | Out-Null }
-        else { Write-Log ('已记录 ' + $count + ' 条快照') -Level OK; Write-Host ('  ' + $path) }
+        else {
+            Write-Log ('已记录 ' + $count + ' 条快照' + $(if ($dup -gt 0) { '（跳过重复 ' + $dup + ' 条）' } else { '' })) -Level OK
+            Write-Host ('  ' + $path)
+        }
         return $script:EXIT.OK
     }
 
