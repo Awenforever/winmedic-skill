@@ -125,6 +125,22 @@ function Get-TrendSnapshot {
         if ($null -ne $cons) { $m['network.proxyConsistent'] = if ($cons) { 1 } else { 0 } }
     }
 
+    $nl = Get-TrendProbe -Findings $Findings -Id 'probe.net-link'
+    if ($nl -and $nl.data) {
+        $d = $nl.data
+        $getv = { param($n) if ($d.PSObject.Properties.Name -contains $n) { $d.$n } else { $null } }
+        $sr = & $getv 'stallRate'
+        if ($null -ne $sr) { $m['network.stallRate'] = [math]::Round([double]$sr, 3) }
+        $dn = & $getv 'dnsOkHosts'
+        if ($null -ne $dn) { $m['network.dnsOkHosts'] = [int]$dn }
+        $di = & $getv 'directOkHosts'
+        if ($null -ne $di) { $m['network.directOkHosts'] = [int]$di }
+        $th = & $getv 'totalHosts'
+        if ($null -ne $th) { $m['network.totalHosts'] = [int]$th }
+        $po = & $getv 'proxyOk'
+        if ($null -ne $po) { $m['network.proxyOk'] = if ([bool]$po) { 1 } else { 0 } }
+    }
+
     $rr = Get-TrendProbe -Findings $Findings -Id 'probe.recovery-readiness'
     if ($rr -and $rr.data) {
         if ($rr.data.PSObject.Properties.Name -contains 'shadowStorageBytes') {

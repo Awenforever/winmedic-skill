@@ -5,6 +5,21 @@
 
 ## [Unreleased]
 
+## [3.11.0] - 2026-10-26
+
+### Added（P1 收尾）
+- **`dx.link-flaky` 网络链路不稳定鉴别诊断**：停滞率 / 代理不可达 / 直连被阻断 / DNS 解析失败 四个假设
+- 病程接入 net-link 指标：`network.stallRate`、`network.dnsOkHosts`、`network.directOkHosts`、`network.totalHosts`、`network.proxyOk`
+- **SKILL 症状硬触发表**：应用反复 Reconnecting / error sending request 时，必须先跑 `probe --set network`（远端用 `remote-probe --set net-link`），禁止先改配置
+
+### Verified
+- `diagnose --case dx.link-flaky` 一次跑通，本机实测 `stallRate=0.333`、`proxyOk=1`、`directOkHosts=0`、`dnsOkHosts=2`
+- Pester 272/0；catalog 校验通过（probes=40 actions=40 evidence=27）
+
+### Notes
+- 本机 stallRate 0.333 与今晚多次 GitHub 推送失败同源：出口链路对长连接不稳定
+
+
 ## [3.10.0] - 2026-10-26
 
 ### Added（P1：只读诊断成为一等公民）

@@ -1,4 +1,4 @@
-﻿{
+{
   "schemaVersion": 1,
   "note": "鉴别诊断：只描述「要看什么」，不写结论。结论由 Agent 结合事实判断。",
   "diagnoses": [
@@ -357,6 +357,72 @@
           ],
           "evidence": [
             "ev.cbs-logs"
+          ]
+        }
+      ]
+    },
+    {
+      "id": "dx.link-flaky",
+      "title": "网络链路不稳定：鉴别诊断",
+      "requiredProbes": [
+        "probe.net-link",
+        "probe.proxy-config"
+      ],
+      "hypotheses": [
+        {
+          "id": "h.stall",
+          "name": "长连接中途停滞",
+          "why": "短请求正常但传输中途停住，流式/实时应用会反复重连",
+          "checks": [
+            {
+              "metric": "network.stallRate",
+              "signal": ">0.1 视为不稳定（1/5 次停滞即 0.2）"
+            }
+          ],
+          "evidence": [
+            "ev.proxy-ports"
+          ]
+        },
+        {
+          "id": "h.proxy-down",
+          "name": "代理不可达",
+          "why": "代理端口在但不通，或进程已退出",
+          "checks": [
+            {
+              "metric": "network.proxyOk",
+              "signal": "=0 时所有经代理的请求都会失败"
+            }
+          ],
+          "evidence": [
+            "ev.proxy-ports"
+          ]
+        },
+        {
+          "id": "h.direct-blocked",
+          "name": "直连被阻断",
+          "why": "目标域名直连 TCP 全部失败，必须依赖代理；一旦代理抖动就无兜底",
+          "checks": [
+            {
+              "metric": "network.directOkHosts",
+              "signal": "=0 表示全部依赖代理"
+            }
+          ],
+          "evidence": [
+            "ev.proxy-ports"
+          ]
+        },
+        {
+          "id": "h.dns-fail",
+          "name": "DNS 解析失败",
+          "why": "解析不出来时连接会卡在超时，而不是快速失败",
+          "checks": [
+            {
+              "metric": "network.dnsOkHosts",
+              "signal": "小于 network.totalHosts 即部分域名解析异常"
+            }
+          ],
+          "evidence": [
+            "ev.proxy-ports"
           ]
         }
       ]

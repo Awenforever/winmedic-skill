@@ -76,6 +76,32 @@
       "unit": "flag",
       "source": "trend",
       "note": "1=WinINET/WinHTTP/环境变量三处一致或都没配"
+    },
+    {
+      "name": "network.stallRate",
+      "unit": "ratio",
+      "source": "trend",
+      "note": "长连接采样停滞率 0..1"
+    },
+    {
+      "name": "network.dnsOkHosts",
+      "unit": "count",
+      "source": "trend"
+    },
+    {
+      "name": "network.directOkHosts",
+      "unit": "count",
+      "source": "trend"
+    },
+    {
+      "name": "network.totalHosts",
+      "unit": "count",
+      "source": "trend"
+    },
+    {
+      "name": "network.proxyOk",
+      "unit": "flag",
+      "source": "trend"
     }
   ],
   "dynamicNamespaces": [
