@@ -230,12 +230,6 @@
       "returns": "Workloads"
     },
     {
-      "id": "probe.proxy-chain",
-      "domain": "workloads",
-      "cost": "fast",
-      "returns": "ProxyChain"
-    },
-    {
       "id": "probe.cleanup-targets",
       "domain": "storage",
       "cost": "medium",

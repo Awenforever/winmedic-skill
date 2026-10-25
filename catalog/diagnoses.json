@@ -1,4 +1,4 @@
-{
+﻿{
   "schemaVersion": 1,
   "note": "鉴别诊断：只描述「要看什么」，不写结论。结论由 Agent 结合事实判断。",
   "diagnoses": [
@@ -123,36 +123,49 @@
       "requiredProbes": [
         "probe.network-adapters",
         "probe.dns-config",
-        "probe.proxy-config",
-        "probe.proxy-chain"
+        "probe.proxy-config"
       ],
       "hypotheses": [
         {
-          "id": "h.proxy-mismatch",
-          "name": "多层代理配置不一致",
-          "why": "系统层与 git/npm/pip 层端口不同，表现为「关了代理反而全断」",
+          "id": "h.proxy-off",
+          "name": "系统代理未启用",
+          "why": "被阻断的目标必须经代理，WinINET 未启用时依赖系统代理的程序会直连失败",
           "checks": [
             {
-              "metric": "proxy.consistent",
-              "signal": "false"
+              "metric": "network.winInetProxyEnabled",
+              "signal": "=0 且目标站点直连不通"
             }
           ],
           "evidence": [
-            "ev.proxy-chain"
+            "ev.proxy-ports"
           ]
         },
         {
-          "id": "h.dns",
-          "name": "DNS 解析异常",
-          "why": "解析失败时表现为「网站打不开」而非「没网」",
+          "id": "h.env-missing",
+          "name": "环境变量未设置",
+          "why": "Node/Rust/Electron 等程序不读 WinINET，只认 HTTPS_PROXY",
           "checks": [
             {
-              "metric": "network.proxyClientCount",
-              "signal": "多个代理客户端共存时易互相覆盖"
+              "metric": "network.envProxySet",
+              "signal": "=0 时这类程序会绕过代理"
             }
           ],
           "evidence": [
-            "ev.dns"
+            "ev.proxy-ports"
+          ]
+        },
+        {
+          "id": "h.conflict",
+          "name": "多处代理配置不一致",
+          "why": "WinINET / WinHTTP / 环境变量指向不同端口时，不同程序走不同出口，表现为「有的能用有的不能」",
+          "checks": [
+            {
+              "metric": "network.proxyConsistent",
+              "signal": "=0 即不一致"
+            }
+          ],
+          "evidence": [
+            "ev.proxy-ports"
           ]
         }
       ]
@@ -320,7 +333,7 @@
           "why": "用户级与系统级 WER 会长期累积",
           "checks": [
             {
-              "metric": "cleanup.wer-reports.GB",
+              "metric": "cleanup.wer.GB",
               "signal": ">0.2 GB"
             },
             {

@@ -21,6 +21,45 @@ $evidence  = Read-JsonFile (Join-Path $Root 'catalog\evidence.json')
 foreach ($pair in @(@{ n='probes.json'; v=$probes }, @{ n='actions.json'; v=$actions }, @{ n='evidence.json'; v=$evidence })) {
     if (-not $pair.v) { [void]$errors.Add('缺少或无法解析 catalog/' + $pair.n) }
 }
+# ---- 一致性：诊断引用的探针与指标必须存在 ----
+$metricsPath = Join-Path $Root 'catalog\metrics.json'
+$diagnosesPath = Join-Path $Root 'catalog\diagnoses.json'
+if (-not (Test-Path -LiteralPath $metricsPath)) {
+    [void]$errors.Add('缺少 catalog/metrics.json（指标注册表）')
+} else {
+    $metricReg = Get-Content $metricsPath -Raw -Encoding UTF8 | ConvertFrom-Json
+    $metricNames = @($metricReg.metrics | ForEach-Object { [string]$_.name })
+    if (Test-Path -LiteralPath $diagnosesPath) {
+        $dxCat = Get-Content $diagnosesPath -Raw -Encoding UTF8 | ConvertFrom-Json
+        $probeIds = @($probes.probes | ForEach-Object { [string]$_.id })
+        foreach ($d in @($dxCat.diagnoses)) {
+            foreach ($rp in @($d.requiredProbes)) {
+                if ($probeIds -notcontains [string]$rp) { [void]$errors.Add(('诊断 ' + $d.id + ' 依赖不存在的探针: ' + $rp)) }
+            }
+            foreach ($h in @($d.hypotheses)) {
+                foreach ($c in @($h.checks)) {
+                    $mn = [string]$c.metric
+                    if ($metricNames -contains $mn) { continue }
+                    $okDynamic = $false
+                    foreach ($ns in @($metricReg.dynamicNamespaces)) {
+                        if (-not $ns) { continue }
+                        $mt = [regex]::Match($mn, [string]$ns.pattern)
+                        if (-not $mt.Success) { continue }
+                        $targetFile = Join-Path $Root ([string]$ns.definedIn -replace '/', '\')
+                        if (-not (Test-Path -LiteralPath $targetFile)) { break }
+                        $tg = Get-Content $targetFile -Raw -Encoding UTF8 | ConvertFrom-Json
+                        $ids = @($tg.targets | ForEach-Object { [string]$_.id })
+                        $want = ([string]$ns.idTemplate).Replace('<id>', $mt.Groups['id'].Value)
+                        if ($ids -contains $want) { $okDynamic = $true }
+                        break
+                    }
+                    if (-not $okDynamic) { [void]$errors.Add(('诊断 ' + $d.id + ' 引用未注册指标: ' + $mn)) }
+                }
+            }
+        }
+    }
+}
+
 if ($errors.Count -gt 0) { $errors | ForEach-Object { Write-Host ('[X] ' + $_) }; exit 1 }
 
 $evIds = @{}

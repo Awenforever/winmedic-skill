@@ -110,6 +110,21 @@ function Get-TrendSnapshot {
         if ($ctTotal -gt 0) { $m['cleanup.totalGB'] = [math]::Round($ctTotal / 1GB, 3) }
     }
 
+    $pc = Get-TrendProbe -Findings $Findings -Id 'probe.proxy-config'
+    if ($pc -and $pc.data) {
+        $wi = ''
+        $ev = ''
+        if ($pc.data.PSObject.Properties.Name -contains 'winInet') { $wi = [string]$pc.data.winInet }
+        if ($pc.data.PSObject.Properties.Name -contains 'envHttps') { $ev = [string]$pc.data.envHttps }
+        $m['network.winInetProxyEnabled'] = if ($wi) { 1 } else { 0 }
+        $m['network.envProxySet'] = if ($ev) { 1 } else { 0 }
+        $cons = $null
+        if ($pc.data.PSObject.Properties.Name -contains 'summary' -and $pc.data.summary) {
+            if ($pc.data.summary.PSObject.Properties.Name -contains 'consistent') { $cons = $pc.data.summary.consistent }
+        }
+        if ($null -ne $cons) { $m['network.proxyConsistent'] = if ($cons) { 1 } else { 0 } }
+    }
+
     $rr = Get-TrendProbe -Findings $Findings -Id 'probe.recovery-readiness'
     if ($rr -and $rr.data) {
         if ($rr.data.PSObject.Properties.Name -contains 'shadowStorageBytes') {

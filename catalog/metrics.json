@@ -1,0 +1,89 @@
+{
+  "schemaVersion": 1,
+  "note": "指标的唯一事实源。诊断只能引用这里注册过的指标；未注册指标视为缺陷。",
+  "metrics": [
+    {
+      "name": "volume.freeGB",
+      "unit": "GB",
+      "source": "trend",
+      "note": "系统盘可用空间"
+    },
+    {
+      "name": "storage.hiberfilGB",
+      "unit": "GB",
+      "source": "trend"
+    },
+    {
+      "name": "storage.recycleGB",
+      "unit": "GB",
+      "source": "trend"
+    },
+    {
+      "name": "storage.browserCacheGB",
+      "unit": "GB",
+      "source": "trend"
+    },
+    {
+      "name": "storage.appCachesGB",
+      "unit": "GB",
+      "source": "trend"
+    },
+    {
+      "name": "storage.officeCacheGB",
+      "unit": "GB",
+      "source": "trend"
+    },
+    {
+      "name": "workloads.totalCacheGB",
+      "unit": "GB",
+      "source": "trend"
+    },
+    {
+      "name": "recovery.shadowGB",
+      "unit": "GB",
+      "source": "trend"
+    },
+    {
+      "name": "recovery.shadowCopies",
+      "unit": "count",
+      "source": "trend"
+    },
+    {
+      "name": "recovery.restorePoints",
+      "unit": "count",
+      "source": "trend"
+    },
+    {
+      "name": "cleanup.totalGB",
+      "unit": "GB",
+      "source": "trend",
+      "note": "全部清理目标合计"
+    },
+    {
+      "name": "network.winInetProxyEnabled",
+      "unit": "flag",
+      "source": "trend",
+      "note": "1=系统代理已启用"
+    },
+    {
+      "name": "network.envProxySet",
+      "unit": "flag",
+      "source": "trend",
+      "note": "1=HTTPS_PROXY 已设置（非 WinINET 程序依赖它）"
+    },
+    {
+      "name": "network.proxyConsistent",
+      "unit": "flag",
+      "source": "trend",
+      "note": "1=WinINET/WinHTTP/环境变量三处一致或都没配"
+    }
+  ],
+  "dynamicNamespaces": [
+    {
+      "pattern": "^cleanup\\.(?<id>.+)\\.GB$",
+      "idTemplate": "clean.<id>",
+      "definedIn": "catalog/cleanup-targets.json",
+      "note": "每个清理目标一个指标，由目标表动态生成"
+    }
+  ]
+}

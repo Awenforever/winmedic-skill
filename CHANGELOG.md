@@ -5,6 +5,25 @@
 
 ## [Unreleased]
 
+## [3.9.0] - 2026-10-25（指标治理：消灭「死案」）
+
+### Fixed（真实缺陷，由网络排查暴露）
+1. **`dx.proxy-unreachable` 是死案**：它引用的 `proxy.consistent`、`network.proxyClientCount` 在代码里**零处生产**，实跑永远是「（无数据）」
+   → 新增真实指标 `network.winInetProxyEnabled` / `network.envProxySet` / `network.proxyConsistent`（由 `probe.proxy-config` 计算），重写三个假设
+2. **孤儿探针**：`probe.proxy-chain` 在 catalog 里有条目但无实现 → 移除，并从诊断的 `requiredProbes` 摘掉
+3. **指标名拼错**：`dx.crash-log-bloat` 引用 `cleanup.wer-reports.GB`，但目标表里是 `clean.wer` → 修正
+
+### Added
+- `catalog/metrics.json`：指标的唯一事实源，支持**静态指标**与**动态命名空间**（`cleanup.<id>.GB` 由 `cleanup-targets.json` 生成）
+- `validate-catalog.ps1` 新增三方一致性校验：诊断引用的探针必须存在、指标必须注册（含动态命名空间校验）
+- `tests/pester/Consistency.Tests.ps1`：3 个用例守住上述契约
+
+### Verified
+- catalog 校验通过：probes=39 actions=40 evidence=27
+- Pester **267/0**，回归 **50/50**
+- `diagnose --case dx.proxy-unreachable` 现在给出真实数值（0 / 0 / 1）
+
+
 ## [3.8.2] - 2026-10-25
 
 ### Added
