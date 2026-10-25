@@ -234,6 +234,13 @@
       "domain": "storage",
       "cost": "medium",
       "returns": "CleanupTargets"
+    },
+    {
+      "id": "probe.net-link",
+      "domain": "network",
+      "cost": "high",
+      "returns": "NetLink",
+      "note": "带采样的链路体检：DNS/直连/代理/停滞率"
     }
   ]
 }

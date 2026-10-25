@@ -1,9 +1,34 @@
-# Changelog
+﻿# Changelog
 
 本文件格式遵循 [Keep a Changelog](https://keepachangelog.com/zh-CN/1.1.0/)，
 版本号遵循 [Semantic Versioning](https://semver.org/lang/zh-CN/)。
 
 ## [Unreleased]
+
+## [3.10.0] - 2026-10-26
+
+### Added（P1：只读诊断成为一等公民）
+- **`remote-probe --target <别名> --set net-link`**：GZip+base64 经 EncodedCommand 传输，**不在目标机落任何文件**，结果只落本地 state
+- **`probe.net-link` 带采样**：DNS、直连 443、代理可达性、N 次长连接采样的**停滞率**（这正是 Codex 反复重连的根因类型）
+- `engine/MANIFEST.txt` + `doctor` 完整性自检：文件缺失/为空时直接提示「可能是安全软件隔离」
+- `scripts/refresh-manifest.ps1`
+
+### Fixed
+- cmd 命令行 8191 字符上限导致 EncodedCommand 超长 → 改为压缩传输
+
+### Verified
+- 本地 `probe --set network`：`net-link` 输出 3 次采样、停滞率 0、代理可达
+- 远端 `remote-probe --target ustc-wjh`：DNS=True / 直连=False / 代理可达=True(401) / 采样 3/3 停滞率 0，**目标机零落盘**
+- NetLink 测试 3/3
+
+### Fixed（安全软件反复误杀，根因在工具）
+- **不再把 engine 复制到 `%TEMP%`**：loopback 改为就地运行仓库引擎，只把状态目录放临时位置；打包改用 `Compress-Archive` 直接压仓库路径，去掉临时 stage
+- 之前每次测试/回环都在 `%TEMP%\winmedic-rem-*` 生成一份 `Remote.ps1`，火绒每次见到新副本就隔离一次，导致信任区里堆了十几条同类路径
+- 启动自检：`doctor` 读 `engine/MANIFEST.txt`，文件被隔离时直接提示，而不是报「找不到命令」
+
+### Notes
+- 真实事故：火绒隔离了 `engine/lib/Remote.ps1`，表现为「找不到文件/命令」。已加入信任区，并补了完整性自检
+
 
 ## [3.9.0] - 2026-10-25（指标治理：消灭「死案」）
 

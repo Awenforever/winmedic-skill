@@ -112,6 +112,8 @@ if (-not $SkipCli) {
         @{ name = 'tools'; args = @('tools'); expect = 0 },
         @{ name = 'trend 记录'; args = @('trend', '--record', '--set', 'storage'); expect = 0 },
         @{ name = 'trend 报告'; args = @('trend'); expect = 0 },
+        @{ name = 'remote-probe 缺参数'; args = @('remote-probe'); expect = 2 },
+        @{ name = 'remote-probe 缺 set'; args = @('remote-probe','--target','x'); expect = 2 },
         @{ name = 'remote-apply 缺参数'; args = @('remote-apply'); expect = 2 },
         @{ name = 'remote-restore 缺参数'; args = @('remote-restore'); expect = 2 },
         @{ name = 'remote 缺 target'; args = @('remote'); expect = 2 },

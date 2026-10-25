@@ -85,18 +85,19 @@ function Format-RemotePathArg {
 }
 
 function New-RemoteBundle {
-    <#  打包最小运行集（engine/catalog/VERSION/SKILL.md），返回 zip 路径。  #>
+    <#
+      打包最小运行集（engine/catalog/VERSION/SKILL.md）。
+      直接对仓库路径压缩，**不复制到 %TEMP%**（避免杀软把临时副本当成新样本隔离）。
+    #>
     param([Parameter(Mandatory)][string]$RepoRoot, [string]$OutZip = '')
-    $stage = Join-Path ([IO.Path]::GetTempPath()) ('winmedic-stage-' + [guid]::NewGuid().ToString('N').Substring(0, 6))
-    New-Item -ItemType Directory -Force -Path $stage | Out-Null
+    $items = @()
     foreach ($item in @('engine', 'catalog', 'VERSION', 'SKILL.md')) {
         $src = Join-Path $RepoRoot $item
-        if (Test-Path -LiteralPath $src) { Copy-Item -LiteralPath $src -Destination $stage -Recurse -Force }
+        if (Test-Path -LiteralPath $src) { $items += $src }
     }
     if (-not $OutZip) { $OutZip = Join-Path ([IO.Path]::GetTempPath()) ('winmedic-' + [guid]::NewGuid().ToString('N').Substring(0, 6) + '.zip') }
     if (Test-Path -LiteralPath $OutZip) { Remove-Item -LiteralPath $OutZip -Force }
-    Compress-Archive -Path (Join-Path $stage '*') -DestinationPath $OutZip -Force
-    Remove-Item -LiteralPath $stage -Recurse -Force -ErrorAction SilentlyContinue
+    Compress-Archive -Path $items -DestinationPath $OutZip -Force
     return $OutZip
 }
 
@@ -172,16 +173,14 @@ function Invoke-RemoteSession {
     if (-not $profile.valid) { return @{ ok = $false; exitCode = 8; detail = $profile.error; runId = $runId } }
 
     if ($Via -eq 'local') {
-        $root = Join-Path ([IO.Path]::GetTempPath()) ('winmedic-' + $runId)
+        # 关键：不复制 engine 到临时目录（否则杀软每见到一个新副本就可能隔离 Remote.ps1）
+        # 就地运行仓库里的引擎，只把状态目录放到临时位置。
+        $root = Join-Path ([IO.Path]::GetTempPath()) ('winmedic-state-' + $runId)
         New-Item -ItemType Directory -Force -Path $root | Out-Null
-        foreach ($item in @('engine', 'catalog', 'VERSION')) {
-            $src = Join-Path $RepoRoot $item
-            if (Test-Path -LiteralPath $src) { Copy-Item -LiteralPath $src -Destination $root -Recurse -Force }
-        }
         $outFile = Join-Path $root ($Set + '-findings.json')
-        $env:CDRIVE_HOME = Join-Path $root 'cdrive'
+        $env:CDRIVE_HOME = $root
         try {
-            $null = & (Join-Path $root 'engine\winmedic.ps1') probe --set $Set --out $outFile 2>&1
+            $null = & (Join-Path $RepoRoot 'engine\winmedic.ps1') probe --set $Set --out $outFile 2>&1
         } finally {
             Remove-Item Env:\CDRIVE_HOME -ErrorAction SilentlyContinue
         }
@@ -189,7 +188,7 @@ function Invoke-RemoteSession {
         $dest = Import-RemoteFindings -RemoteFile $outFile -Alias ($profile.alias + '-loopback') -Set $Set
         if (-not $Keep) { Remove-Item -LiteralPath $root -Recurse -Force -ErrorAction SilentlyContinue }
         $sw.Stop()
-        return @{ ok = $true; exitCode = 0; findingsPath = $dest; runId = $runId; seconds = [math]::Round($sw.Elapsed.TotalSeconds, 1); detail = 'loopback' }
+        return @{ ok = $true; exitCode = 0; findingsPath = $dest; runId = $runId; seconds = [math]::Round($sw.Elapsed.TotalSeconds, 1); detail = '' }
     }
 
     $reach = Test-RemoteReachable -Target $profile.alias
@@ -400,4 +399,51 @@ function Invoke-RemoteEngineScript {
     Remove-Item -LiteralPath $local -Force -ErrorAction SilentlyContinue
     if ($LASTEXITCODE -ne 0) { return @{ ok = $false; exit = 8; text = '上传包装脚本失败' } }
     return (Invoke-RemoteShell -Target $Target -Command ('powershell -NoProfile -ExecutionPolicy Bypass -File ' + $remotePath) -TimeoutSec $TimeoutSec)
+}
+
+function Invoke-RemoteEphemeralProbe {
+    <#
+      远端只读体检：把 netlink 探针源码经 EncodedCommand 送到远端执行，
+      不在目标机创建任何文件。结果只落本地 state。
+    #>
+    param(
+        [Parameter(Mandatory)][string]$Target,
+        [int]$Samples = 3,
+        [int64]$Bytes = 5000000,
+        [int]$TimeoutSec = 15
+    )
+    $profile = Get-RemoteTargetProfile -Target $Target
+    if (-not $profile.valid) { return @{ ok = $false; error = $profile.error } }
+    $reach = Test-RemoteReachable -Target $profile.alias
+    if (-not $reach.ok) { return @{ ok = $false; error = ('不可达: ' + $reach.text) } }
+
+    $src = Join-Path (Split-Path -Parent (Split-Path -Parent $PSScriptRoot)) 'engine\probes\netlink.ps1'
+    if (-not (Test-Path -LiteralPath $src)) { return @{ ok = $false; error = ('缺少探针源码: ' + $src) } }
+    $code = Get-Content -LiteralPath $src -Raw -Encoding UTF8
+    $script = $code + "`n" + '$r = Get-NetLinkProbe -Samples ' + $Samples + ' -Bytes ' + $Bytes + ' -TimeoutSec ' + $TimeoutSec + "`n" + '$r | ConvertTo-Json -Depth 8 -Compress'
+    # cmd 命令行有 8191 字符上限：先 GZip 压缩再 base64，远端解压后 Invoke-Expression
+    $raw = [Text.Encoding]::UTF8.GetBytes($script)
+    $ms = New-Object IO.MemoryStream
+    $gz = New-Object IO.Compression.GZipStream($ms, [IO.Compression.CompressionMode]::Compress)
+    $gz.Write($raw, 0, $raw.Length)
+    $gz.Close()
+    $b64 = [Convert]::ToBase64String($ms.ToArray())
+    $ms.Dispose()
+    $wrapper = '$b=[Convert]::FromBase64String(''' + $b64 + ''');$m=New-Object IO.MemoryStream(,$b);$g=New-Object IO.Compression.GZipStream($m,[IO.Compression.CompressionMode]::Decompress);$s=(New-Object IO.StreamReader($g)).ReadToEnd();Invoke-Expression $s'
+    $run = Invoke-RemoteShell -Target $profile.alias -Command ('powershell -NoProfile -ExecutionPolicy Bypass -Command "' + $wrapper + '"') -TimeoutSec ($TimeoutSec * ($Samples + 2) + 30)
+    if (-not $run.ok -or -not $run.text) { return @{ ok = $false; error = ('执行失败: ' + $run.text) } }
+    $probe = $null
+    try { $probe = $run.text.Trim() | ConvertFrom-Json } catch { return @{ ok = $false; error = ('结果无法解析: ' + $run.text.Substring(0, [Math]::Min(200, $run.text.Length))) } }
+    $findings = [ordered]@{
+        schemaVersion = 1
+        generatedAt   = (Get-Date).ToString('o')
+        host          = $profile.alias
+        probeSet      = 'net-link'
+        probes        = @([pscustomobject]@{ id = 'probe.net-link'; ok = [bool]$probe.ok; data = $probe.data; candidates = @(); origin = ('remote:' + $profile.alias) })
+        candidates    = @()
+    }
+    $name = 'remote-' + ($profile.alias -replace '[^A-Za-z0-9._-]', '_') + '-netlink-findings.json'
+    $path = Join-Path (Get-RemoteStateDir) $name
+    Write-JsonResult -Object $findings -Path $path | Out-Null
+    return @{ ok = $true; findings = $findings; path = $path }
 }

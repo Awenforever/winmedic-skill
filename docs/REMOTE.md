@@ -92,3 +92,25 @@
 
 - 120 MB Edge 缓存：远端移入隔离区（目录消失）→ `remote-restore` → 3 个文件 SHA256 与原负载一致
 - 重复 restore 正确报「隔离区文件已不存在」
+
+## 无落盘只读体检（remote-probe）
+
+只想「看看」，不想在对方机器上留下任何文件时用这个：
+
+```powershell
+winmedic.ps1 remote-probe --target <别名> --set net-link
+```
+
+它把探针源码 **GZip 压缩 + base64** 后经 `EncodedCommand` 送到远端执行（cmd 命令行有 8191 字符上限），
+**不在目标机创建任何文件**，结果只落本地 `state/remote-<别名>-netlink-findings.json`。
+
+输出四项事实：
+
+| 项 | 含义 |
+|---|---|
+| DNS | 每个目标域名是否解析成功 |
+| 直连 443 | 不经代理能否建立 TCP |
+| 代理 | 端口、是否可达、HTTP 状态 |
+| 长连接采样 | N 次传输中完整/停滞的数量与停滞率 |
+
+实测（ustc-wjh）：`DNS=True 直连=False 代理可达=True HTTP=401 采样 3/3 停滞率=0`。

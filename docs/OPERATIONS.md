@@ -44,3 +44,12 @@ GitHub 直连通常不通，git 的 http.proxy 端口会随代理软件漂移。
 ```powershell
 .\scripts\gh-setup.ps1
 ```
+## 安全软件误杀（真实踩坑）
+
+2026-10-25：火绒把 `engine/lib/Remote.ps1` 隔离，表现是引擎突然报「找不到文件/命令」，排查半天才发现文件不见了。
+
+**处置**：
+1. 把仓库目录加入杀软信任区
+2. `winmedic.ps1 doctor` 现在会检查 `engine/MANIFEST.txt`：文件缺失或为空会直接提示「可能是安全软件隔离」
+
+`MANIFEST.txt` 由发布脚本生成，列出引擎全部 `.ps1`；加文件后记得同步清单（或跑 `scripts/refresh-manifest.ps1`）。

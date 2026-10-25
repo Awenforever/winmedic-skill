@@ -15,7 +15,7 @@
 [CmdletBinding()]
 param(
     [Parameter(Position = 0)]
-    [ValidateSet('doctor', 'probe', 'plan', 'apply', 'verify', 'restore', 'journal', 'profile', 'report', 'explain', 'summary', 'diff', 'relocate', 'remote', 'trend', 'diagnose', 'tools', 'selftest', 'remote-apply', 'remote-restore', 'version', 'help')]
+    [ValidateSet('doctor', 'probe', 'plan', 'apply', 'verify', 'restore', 'journal', 'profile', 'report', 'explain', 'summary', 'diff', 'relocate', 'remote', 'trend', 'diagnose', 'tools', 'selftest', 'remote-apply', 'remote-restore', 'remote-probe', 'version', 'help')]
     [string]$Command = 'help',
     [string]$SubCommand,
     [string]$Set = '',
@@ -80,6 +80,7 @@ if (-not $script:WinMedicRoot) { $script:WinMedicRoot = (Resolve-Path (Join-Path
 . (Join-Path $PSScriptRoot 'probes\apps.ps1')
 . (Join-Path $PSScriptRoot 'probes\updates.ps1')
 . (Join-Path $PSScriptRoot 'probes\network.ps1')
+. (Join-Path $PSScriptRoot 'probes\netlink.ps1')
 . (Join-Path $PSScriptRoot 'probes\security.ps1')
 . (Join-Path $PSScriptRoot 'probes\recovery.ps1')
 . (Join-Path $PSScriptRoot 'probes\printers.ps1')
@@ -227,6 +228,23 @@ function Get-StatePath {
     return $dir
 }
 
+function Test-EngineIntegrity {
+    <#  文件缺失/被安全软件隔离时给出明确提示，而不是让调用方看到「找不到命令」。  #>
+    $root = Split-Path -Parent $PSScriptRoot
+    $manifest = Join-Path $PSScriptRoot 'MANIFEST.txt'
+    if (-not (Test-Path -LiteralPath $manifest)) { return @{ ok = $true; missing = @(); note = '无清单，跳过' } }
+    $missing = @()
+    foreach ($rel in (Get-Content -LiteralPath $manifest -Encoding UTF8)) {
+        $r = $rel.Trim()
+        if (-not $r) { continue }
+        $full = Join-Path (Join-Path $PSScriptRoot ($r -replace '/', '\')) ''
+        $full = Join-Path $PSScriptRoot ($r -replace '/', '\')
+        if (-not (Test-Path -LiteralPath $full)) { $missing += $r }
+        elseif ((Get-Item -LiteralPath $full).Length -le 0) { $missing += ($r + '(空)') }
+    }
+    return @{ ok = ($missing.Count -eq 0); missing = $missing }
+}
+
 function Invoke-Doctor {
     $hostInfo = Get-HostProbe
     $d = $hostInfo.data
@@ -274,7 +292,7 @@ function Invoke-Probe {
     }
 
     if ($set -eq 'network' -or $set -eq 'all' -or $set -eq 'intake') {
-        $probes += @((Get-NetworkAdaptersProbe), (Get-DnsConfigProbe), (Get-ProxyConfigProbe), (Get-VpnAdaptersProbe))
+        $probes += @((Get-NetworkAdaptersProbe), (Get-DnsConfigProbe), (Get-ProxyConfigProbe), (Get-VpnAdaptersProbe), (Get-NetLinkProbe))
     }
 
     if ($set -eq 'security' -or $set -eq 'all' -or $set -eq 'intake') {
@@ -368,6 +386,12 @@ function Invoke-Plan {
 
     if ($Json) { Write-JsonResult -Object $plan | Out-Null; return $script:EXIT.OK }
     Write-Host $md
+    $integ = Test-EngineIntegrity
+    if (-not $integ.ok) {
+        Write-Log ('引擎文件完整性：缺失 ' + $integ.missing.Count + ' 个（可能是安全软件隔离，请把仓库目录加入信任区）') -Level WARN
+        foreach ($m in $integ.missing) { Write-Host ('  [缺失] ' + $m) }
+    }
+
     Write-Host ''
     Write-Log ('方案已写入: ' + $planPath) -Level OK
     return $script:EXIT.OK
@@ -1021,6 +1045,22 @@ function Invoke-RemoteRestoreCmd {
     return $script:EXIT.OK
 }
 
+function Invoke-RemoteProbeCmd {
+    if (-not $Target) { Write-Log 'remote-probe 需要 --target <ssh 别名>' -Level ERROR; return $script:EXIT.USAGE }
+    if (-not $Set) { Write-Log 'remote-probe 需要 --set net-link' -Level ERROR; return $script:EXIT.USAGE }
+    if ($Set -ne 'net-link') { Write-Log ('remote-probe 暂不支持: ' + $Set + '（目前仅 net-link）') -Level ERROR; return $script:EXIT.USAGE }
+    $res = Invoke-RemoteEphemeralProbe -Target $Target -Samples 3 -Bytes 5000000 -TimeoutSec $TimeoutSec
+    if (-not $res.ok) { Write-Log ('远端只读探针失败: ' + $res.error) -Level ERROR; return $script:EXIT.REMOTE }
+    if ($Json) { Write-JsonResult -Object $res.findings | Out-Null; return $script:EXIT.OK }
+    $d = $res.findings.probes[0].data
+    Write-Log ('远端只读体检完成（未在目标机落盘）') -Level OK
+    Write-Host ('  findings: ' + $res.path)
+    foreach ($h in @($d.hosts)) { Write-Host ('  ' + $h.host + '  DNS=' + $h.dnsOk + '  直连443=' + $h.directTcpOk) }
+    Write-Host ('  代理: ' + $d.proxy + '  可达=' + $d.proxyOk + '  HTTP=' + $d.proxyStatus)
+    Write-Host ('  长连接采样: ' + $d.complete + '/' + (@($d.samples).Count) + ' 完整，停滞率=' + $d.stallRate)
+    return $script:EXIT.OK
+}
+
 function Show-Help {
     Write-Host 'WinMedic 引擎'
     Write-Host '  doctor                     环境自检'
@@ -1048,6 +1088,8 @@ function Show-Help {
     Write-Host '  selftest [--keep]                       沙箱自检：证明隔离/还原逐字节一致'
     Write-Host '  remote-apply --target <别名> --plan <plan.json> --ids R2 --yes'
     Write-Host '                                          远端执行处置（同一套护栏；计划 origin 必须匹配）'
+    Write-Host '  remote-probe --target <别名> --set net-link'
+    Write-Host '                                          远端只读体检：DNS/直连/代理/长连接停滞率（不落盘）'
     Write-Host '  remote-restore --target <别名> --journal <runId> --yes'
     Write-Host '                                          远端还原（把隔离项移回远端原位）'
     Write-Host '  apply --action <id> --yes              执行 standalone 动作（仅 Tier 1）'
@@ -1077,6 +1119,7 @@ switch ($Command) {
     'selftest' { $code = Invoke-SelfTestCmd }
     'remote-apply' { $code = Invoke-RemoteApplyCmd }
     'remote-restore' { $code = Invoke-RemoteRestoreCmd }
+    'remote-probe' { $code = Invoke-RemoteProbeCmd }
     'version' { Write-Host ('winmedic ' + (Get-Content (Join-Path $script:WinMedicRoot 'VERSION') -Raw).Trim()); $code = $script:EXIT.OK }
     default   { $code = Show-Help }
 }
