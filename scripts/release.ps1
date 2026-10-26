@@ -17,7 +17,7 @@ $name = 'winmedic-skill-' + $ver
 $zip = Join-Path $OutDir ($name + '.zip')
 if (Test-Path $zip) { Remove-Item $zip -Force }
 $items = @()
-foreach ($i in @('engine', 'catalog', 'playbooks', 'cases', 'docs', 'SKILL.md', 'README.md', 'README.en.md', 'LICENSE', 'VERSION', 'CHANGELOG.md', 'SECURITY.md', 'CONTRIBUTING.md', 'playbook-index.md')) {
+foreach ($i in @('engine', 'catalog', 'playbooks', 'cases', 'docs', 'SKILL.md', 'README.md', 'README.en.md', 'LICENSE', 'VERSION', 'CHANGELOG.md', 'SECURITY.md', 'CONTRIBUTING.md', 'playbook-index.md', 'install.ps1', 'uninstall.ps1')) {
     $p = Join-Path $root $i
     if (Test-Path $p) { $items += $p }
 }
@@ -39,9 +39,10 @@ foreach ($item in $items) {
 }
 $arch.Dispose()
 $fs.Dispose()
-# 自校验：zip 内每个条目必须与源文件内容一致，且数量吻合
+# 自校验：双向核对（包内 -> 源、源 -> 包内）
 $bad = @()
 $z = [IO.Compression.ZipFile]::OpenRead($zip)
+$inZip = @($z.Entries | ForEach-Object { $_.FullName -replace '\\', '/' })
 foreach ($e in $z.Entries) {
     if ($e.FullName.EndsWith('/')) { continue }
     $src = Join-Path $root ($e.FullName -replace '/', '\')
@@ -49,16 +50,31 @@ foreach ($e in $z.Entries) {
     $stream = $e.Open()
     try {
         $sha = [Security.Cryptography.SHA256]::Create()
-        $inZip = (-join ($sha.ComputeHash($stream) | ForEach-Object { $_.ToString('x2') }))
+        $inZipHash = (-join ($sha.ComputeHash($stream) | ForEach-Object { $_.ToString('x2') }))
         $sha.Dispose()
     } finally { $stream.Dispose() }
     $onDisk = (Get-FileHash -LiteralPath $src -Algorithm SHA256).Hash.ToLower()
-    if ($inZip -ne $onDisk) { $bad += ('内容不一致: ' + $e.FullName) }
+    if ($inZipHash -ne $onDisk) { $bad += ('内容不一致: ' + $e.FullName) }
 }
 $z.Dispose()
-if ($bad.Count -gt 0) { Write-Host ('自校验失败 ' + $bad.Count + ' 项:') -ForegroundColor Red; $bad | ForEach-Object { Write-Host ('  [X] ' + $_) }; exit 1 }
-Write-Host '自校验: 条目与源文件内容一致'
-
+foreach ($item in $items) {
+    if (Test-Path -LiteralPath $item -PathType Leaf) {
+        if ($inZip -notcontains (Split-Path -Leaf $item)) { $bad += ('漏打包: ' + (Split-Path -Leaf $item)) }
+    } else {
+        $base = Split-Path -Leaf $item
+        foreach ($f in (Get-ChildItem -LiteralPath $item -Recurse -File)) {
+            $relPath = $f.FullName.Substring($item.Length).TrimStart('\')
+            $entry = $base + '/' + ($relPath -replace '\\', '/')
+            if ($inZip -notcontains $entry) { $bad += ('漏打包: ' + $entry) }
+        }
+    }
+}
+if ($bad.Count -gt 0) {
+    Write-Host ('自校验失败 ' + $bad.Count + ' 项:') -ForegroundColor Red
+    $bad | Select-Object -First 10 | ForEach-Object { Write-Host ('  [X] ' + $_) }
+    exit 1
+}
+Write-Host ('自校验: 双向一致（' + $inZip.Count + ' 个条目）')
 $hash = (Get-FileHash $zip -Algorithm SHA256).Hash
 $hashFile = Join-Path $OutDir ($name + '.zip.sha256')
 Set-Content -LiteralPath $hashFile -Value ($hash + '  ' + (Split-Path -Leaf $zip)) -Encoding ASCII

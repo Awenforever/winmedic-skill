@@ -43,6 +43,17 @@
 - 处理：把**仓库目录**加入信任区（不要只加单个文件或 Temp 路径），再 `git checkout -- engine/lib/Remote.ps1`
 - 受影响时远端功能不可用，其余功能不受影响
 
+### 实测记录（2026-10-26，win11-test VM）
+
+VM 上的火绒（HipsDaemon）拦截了 `Remote.ps1` 的复制。安装脚本**继续完成安装**并打印：
+
+```
+注意：engine/lib/Remote.ps1 缺失或被安全软件拦截（读到的内容为空）。
+  - 远端功能（remote / remote-probe / remote-apply）将不可用，其它功能正常
+```
+
+安装后 `probe` / `plan` / `selftest` 均正常；`remote-probe` 返回退出码 4 并提示加入信任区。
+
 ## 6. 趋势需要时间
 
 `trend` 的速率（perDay）在跨度 < 0.5 天时会拒绝给出，这是刻意的。要看到真实增长，至少积累一天。

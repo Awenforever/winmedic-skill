@@ -21,6 +21,14 @@
 - 远端计划本地拒绝执行（`origin` 守卫），远端隔离区持久化
 - 沙箱自检：8 项，含隔离/还原逐字节比对
 
+### 安装与生命周期
+- `install.ps1`：安装到用户目录（默认 `%LOCALAPPDATA%\Programs\WinMedic`），生成 `winmedic.cmd` 入口，`-Force` 覆盖升级，可选 `-AddToPath`
+- `uninstall.ps1`：默认**保留**状态目录；`-PurgeState -Yes` 才删除隔离区与审计日志
+- 安全软件拦截 `Remote.ps1` 时**降级安装**：远端功能不可用并明确提示，其余功能正常
+
+### 实测（win11-test VM，火绒环境）
+- 安装 → 使用（doctor/probe/plan/selftest）→ 升级（1.0.0 → 1.0.1，状态保留）→ 卸载（保留状态）→ 彻底卸载（删除状态）：**18/18 通过**
+
 ### 分发
 - `scripts/release.ps1`：产出 zip + SHA256，并**自校验 zip 条目与源文件一致**
 - CI 增加冷启动 job：从 zip 解压后在干净环境跑 `doctor/probe/plan/selftest`

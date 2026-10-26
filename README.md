@@ -17,6 +17,27 @@
 
 > 发布前必读：[已知局限](docs/KNOWN-LIMITATIONS.md)
 
+## 安装 / 升级 / 卸载
+
+```powershell
+# 安装（默认 %LOCALAPPDATA%\Programs\WinMedic，无需管理员）
+Expand-Archive .\winmedic-skill-1.0.0.zip -DestinationPath .
+powershell -ExecutionPolicy Bypass -File .\install.ps1
+
+# 使用入口
+winmedic.cmd doctor
+winmedic.cmd probe --set storage
+
+# 升级（覆盖安装，状态目录保留）
+powershell -ExecutionPolicy Bypass -File .\install.ps1 -Force
+
+# 卸载（默认保留隔离区与审计日志）
+powershell -ExecutionPolicy Bypass -File .\uninstall.ps1
+```
+
+> 安全软件若拦截 `engine/lib/Remote.ps1`，安装会**降级并提示**：远端功能不可用，其余正常。
+> 处理方式见 [已知局限](docs/KNOWN-LIMITATIONS.md)。
+
 ## 四件结构性能力
 
 | 能力 | 命令 | 说明 |
