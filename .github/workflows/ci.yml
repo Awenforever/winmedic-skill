@@ -11,11 +11,6 @@ jobs:
     steps:
       - uses: actions/checkout@v4
 
-      - name: Show environment
-        shell: pwsh
-        run: |
-          $PSVersionTable | Out-String | Write-Host
-
       - name: Validate catalog
         shell: powershell
         run: .\scripts\validate-catalog.ps1
@@ -25,64 +20,64 @@ jobs:
         run: |
           $ConfirmPreference = 'None'
           Install-Module Pester -MinimumVersion 5.0.0 -Force -Scope CurrentUser -SkipPublisherCheck -Confirm:$false -ErrorAction Stop
-          Import-Module Pester -MinimumVersion 5.0.0
 
-      - name: Engine tests
+  suite:
+    runs-on: windows-latest
+    needs: validate
+    strategy:
+      fail-fast: false
+      matrix:
+        suite: ['Action', 'Apps', 'Backup', 'Boot', 'Consistency', 'Diagnose', 'Guardrails', 'Mail', 'Mcp', 'NetLink', 'Network', 'Origins', 'Plan', 'Printers', 'Profile', 'PurgeConfirm', 'Quarantine', 'Recommendations', 'Recovery', 'Relocation', 'RelocationFacts', 'Remote', 'Report', 'RiskGate', 'Safety', 'Security', 'SelfTest', 'Summary', 'Tools', 'Trend', 'Updates', 'Workloads']
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Install Pester
         shell: powershell
         run: |
-          Import-Module Pester -MinimumVersion 5.0.0
-          $r = Invoke-Pester -Path .\tests\pester -PassThru -Output Detailed
-          if ($r.FailedCount -gt 0) { throw ('Pester failed: ' + $r.FailedCount) }
+          $ConfirmPreference = 'None'
+          Install-Module Pester -MinimumVersion 5.0.0 -Force -Scope CurrentUser -SkipPublisherCheck -Confirm:$false -ErrorAction Stop
 
+      - name: Run ${{ matrix.suite }}
+        shell: powershell
+        run: |
+          $r = Invoke-Pester -Path '.\tests\pester\${{ matrix.suite }}.Tests.ps1' -PassThru -Output Detailed
+          if ($r.FailedCount -gt 0) { throw ('suite failed: ${{ matrix.suite }}') }
+
+  routing:
+    runs-on: windows-latest
+    needs: validate
+    steps:
+      - uses: actions/checkout@v4
+      - name: Install Pester
+        shell: powershell
+        run: |
+          $ConfirmPreference = 'None'
+          Install-Module Pester -MinimumVersion 5.0.0 -Force -Scope CurrentUser -SkipPublisherCheck -Confirm:$false -ErrorAction Stop
       - name: Routing tests
         shell: powershell
         run: |
-          Import-Module Pester -MinimumVersion 5.0.0
           $r = Invoke-Pester -Path .\tests\routing -PassThru -Output Detailed
-          if ($r.FailedCount -gt 0) { throw ('Routing failed: ' + $r.FailedCount) }
+          if ($r.FailedCount -gt 0) { throw 'routing failed' }
 
+  regress:
+    runs-on: windows-latest
+    needs: validate
+    steps:
+      - uses: actions/checkout@v4
       - name: CLI contract regression
         shell: powershell
         run: |
           .\scripts\regress.ps1 -SkipUnit
           if ($LASTEXITCODE -ne 0) { throw 'regression failed' }
 
-      - name: Generate checksums
-        shell: powershell
-        run: |
-          New-Item -ItemType Directory -Force -Path checksums | Out-Null
-          $root = (Get-Location).Path
-          $files = @()
-          foreach ($d in @('engine','catalog','playbooks','scripts')) {
-            $files += Get-ChildItem -Path $d -Recurse -File -ErrorAction SilentlyContinue
-          }
-          foreach ($f in @('SKILL.md','playbook-index.md','README.md','VERSION')) {
-            if (Test-Path $f) { $files += Get-Item $f }
-          }
-          $lines = foreach ($f in $files) {
-            $h = (Get-FileHash -LiteralPath $f.FullName -Algorithm SHA256).Hash.ToLower()
-            $rel = $f.FullName.Substring($root.Length).TrimStart('\') -replace '\\','/'
-            ($h + '  ' + $rel)
-          }
-          $lines | Sort-Object | Set-Content -LiteralPath checksums\SHA256SUMS -Encoding ascii
-          Write-Host ('checksums: ' + $lines.Count + ' files')
-
-      - name: Upload checksums
-        uses: actions/upload-artifact@v4
-        with:
-          name: checksums
-          path: checksums/SHA256SUMS
-
   coldstart:
     runs-on: windows-latest
-    needs: validate
+    needs: [validate, regress]
     steps:
       - uses: actions/checkout@v4
-
       - name: Build release package
         shell: powershell
         run: .\scripts\release.ps1
-
       - name: Cold start from zip
         shell: powershell
         run: |
