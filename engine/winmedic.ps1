@@ -69,7 +69,13 @@ if (-not $script:WinMedicRoot) { $script:WinMedicRoot = (Resolve-Path (Join-Path
 . (Join-Path $PSScriptRoot 'lib\Recommendations.ps1')
 . (Join-Path $PSScriptRoot 'lib\Relocation.ps1')
 . (Join-Path $PSScriptRoot 'lib\Explain.ps1')
-. (Join-Path $PSScriptRoot 'lib\Remote.ps1')
+$remoteLibPath = Join-Path $PSScriptRoot 'lib\Remote.ps1'
+$script:RemoteLibOk = $false
+if (Test-Path -LiteralPath $remoteLibPath) {
+    $remoteLen = 0
+    try { $remoteLen = (Get-Content -LiteralPath $remoteLibPath -Raw -ErrorAction Stop).Length } catch { $remoteLen = 0 }
+    if ($remoteLen -gt 0) { . $remoteLibPath; $script:RemoteLibOk = $true }
+}
 . (Join-Path $PSScriptRoot 'lib\Trend.ps1')
 . (Join-Path $PSScriptRoot 'lib\Diagnose.ps1')
 . (Join-Path $PSScriptRoot 'lib\Tools.ps1')
@@ -857,6 +863,7 @@ function Invoke-Relocate {
 }
 
 function Invoke-RemoteCmd {
+    if (-not (Test-RemoteLib)) { return $script:EXIT.PRECONDITION }
     if (-not $Target) {
         Write-Log 'remote 需要 --target <ssh 别名或 user@host>' -Level ERROR
         Write-Log '示例: winmedic.ps1 remote --target augenstern-adm --set intake' -Level INFO
@@ -1018,6 +1025,7 @@ function Invoke-SelfTestCmd {
 }
 
 function Invoke-RemoteApplyCmd {
+    if (-not (Test-RemoteLib)) { return $script:EXIT.PRECONDITION }
     if (-not $Target) { Write-Log 'remote-apply 需要 --target <ssh 别名>' -Level ERROR; return $script:EXIT.USAGE }
     if (-not $PlanPath) { Write-Log 'remote-apply 需要 --plan <本地计划文件>' -Level ERROR; return $script:EXIT.USAGE }
     if (-not $Ids -or $Ids.Count -eq 0) { Write-Log 'remote-apply 需要 --ids <R2,R3>' -Level ERROR; return $script:EXIT.USAGE }
@@ -1034,6 +1042,7 @@ function Invoke-RemoteApplyCmd {
 }
 
 function Invoke-RemoteRestoreCmd {
+    if (-not (Test-RemoteLib)) { return $script:EXIT.PRECONDITION }
     if (-not $Target) { Write-Log 'remote-restore 需要 --target <ssh 别名>' -Level ERROR; return $script:EXIT.USAGE }
     if (-not $Journal) { Write-Log 'remote-restore 需要 --journal <runId>' -Level ERROR; return $script:EXIT.USAGE }
     if (-not $Yes) { Write-Log 'remote-restore 需要显式 --yes' -Level ERROR; return $script:EXIT.USAGE }
@@ -1045,7 +1054,16 @@ function Invoke-RemoteRestoreCmd {
     return $script:EXIT.OK
 }
 
+function Test-RemoteLib {
+    if ($script:RemoteLibOk) { return $true }
+    Write-Log '远端模块不可用：engine/lib/Remote.ps1 缺失或被安全软件拦截（读到的内容为空）' -Level ERROR
+    Write-Log '处理：把仓库目录加入杀毒软件信任区，然后执行 git checkout -- engine/lib/Remote.ps1' -Level INFO
+    Write-Log '非远端功能（probe/plan/apply/verify/restore/trend/diagnose）不受影响' -Level INFO
+    return $false
+}
+
 function Invoke-RemoteProbeCmd {
+    if (-not (Test-RemoteLib)) { return $script:EXIT.PRECONDITION }
     if (-not $Target) { Write-Log 'remote-probe 需要 --target <ssh 别名>' -Level ERROR; return $script:EXIT.USAGE }
     if (-not $Set) { Write-Log 'remote-probe 需要 --set net-link' -Level ERROR; return $script:EXIT.USAGE }
     if ($Set -ne 'net-link') { Write-Log ('remote-probe 暂不支持: ' + $Set + '（目前仅 net-link）') -Level ERROR; return $script:EXIT.USAGE }

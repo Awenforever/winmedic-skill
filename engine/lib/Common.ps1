@@ -23,9 +23,25 @@ $script:EXIT = @{
 }
 
 # ---- 根目录 ----------------------------------------------------------------
+function Test-DirWritable {
+    param([Parameter(Mandatory)][string]$Path)
+    try {
+        if (-not (Test-Path -LiteralPath $Path)) { New-Item -ItemType Directory -Force -Path $Path -ErrorAction Stop | Out-Null }
+        $probe = Join-Path $Path ('.wtest-' + [guid]::NewGuid().ToString('N').Substring(0, 8))
+        [IO.File]::WriteAllText($probe, 'x')
+        Remove-Item -LiteralPath $probe -Force -ErrorAction SilentlyContinue
+        return $true
+    } catch { return $false }
+}
+
 function Get-CdriveRoot {
     if ($env:CDRIVE_HOME) { return $env:CDRIVE_HOME }
-    return (Join-Path $env:ProgramData 'cdrive')
+    # 优先 ProgramData（多用户共享），不可写时回退到用户目录（非管理员/受控机器）
+    $shared = Join-Path $env:ProgramData 'cdrive'
+    if (Test-DirWritable -Path $shared) { return $shared }
+    $user = Join-Path $env:LOCALAPPDATA 'winmedic'
+    if (Test-DirWritable -Path $user) { return $user }
+    return $shared
 }
 
 function Get-CdriveStateDir {

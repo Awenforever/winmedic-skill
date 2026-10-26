@@ -1,4 +1,4 @@
-# WinMedic
+﻿# WinMedic
 
 > **DSH Agent 的 Skill：给 AI 用的「主治医生」，不是给用户双击的清理软件。**
 
@@ -14,6 +14,8 @@
 原则：**引擎只给事实，判断归 Agent；红线绝不放开，不制造不可逆损害。**
 
 详见 [docs/POSITIONING.md](docs/POSITIONING.md)。
+
+> 发布前必读：[已知局限](docs/KNOWN-LIMITATIONS.md)
 
 ## 四件结构性能力
 

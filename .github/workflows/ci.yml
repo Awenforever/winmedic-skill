@@ -72,3 +72,32 @@ jobs:
         with:
           name: checksums
           path: checksums/SHA256SUMS
+
+  coldstart:
+    runs-on: windows-latest
+    needs: validate
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Build release package
+        shell: powershell
+        run: .\scripts\release.ps1
+
+      - name: Cold start from zip
+        shell: powershell
+        run: |
+          $zip = Get-ChildItem dist\*.zip | Select-Object -First 1
+          if (-not $zip) { throw 'no release zip' }
+          $dst = Join-Path $env:RUNNER_TEMP 'coldstart'
+          Expand-Archive -LiteralPath $zip.FullName -DestinationPath $dst -Force
+          $eng = Join-Path $dst 'engine\winmedic.ps1'
+          if (-not (Test-Path $eng)) { throw 'engine missing after extract' }
+          if (-not (Test-Path (Join-Path $dst 'engine\lib\Remote.ps1'))) { throw 'lib module missing after extract' }
+          $env:CDRIVE_HOME = Join-Path $env:RUNNER_TEMP 'coldstart-state'
+          & $eng doctor; if ($LASTEXITCODE -ne 0) { throw 'doctor failed' }
+          $out = Join-Path $env:RUNNER_TEMP 'p.json'
+          & $eng probe --set storage --out $out; if ($LASTEXITCODE -ne 0) { throw 'probe failed' }
+          if (-not (Test-Path $out)) { throw 'probe produced no findings' }
+          & $eng plan --from $out; if ($LASTEXITCODE -ne 0) { throw 'plan failed' }
+          & $eng selftest; if ($LASTEXITCODE -ne 0) { throw 'selftest failed' }
+          Write-Host 'cold start OK'

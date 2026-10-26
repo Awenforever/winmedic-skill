@@ -5,6 +5,32 @@
 
 ## [Unreleased]
 
+## [1.0.0] - 2026-10-26
+
+首个公开可用版本。
+
+### 能力
+- 只读采集与鉴别诊断（6 个诊断用例：C 盘满、代理、浏览器衍生缓存、开发缓存、崩溃日志、链路不稳）
+- 处置闭环：`plan → apply → verify → restore`，隔离区 + 审计日志 + 孤儿恢复
+- 远端：`remote`（只读采集）、`remote-probe`（零落盘体检）、`remote-apply` / `remote-restore`
+- 病程：`trend`（按来源隔离、按测量时间打点、可重建）
+- 40 个处置动作（数据驱动目标表），24 个已真机验证
+
+### 安全
+- 红线拦截、风险分级、计划哈希绑定、purge 双门（`--accept-irreversible` + `--confirm-token`）
+- 远端计划本地拒绝执行（`origin` 守卫），远端隔离区持久化
+- 沙箱自检：8 项，含隔离/还原逐字节比对
+
+### 分发
+- `scripts/release.ps1`：产出 zip + SHA256，并**自校验 zip 条目与源文件一致**
+- CI 增加冷启动 job：从 zip 解压后在干净环境跑 `doctor/probe/plan/selftest`
+- 已知局限见 `docs/KNOWN-LIMITATIONS.md`
+
+### 验证状态
+- Pester 272/0；回归 52/52；catalog：probes=40 actions=40 evidence=27
+- 真机闭环：G1（本地处置+字节级还原）、G2（还原点/Tier3 拦截）、G3（远端处置+远端还原）
+
+
 ## [3.11.2] - 2026-10-26
 
 ### Docs

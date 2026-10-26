@@ -1,4 +1,4 @@
-# runtime state
+﻿# runtime state
 state/
 *.log
 
@@ -14,3 +14,5 @@ tests/**/TestResults/
 # local
 *.local.json
 vendor/
+# 发布产物（本地生成，不入库）
+dist/
