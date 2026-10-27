@@ -15,11 +15,18 @@ jobs:
         shell: powershell
         run: .\scripts\validate-catalog.ps1
 
-      - name: Install Pester
+      - name: Ensure Pester 5
         shell: powershell
         run: |
-          $ConfirmPreference = 'None'
-          Install-Module Pester -MinimumVersion 5.0.0 -Force -Scope CurrentUser -SkipPublisherCheck -Confirm:$false -ErrorAction Stop
+          $mod = Get-Module -ListAvailable Pester | Where-Object { $_.Version.Major -ge 5 } | Select-Object -First 1
+          if (-not $mod) {
+            Write-Host '未预装 Pester 5，尝试安装'
+            $ConfirmPreference = 'None'
+            Install-Module Pester -MinimumVersion 5.0.0 -Force -Scope CurrentUser -SkipPublisherCheck -Confirm:$false -ErrorAction Stop
+          } else {
+            Write-Host ('使用预装 Pester ' + $mod.Version)
+          }
+          Import-Module Pester -MinimumVersion 5.0.0 -ErrorAction Stop
 
   suite:
     runs-on: windows-latest
@@ -27,19 +34,27 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        suite: ['Action', 'Apps', 'Backup', 'Boot', 'Consistency', 'Diagnose', 'Guardrails', 'Mail', 'Mcp', 'NetLink', 'Network', 'Origins', 'Plan', 'Printers', 'Profile', 'PurgeConfirm', 'Quarantine', 'Recommendations', 'Recovery', 'Relocation', 'RelocationFacts', 'Remote', 'Report', 'RiskGate', 'Safety', 'Security', 'SelfTest', 'Summary', 'Tools', 'Trend', 'Updates', 'Workloads']
+        suite: ['Action', 'Apps', 'Backup', 'Boot', 'Consistency', 'Diagnose', 'Guardrails', 'Mail', 'Mcp', 'NetLink', 'Network', 'Origins', 'Plan', 'Printers', 'Profile', 'PurgeConfirm', 'Quarantine', 'Recommendations', 'Recovery', 'Relocation', 'RelocationFacts', 'SkillHost', 'Remote', 'Report', 'RiskGate', 'Safety', 'Security', 'SelfTest', 'Summary', 'Tools', 'Trend', 'Updates', 'Workloads']
     steps:
       - uses: actions/checkout@v4
 
-      - name: Install Pester
+      - name: Ensure Pester 5
         shell: powershell
         run: |
-          $ConfirmPreference = 'None'
-          Install-Module Pester -MinimumVersion 5.0.0 -Force -Scope CurrentUser -SkipPublisherCheck -Confirm:$false -ErrorAction Stop
+          $mod = Get-Module -ListAvailable Pester | Where-Object { $_.Version.Major -ge 5 } | Select-Object -First 1
+          if (-not $mod) {
+            Write-Host '未预装 Pester 5，尝试安装'
+            $ConfirmPreference = 'None'
+            Install-Module Pester -MinimumVersion 5.0.0 -Force -Scope CurrentUser -SkipPublisherCheck -Confirm:$false -ErrorAction Stop
+          } else {
+            Write-Host ('使用预装 Pester ' + $mod.Version)
+          }
+          Import-Module Pester -MinimumVersion 5.0.0 -ErrorAction Stop
 
       - name: Run ${{ matrix.suite }}
         shell: powershell
         run: |
+          Import-Module Pester -MinimumVersion 5.0.0 -ErrorAction Stop
           $r = Invoke-Pester -Path '.\tests\pester\${{ matrix.suite }}.Tests.ps1' -PassThru -Output Detailed
           if ($r.FailedCount -gt 0) {
             foreach ($f in ($r.Failed | Select-Object -First 5)) {
@@ -55,14 +70,22 @@ jobs:
     needs: validate
     steps:
       - uses: actions/checkout@v4
-      - name: Install Pester
+      - name: Ensure Pester 5
         shell: powershell
         run: |
-          $ConfirmPreference = 'None'
-          Install-Module Pester -MinimumVersion 5.0.0 -Force -Scope CurrentUser -SkipPublisherCheck -Confirm:$false -ErrorAction Stop
+          $mod = Get-Module -ListAvailable Pester | Where-Object { $_.Version.Major -ge 5 } | Select-Object -First 1
+          if (-not $mod) {
+            Write-Host '未预装 Pester 5，尝试安装'
+            $ConfirmPreference = 'None'
+            Install-Module Pester -MinimumVersion 5.0.0 -Force -Scope CurrentUser -SkipPublisherCheck -Confirm:$false -ErrorAction Stop
+          } else {
+            Write-Host ('使用预装 Pester ' + $mod.Version)
+          }
+          Import-Module Pester -MinimumVersion 5.0.0 -ErrorAction Stop
       - name: Routing tests
         shell: powershell
         run: |
+          Import-Module Pester -MinimumVersion 5.0.0 -ErrorAction Stop
           $r = Invoke-Pester -Path .\tests\routing -PassThru -Output Detailed
           if ($r.FailedCount -gt 0) { throw 'routing failed' }
 
