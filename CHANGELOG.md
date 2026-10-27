@@ -5,6 +5,17 @@
 
 ## [Unreleased]
 
+## [1.0.3] - 2026-10-27
+
+### Added
+- `tests/pester/SkillHost.Tests.ps1`：把「宿主契约」固化成回归测试——frontmatter 必填、不得有裸冒号空格、MCP 输出必须是严格合法 UTF-8 且中文可读
+- 病例 `0011`：装进 DSH 才暴露的两个契约问题
+
+### Verified
+- 重启 DSH 后：`skill` 返回 provider=filesystem；`mcp__winmedic__winmedic_doctor` 中文正常、无替换符
+- SkillHost 测试 3/3
+
+
 ## [1.0.2] - 2026-10-27
 
 ### Fixed（装进 DSH 后暴露）
