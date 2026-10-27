@@ -5,6 +5,17 @@
 
 ## [Unreleased]
 
+## [1.0.2] - 2026-10-27
+
+### Fixed（装进 DSH 后暴露）
+1. **技能无法被识别**：`SKILL.md` frontmatter 的 `whenToUse` 值里含 `English keywords: ...`，冒号+空格让 YAML 把值截断成映射，解析失败 → 技能不进目录。现改为双引号包裹
+2. **MCP 中文乱码**：MCP 服务器未设置 stdout 编码，PowerShell 默认按 OEM 代码页（GBK）写出，客户端按 UTF-8 解码 → 乱码。现显式设置 `[Console]::OutputEncoding/InputEncoding = UTF8`
+
+### Verified
+- DSH 技能目录已出现 `winmedic`（provider=filesystem，base=~/.dsh/skills/winmedic）
+- MCP `initialize` / `tools/list`（14 工具）/ `tools/call` 均正常；严格 UTF-8 解码下中文正确，无替换符
+
+
 ## [1.0.1] - 2026-10-27
 
 ### Docs

@@ -21,6 +21,10 @@ param(
 )
 
 $ErrorActionPreference = 'Stop'
+# MCP 走 stdio 传输 JSON：必须固定 UTF-8，否则中文在客户端侧是乱码
+[Console]::OutputEncoding = [Text.Encoding]::UTF8
+[Console]::InputEncoding = [Text.Encoding]::UTF8
+$OutputEncoding = [Text.Encoding]::UTF8
 $script:Root = Split-Path -Parent (Split-Path -Parent $PSScriptRoot)
 if (-not $script:Root) { $script:Root = (Resolve-Path (Join-Path $PSScriptRoot '..\..')).Path }
 $script:Engine = if ($EnginePath) { $EnginePath } else { Join-Path $script:Root 'engine\winmedic.ps1' }
