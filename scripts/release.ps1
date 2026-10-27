@@ -16,6 +16,29 @@ $ver = (Get-Content (Join-Path $root 'VERSION') -Raw).Trim()
 $name = 'winmedic-skill-' + $ver
 $zip = Join-Path $OutDir ($name + '.zip')
 if (Test-Path $zip) { Remove-Item $zip -Force }
+# 兜底：安全软件可能删掉某些被标记的脚本；只要 git 里有，就还原后再打包
+# 从 git 还原缺失的受跟踪文件
+$restored = @()
+foreach ($sub in @('engine', 'catalog', 'playbooks', 'cases', 'docs')) {
+    $dir = Join-Path $root $sub
+    if (-not (Test-Path $dir)) { continue }
+    Push-Location $root
+    $tracked = @(& git ls-files ($sub -replace '\\', '/'))
+    Pop-Location
+    foreach ($rel in $tracked) {
+        $full = Join-Path $root ($rel -replace '/', '\')
+        if (-not (Test-Path $full)) {
+            $content = & git show ('HEAD:' + $rel) 2>$null
+            if ($LASTEXITCODE -eq 0) {
+                New-Item -ItemType Directory -Force -Path (Split-Path -Parent $full) | Out-Null
+                Set-Content -LiteralPath $full -Value ($content -join [Environment]::NewLine) -Encoding UTF8
+                $restored += $rel
+            }
+        }
+    }
+}
+if ($restored.Count -gt 0) { Write-Host ('从 git 还原 ' + $restored.Count + ' 个缺失文件: ' + ($restored -join ', ')) }
+
 $items = @()
 foreach ($i in @('engine', 'catalog', 'playbooks', 'cases', 'docs', 'SKILL.md', 'README.md', 'README.en.md', 'LICENSE', 'VERSION', 'CHANGELOG.md', 'SECURITY.md', 'CONTRIBUTING.md', 'playbook-index.md', 'install.ps1', 'uninstall.ps1')) {
     $p = Join-Path $root $i

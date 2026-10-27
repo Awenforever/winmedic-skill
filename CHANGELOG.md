@@ -5,6 +5,16 @@
 
 ## [Unreleased]
 
+## [1.0.5] - 2026-10-27
+
+### Added
+- `release.ps1` 打包前兜底：受跟踪文件若被安全软件删除，自动从 `git show HEAD:<path>` 还原，保证发布包完整
+
+### Verified（宿主验收 8/8）
+- 技能目录加入火绒信任区后：`Remote.ps1` 可读、存活；`verify-host.ps1` 八项全过
+- 远端链路实测：`remote-probe --target win11-test --set net-link` 退出码 0，目标机零落盘
+
+
 ## [1.0.4] - 2026-10-27
 
 ### Added
