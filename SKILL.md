@@ -7,6 +7,11 @@ version: 1.16.0
 
 # WinMedic
 
+
+> **定位引擎**：引擎在本技能目录下的 `engine\winmedic.ps1`。
+> 若当前工作目录不是技能目录，请用 `skill` 工具返回的 `resourceBase.path` 拼出绝对路径再执行（例如 `<技能目录>\engine\winmedic.ps1 doctor`）。
+> 状态目录默认 `C:\ProgramData\cdrive`，不可写时自动回退到 `%LOCALAPPDATA%\winmedic`。
+
 ## 症状 → 先跑什么（硬触发，不要跳过）
 
 | 症状 | 必须先执行 | 禁止先做 |

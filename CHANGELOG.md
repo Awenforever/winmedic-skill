@@ -5,6 +5,16 @@
 
 ## [Unreleased]
 
+## [1.0.1] - 2026-10-27
+
+### Docs
+- `SKILL.md` 明确引擎绝对路径的解析方式（配合 DSH `skill` 工具的 `resourceBase`），并说明状态目录回退规则
+
+### Install
+- 已以技能形式安装到 `~/.dsh/skills/winmedic`（0.58 MB），引擎自检通过
+- 可选 MCP：stdio 握手验证通过，`initialize` 返回 `winmedic 1.0.0`，`tools/list` 返回 **14** 个工具
+
+
 ## [1.0.0] - 2026-10-26
 
 首个公开可用版本。
