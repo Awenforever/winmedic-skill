@@ -1,0 +1,26 @@
+#!/bin/sh
+# 安全软件可能删除被标记的脚本；禁止把这类删除误提交进历史。
+# 确需删除时：ALLOW_PROTECTED_DELETE=1 git commit ...
+
+if [ "$ALLOW_PROTECTED_DELETE" = "1" ]; then
+  exit 0
+fi
+
+deleted=$(git diff --cached --name-only --diff-filter=D)
+[ -z "$deleted" ] && exit 0
+
+bad=''
+for f in $deleted; do
+  case "$f" in
+    engine/*|catalog/*|playbooks/*) bad="$bad $f" ;;
+  esac
+done
+
+if [ -n "$bad" ]; then
+  echo "[pre-commit] 拒绝对受保护目录的删除提交：" >&2
+  for f in $bad; do echo "  - $f" >&2; done
+  echo "若确需删除：ALLOW_PROTECTED_DELETE=1 git commit ..." >&2
+  echo "若文件是被安全软件删除，请先 git checkout <tag> -- <path> 恢复。" >&2
+  exit 1
+fi
+exit 0
