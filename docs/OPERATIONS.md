@@ -64,3 +64,40 @@ GitHub 直连通常不通，git 的 http.proxy 端口会随代理软件漂移。
 ```
 
 `push.ps1` 会重试并在最后用 `ls-remote` 确认远端 HEAD 与本地一致，避免「以为推上去了」。
+
+## 安装到宿主后的验收清单（DSH）
+
+每次发版、每次装到新宿主，跑一条命令：
+
+```powershell
+powershell -ExecutionPolicy Bypass -File .\scripts\verify-host.ps1
+powershell -ExecutionPolicy Bypass -File .\scripts\verify-host.ps1 -Json   # 机器可读
+```
+
+八项检查（全部 PASS 才算出货）：
+
+| # | 检查 | 失败意味着 |
+|---|---|---|
+| 1 | SKILL.md 存在 | 安装不完整 |
+| 2 | engine 存在 | 同上 |
+| 3 | `Remote.ps1` 可读 | 被安全软件拦截 → **远端功能降级** |
+| 4 | VERSION 与引擎版本一致 | 覆盖不完整（升级残留） |
+| 5 | frontmatter 可被 YAML 解析 | 技能不会出现在宿主目录（病例 0011） |
+| 6 | doctor 通过 | 环境/权限问题 |
+| 7 | MCP 握手 + 中文可读 | MCP 未注册、或编码不一致（病例 0011） |
+| 8 | MCP 已注册到 profile | 配置没写进去 |
+
+### 第 3 项失败怎么办
+
+现象：`Remote.ps1` 缺失或读出来是空。
+
+1. 把**技能目录**加入杀毒软件信任区：`%USERPROFILE%\.dsh\skills\winmedic`
+2. 从仓库或安装包恢复文件：
+
+```powershell
+Copy-Item .\engine\lib\Remote.ps1 "$env:USERPROFILE\.dsh\skills\winmedic\engine\lib\" -Force
+```
+
+3. 重跑 `verify-host.ps1`
+
+其余功能（probe/plan/apply/verify/restore/trend/diagnose）不受影响，只有 `remote*` 命令会返回退出码 4 并提示原因。

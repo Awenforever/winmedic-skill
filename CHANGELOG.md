@@ -5,6 +5,16 @@
 
 ## [Unreleased]
 
+## [1.0.4] - 2026-10-27
+
+### Added
+- `scripts/verify-host.ps1`：装到宿主后的八项验收（目录、版本一致、frontmatter 可解析、doctor、MCP 握手与 UTF-8、profile 注册、模块可读）
+- `docs/OPERATIONS.md` 增补「安装到宿主后的验收清单」，含第 3 项（模块被安全软件拦截）的处理步骤
+
+### Verified
+- 本机实测 7/8：唯一失败项是安装目录的 `Remote.ps1` 被火绒隔离（远端功能降级），其余全部通过
+
+
 ## [1.0.3] - 2026-10-27
 
 ### Added
