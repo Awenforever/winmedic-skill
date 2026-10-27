@@ -41,7 +41,14 @@ jobs:
         shell: powershell
         run: |
           $r = Invoke-Pester -Path '.\tests\pester\${{ matrix.suite }}.Tests.ps1' -PassThru -Output Detailed
-          if ($r.FailedCount -gt 0) { throw ('suite failed: ${{ matrix.suite }}') }
+          if ($r.FailedCount -gt 0) {
+            foreach ($f in ($r.Failed | Select-Object -First 5)) {
+              $m = ($f.ErrorRecord.Exception.Message -replace "`r?`n", ' ')
+              if ($m.Length -gt 180) { $m = $m.Substring(0, 180) }
+              Write-Host ("::error title=${{ matrix.suite }}::$($f.ExpandedName) :: $m")
+            }
+            throw 'suite failed: ${{ matrix.suite }}'
+          }
 
   routing:
     runs-on: windows-latest
