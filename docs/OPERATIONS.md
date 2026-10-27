@@ -101,3 +101,17 @@ Copy-Item .\engine\lib\Remote.ps1 "$env:USERPROFILE\.dsh\skills\winmedic\engine\
 3. 重跑 `verify-host.ps1`
 
 其余功能（probe/plan/apply/verify/restore/trend/diagnose）不受影响，只有 `remote*` 命令会返回退出码 4 并提示原因。
+
+### 仓库目录也被拦截时
+
+两种兜底已经在仓库里：
+
+1. `release.ps1` 打包前会检查受跟踪文件，缺失的自动从 `git show HEAD:<path>` 还原（实测可从零恢复）
+2. `.githooks/pre-commit` 阻止把受保护目录（engine/catalog/playbooks）的**删除**提交进历史；确需删除时用 `ALLOW_PROTECTED_DELETE=1 git commit`
+
+钩子启用方式（新克隆后一次）：
+
+```powershell
+git config core.hooksPath .githooks
+```
+
