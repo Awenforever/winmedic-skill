@@ -19,6 +19,8 @@ version: 1.0.2
 | 应用反复「正在连接 / Reconnecting / 一直转圈」 | `winmedic.ps1 probe --set network`（含 `probe.net-link`）→ 按 PB-503 分层判断 | 直接改代理/改 DNS/重装应用 |
 | 「error sending request」「connection failed」 | 同上；远端机用 `remote-probe --target <别名> --set net-link`（只读、不落盘） | 在目标机装工具或改设置 |
 | 网页时快时慢 / 大文件下载中断 | `probe --set network`，重点看 `stallRate` | 归结为「网速问题」 |
+| 蓝牙耳机：提示音正常但应用无声、暂停后无声 | `probe --set audio` → `diagnose --case dx.bt-audio` → 按 PB-704 | 先禁用 HFP / 重装蓝牙驱动 / 反复配对 |
+| 文件复制后时间跳到未来、比现在晚 | `probe --set media` → 按病例 0014 判断 | 逐个修改文件时间 |
 
 网络类问题**先证明哪一跳断了**（DNS → 直连 → 代理 → 长连接 → 应用连接抖动），再谈处置。
 

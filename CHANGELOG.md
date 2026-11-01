@@ -5,6 +5,26 @@
 
 ## [Unreleased]
 
+## [1.1.0] - 2026-11-01
+
+### Added — 音频域
+- `probe --set audio`：端点状态（解码 ACTIVE/DISABLED/NOTPRESENT/UNPLUGGED）、每应用路由（指向设备 + 应用）、音频/蓝牙服务、HFP 节点、虚拟声卡
+- `diagnose --case dx.bt-audio`：蓝牙链路 / 应用路由 / 音频引擎 / HFP / 历史残留 五类假设
+- playbook `PB-704 bluetooth-audio-routing`：分诊顺序与安全边界（改注册表前必须导出）
+
+### Added — 媒体时间线
+- `probe --set media`：抽样视频，比对文件系统修改时间与 `System.Media.DateEncoded`，偏移 ≥1h 告警
+
+### Added — 语义与治理
+- `catalog/enums.json`：设备状态、电源状态、卷类型、退出码的权威解码（修正「CM_POWER_DATA 里 1 是 D0 而不是 D1」这类误读）
+- 指标：`audio.activeRender` / `audio.btActive` / `audio.staleRoutes` / `audio.orphanRoutes` / `audio.hfpNotOk` / `audio.servicesOk` / `media.maxOffsetHours` / `media.shiftedFiles`
+- 路由语义拆分：`stale`（设备仍配对但无活跃端点）与 `orphan`（设备已不在系统）分开计数，避免误报
+
+### Docs
+- `SKILL.md` 症状表新增蓝牙音频与媒体时间两行
+- 病例 `0013` / `0014` 作为这两块的现场依据
+
+
 ## [1.0.6] - 2026-10-27
 
 ### Docs

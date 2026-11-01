@@ -426,6 +426,78 @@
           ]
         }
       ]
+    },
+    {
+      "id": "dx.bt-audio",
+      "title": "蓝牙音频：提示音正常而应用无声",
+      "requiredProbes": [
+        "probe.host",
+        "probe.audio-endpoints",
+        "probe.audio-app-routing",
+        "probe.audio-services"
+      ],
+      "hypotheses": [
+        {
+          "id": "h.bt-link",
+          "name": "蓝牙链路/端点未激活",
+          "why": "端点不在活跃状态时，任何应用都发不出声",
+          "checks": [
+            {
+              "metric": "audio.btActive",
+              "signal": "=0 表示没有活跃蓝牙渲染端点；=1 表示链路层正常"
+            }
+          ],
+          "evidence": []
+        },
+        {
+          "id": "h.app-routing",
+          "name": "每应用路由指向已断开的设备",
+          "why": "应用被固定在旧耳机/设备上，系统提示音走默认设备仍然正常",
+          "checks": [
+            {
+              "metric": "audio.staleRoutes",
+              "signal": ">0：已配对设备当前无活跃端点，但有应用被钉在它上面（历史残留不计入）"
+            }
+          ],
+          "evidence": []
+        },
+        {
+          "id": "h.audio-engine",
+          "name": "音频服务/引擎未全部运行",
+          "why": "Audiosrv/EndpointBuilder 异常时整个音频栈不工作",
+          "checks": [
+            {
+              "metric": "audio.servicesOk",
+              "signal": "=0 表示有必需服务未运行"
+            }
+          ],
+          "evidence": []
+        },
+        {
+          "id": "h.hfp",
+          "name": "Hands-Free 节点异常",
+          "why": "HFP 节点损坏可能导致端点映射混乱（历史上禁用 HFP 会留下 Unknown 节点）",
+          "checks": [
+            {
+              "metric": "audio.hfpNotOk",
+              "signal": ">0 表示存在状态异常的 Hands-Free 节点"
+            }
+          ],
+          "evidence": []
+        },
+        {
+          "id": "h.orphan-routes",
+          "name": "历史残留路由（设备已不在系统）",
+          "why": "换过耳机/重装后遗留的路由，通常无害，只在排查噪声时需要清理",
+          "checks": [
+            {
+              "metric": "audio.orphanRoutes",
+              "signal": ">0：存在指向已不存在设备的路由，通常不必处理"
+            }
+          ],
+          "evidence": []
+        }
+      ]
     }
   ]
 }

@@ -241,6 +241,30 @@
       "cost": "high",
       "returns": "NetLink",
       "note": "带采样的链路体检：DNS/直连/代理/停滞率"
+    },
+    {
+      "id": "probe.audio-endpoints",
+      "domain": "audio",
+      "cost": "fast",
+      "returns": "AudioEndpoints"
+    },
+    {
+      "id": "probe.audio-app-routing",
+      "domain": "audio",
+      "cost": "fast",
+      "returns": "AudioAppRouting"
+    },
+    {
+      "id": "probe.audio-services",
+      "domain": "audio",
+      "cost": "fast",
+      "returns": "AudioServices"
+    },
+    {
+      "id": "probe.media-timestamps",
+      "domain": "media",
+      "cost": "slow",
+      "returns": "MediaTimestamps"
     }
   ]
 }

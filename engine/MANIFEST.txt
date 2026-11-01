@@ -1,4 +1,4 @@
-lib/Action.ps1
+﻿lib/Action.ps1
 lib/Common.ps1
 lib/Diagnose.ps1
 lib/Explain.ps1
@@ -18,9 +18,11 @@ lib/Trend.ps1
 lib/Verify.ps1
 mcp/winmedic-mcp.ps1
 probes/apps.ps1
+probes/audio.ps1
 probes/backup.ps1
 probes/boot.ps1
 probes/mail.ps1
+probes/media.ps1
 probes/netlink.ps1
 probes/network.ps1
 probes/printers.ps1

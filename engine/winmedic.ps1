@@ -93,6 +93,8 @@ if (Test-Path -LiteralPath $remoteLibPath) {
 . (Join-Path $PSScriptRoot 'probes\backup.ps1')
 . (Join-Path $PSScriptRoot 'probes\mail.ps1')
 . (Join-Path $PSScriptRoot 'probes\workloads.ps1')
+. (Join-Path $PSScriptRoot 'probes\audio.ps1')
+. (Join-Path $PSScriptRoot 'probes\media.ps1')
 
 # 兼容 --set / --ids 这类双横线写法（-File 模式本就支持，直接调用时需要手动归一）
 function Resolve-RestArguments {
@@ -325,6 +327,14 @@ function Invoke-Probe {
         $probes += @((Get-WorkloadsProbe -TimeBudgetSeconds 60), (Get-ProxyChainProbe))
     }
 
+    if ($set -eq 'audio' -or $set -eq 'all' -or $set -eq 'intake') {
+        $probes += @((Get-AudioEndpointsProbe), (Get-AudioAppRoutingProbe), (Get-AudioServicesProbe))
+    }
+
+    if ($set -eq 'media') {
+        $probes += @((Get-MediaTimestampProbe))
+    }
+
     if ($set -eq 'relocation') {
         $probes += @((Get-RelocationProbe -TimeBudgetSeconds 60))
     }
@@ -339,7 +349,7 @@ function Invoke-Probe {
     }
 
     if ($probes.Count -le 1) {
-        Write-Log ('未知探针集: ' + $Set + '（可用 storage / boot / apps / updates / network / security / recovery / printers / backup / mail / workloads / relocation / intake / all）') -Level ERROR
+        Write-Log ('未知探针集: ' + $Set + '（可用 storage / boot / apps / updates / network / security / recovery / printers / backup / mail / workloads / audio / media / relocation / intake / all）') -Level ERROR
         return $script:EXIT.USAGE
     }
 

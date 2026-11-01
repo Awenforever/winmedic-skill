@@ -102,6 +102,54 @@
       "name": "network.proxyOk",
       "unit": "flag",
       "source": "trend"
+    },
+    {
+      "name": "audio.activeRender",
+      "unit": "count",
+      "source": "trend",
+      "note": "活跃渲染端点数"
+    },
+    {
+      "name": "audio.btActive",
+      "unit": "count",
+      "source": "trend",
+      "note": "活跃蓝牙渲染端点数"
+    },
+    {
+      "name": "audio.staleRoutes",
+      "unit": "count",
+      "source": "trend",
+      "note": "指向非活跃设备的每应用路由数"
+    },
+    {
+      "name": "audio.hfpNotOk",
+      "unit": "count",
+      "source": "trend",
+      "note": "状态异常的 Hands-Free 节点数"
+    },
+    {
+      "name": "audio.servicesOk",
+      "unit": "bool",
+      "source": "trend",
+      "note": "音频/蓝牙服务是否全部运行（1/0）"
+    },
+    {
+      "name": "media.maxOffsetHours",
+      "unit": "h",
+      "source": "trend",
+      "note": "媒体元数据与文件系统时间的最大绝对偏移"
+    },
+    {
+      "name": "media.shiftedFiles",
+      "unit": "count",
+      "source": "trend",
+      "note": "偏移超过 1 小时的样本数"
+    },
+    {
+      "name": "audio.orphanRoutes",
+      "unit": "count",
+      "source": "trend",
+      "note": "指向已不在系统中的蓝牙设备的历史路由数"
     }
   ],
   "dynamicNamespaces": [

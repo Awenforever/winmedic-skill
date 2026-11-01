@@ -115,6 +115,7 @@ powershell -ExecutionPolicy Bypass -File .\uninstall.ps1
 | v1.3 | + 网络 | 17 | ✅ 已发布 |
 | v1.4 | + 安全态势 | 19 | ✅ 已发布 |
 | v1.5 | + 恢复分诊 | 21 | ✅ 已发布 |
+| **v1.1** | + 音频/媒体时间线 | 37 | ✅ 已发布 |
 | v2.0 | + 新机验收/基线 | 35+ |
 
 当前状态见 [CHANGELOG.md](CHANGELOG.md) 与 [docs/ROADMAP.md](docs/ROADMAP.md)。

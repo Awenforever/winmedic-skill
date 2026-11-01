@@ -1,0 +1,45 @@
+{
+  "schemaVersion": 1,
+  "note": "引擎输出里出现的枚举语义。探针应输出解码后的 label，原始值保留用于排错。",
+  "deviceState": {
+    "mask": 15,
+    "values": {
+      "1": "ACTIVE",
+      "2": "DISABLED",
+      "4": "NOTPRESENT",
+      "8": "UNPLUGGED"
+    },
+    "note": "高位是标志位，判断状态时先与 0xF 取与"
+  },
+  "powerState": {
+    "values": {
+      "0": "Unspecified",
+      "1": "D0",
+      "2": "D1",
+      "3": "D2",
+      "4": "D3"
+    },
+    "note": "CM_POWER_DATA 的 PD_MostRecentPowerState；1 才是 D0，不是 D1"
+  },
+  "volumeType": {
+    "values": {
+      "2": "Removable",
+      "3": "Fixed",
+      "4": "Network",
+      "5": "CDROM"
+    }
+  },
+  "exitCode": {
+    "values": {
+      "0": "OK",
+      "1": "FAIL",
+      "2": "USAGE",
+      "3": "NO_ADMIN",
+      "4": "PRECONDITION",
+      "5": "PLAN_INVALID",
+      "6": "REDLINE",
+      "7": "PARTIAL",
+      "8": "REMOTE"
+    }
+  }
+}

@@ -141,6 +141,28 @@ function Get-TrendSnapshot {
         if ($null -ne $po) { $m['network.proxyOk'] = if ([bool]$po) { 1 } else { 0 } }
     }
 
+    $ae = Get-TrendProbe -Findings $Findings -Id 'probe.audio-endpoints'
+    if ($ae -and $ae.data -and $ae.data.counts) {
+        $m['audio.activeRender'] = [int]$ae.data.counts.active
+        $m['audio.btActive'] = [int]$ae.data.counts.bluetoothActive
+        $m['audio.hfpNotOk'] = [int]$ae.data.counts.hfpNotOk
+    }
+
+    $ar = Get-TrendProbe -Findings $Findings -Id 'probe.audio-app-routing'
+    if ($ar -and $ar.data) {
+        $m['audio.staleRoutes'] = [int](Get-TrendNumber -Object $ar.data -Name 'staleCount')
+        $m['audio.orphanRoutes'] = [int](Get-TrendNumber -Object $ar.data -Name 'orphanCount')
+    }
+
+    $as = Get-TrendProbe -Findings $Findings -Id 'probe.audio-services'
+    if ($as -and $as.data) { $m['audio.servicesOk'] = if ($as.data.allRunning) { 1 } else { 0 } }
+
+    $mt = Get-TrendProbe -Findings $Findings -Id 'probe.media-timestamps'
+    if ($mt -and $mt.data) {
+        $m['media.maxOffsetHours'] = [math]::Round((Get-TrendNumber -Object $mt.data -Name 'maxAbsOffsetHours'), 1)
+        $m['media.shiftedFiles'] = [int](Get-TrendNumber -Object $mt.data -Name 'shifted')
+    }
+
     $rr = Get-TrendProbe -Findings $Findings -Id 'probe.recovery-readiness'
     if ($rr -and $rr.data) {
         if ($rr.data.PSObject.Properties.Name -contains 'shadowStorageBytes') {
