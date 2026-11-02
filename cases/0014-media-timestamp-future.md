@@ -73,3 +73,10 @@
 
 当前引擎没有媒体/时间线域，无法自动判断「FS 时间与元数据不一致」。
 可考虑的探针（未来）：`probe --set media` —— 抽样视频，比对 FS 修改时间与元数据时间差，超过阈值（如 ±1h）即告警，并提示检查拍摄设备时区。
+
+## 9. 引擎侧验证（v1.5.0）
+
+- `probe --set media` 新增 `moov/mvhd` 自解析，不依赖 Shell 属性
+- 用本案真实文件验证：31 GB XAVC，`moov` 位于 31.4 GB 的 `mdat` 之后，按 box 跳转可直接定位；
+  解析出的 UTC `2026-11-01 11:41:04` 与 Shell `DateEncoded` 完全一致
+- `diagnose --case dx.media-timestamp` 可直接给出偏移事实，不再需要人工拿 Explorer 对照

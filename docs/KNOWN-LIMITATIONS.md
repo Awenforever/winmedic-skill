@@ -66,5 +66,5 @@ VM 上的火绒（HipsDaemon）拦截了 `Remote.ps1` 的复制。安装脚本**
 ## 音频与媒体
 
 - **默认音频设备无法在远程/服务会话读取**：session 0 没有音频端点，`probe --set audio` 只能给端点状态与路由，默认设备必须交互式确认。`diagnose --case dx.bt-audio` 的结论因此需要人工补一条「当前默认输出」。
-- **`probe --set media` 只抽样用户目录**（桌面/视频/图片/文档，深度 3），不扫全盘；元数据读取依赖 Shell 属性，服务会话下可能不可用，探针会标 `shellAvailable=false`。
+- **`probe --set media` 只抽样用户目录**（桌面/视频/图片/文档，深度 3），不扫全盘；元数据优先读 Shell 属性，不可用时自动回退到 `moov/mvhd` 自解析（`metaSource=mvhd`），服务会话下也能工作。
 - **`repair` 在已安装目录没有可信来源**：安装目录没有 `.git` 时，必须显式 `--source <发布包.zip|仓库目录>`，否则返回 4（这是有意的，避免拿自己修自己）。

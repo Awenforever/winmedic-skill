@@ -17,6 +17,75 @@ function Convert-MediaOffsetHours {
     return [math]::Round((($meta - $FileTime).TotalHours), 1)
 }
 
+function Read-BigEndian32 {
+    param([byte[]]$Bytes, [int]$Offset)
+    return (([uint64]$Bytes[$Offset] -shl 24) -bor ([uint64]$Bytes[$Offset + 1] -shl 16) -bor ([uint64]$Bytes[$Offset + 2] -shl 8) -bor [uint64]$Bytes[$Offset + 3])
+}
+
+function Read-BigEndian64 {
+    param([byte[]]$Bytes, [int]$Offset)
+    $v = [uint64]0
+    for ($i = 0; $i -lt 8; $i++) { $v = ($v -shl 8) -bor [uint64]$Bytes[$Offset + $i] }
+    return $v
+}
+
+function Get-Mp4CreationTimeUtc {
+    <#
+      纯本地解析 MP4 顶层 box，找到 moov/mvhd 的 creation_time，返回 UTC。
+      不读整个文件，只按 box 大小跳转；支持 64 位 largesize 与 moov 在 mdat 之后的结构。
+    #>
+    param([string]$Path)
+    if (-not (Test-Path -LiteralPath $Path)) { return $null }
+    $fs = $null
+    try {
+        $fs = [IO.File]::OpenRead($Path)
+        $len = [uint64]$fs.Length
+        $pos = [uint64]0
+        $guard = 0
+        while ($pos -lt $len -and $guard -lt 20000) {
+            $guard++
+            $fs.Position = [long]$pos
+            $hdr = New-Object byte[] 8
+            if ($fs.Read($hdr, 0, 8) -lt 8) { break }
+            $size = Read-BigEndian32 -Bytes $hdr -Offset 0
+            $type = [Text.Encoding]::ASCII.GetString($hdr, 4, 4)
+            $headerSize = [uint64]8
+            if ($size -eq 1) {
+                $ext = New-Object byte[] 8
+                if ($fs.Read($ext, 0, 8) -lt 8) { break }
+                $size = Read-BigEndian64 -Bytes $ext -Offset 0
+                $headerSize = [uint64]16
+            } elseif ($size -eq 0) {
+                $size = $len - $pos
+            }
+            if ($size -lt $headerSize) { break }
+            if ($type -eq 'moov') {
+                $payload = [uint64]($size - $headerSize)
+                $take = [int][Math]::Min([uint64]4194304, $payload)
+                if ($take -le 8) { return $null }
+                $buf = New-Object byte[] $take
+                $fs.Position = [long]($pos + $headerSize)
+                $read = 0
+                while ($read -lt $take) { $k = $fs.Read($buf, $read, $take - $read); if ($k -le 0) { break }; $read += $k }
+                $text = [Text.Encoding]::ASCII.GetString($buf, 0, $read)
+                $idx = $text.IndexOf('mvhd')
+                if ($idx -lt 0) { return $null }
+                $ver = $buf[$idx + 4]
+                if ($ver -eq 1) {
+                    $sec = Read-BigEndian64 -Bytes $buf -Offset ($idx + 12)
+                } else {
+                    $sec = Read-BigEndian32 -Bytes $buf -Offset ($idx + 8)
+                }
+                $epoch = [datetime]::SpecifyKind([datetime]'1904-01-01', 'Utc')
+                $utc = $epoch.AddSeconds([double]$sec)
+                return [pscustomobject]@{ ok = $true; utc = $utc; seconds = $sec; source = 'mvhd' }
+            }
+            $pos = $pos + $size
+        }
+        return $null
+    } catch { return $null } finally { if ($fs) { $fs.Dispose() } }
+}
+
 function Get-MediaTimestampProbe {
     param([int]$MaxFiles = 40, [int]$TimeBudgetSeconds = 20, [string[]]$Paths = @())
     $deadline = (Get-Date).AddSeconds($TimeBudgetSeconds)
@@ -56,11 +125,20 @@ function Get-MediaTimestampProbe {
                 }
             } catch { }
         }
+        $metaSource = if ($metaText) { 'shell' } else { '' }
+        if (-not $metaText) {
+            $mp4 = Get-Mp4CreationTimeUtc -Path $f.FullName
+            if ($mp4 -and $mp4.ok) {
+                $metaText = $mp4.utc.ToLocalTime().ToString('yyyy-MM-dd HH:mm:ss')
+                $metaSource = 'mvhd'
+            }
+        }
         $offset = Convert-MediaOffsetHours -FileTime $f.LastWriteTime -MetaText $metaText
         $results += [pscustomobject]@{
             path = $f.FullName
             fileModified = $f.LastWriteTime.ToString('yyyy-MM-dd HH:mm:ss')
             metaCreated = $metaText
+            metaSource = $metaSource
             offsetHours = $offset
             shifted = ($null -ne $offset -and [math]::Abs($offset) -ge 1)
         }

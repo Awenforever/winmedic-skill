@@ -498,6 +498,40 @@
           "evidence": []
         }
       ]
+    },
+    {
+      "id": "dx.media-timestamp",
+      "title": "媒体时间与文件系统不一致（复制后时间跳到未来）",
+      "requiredProbes": [
+        "probe.host",
+        "probe.media-timestamps"
+      ],
+      "hypotheses": [
+        {
+          "id": "h.tz-offset",
+          "name": "拍摄设备时区设置错误（本地时间按 UTC 写入）",
+          "why": "偏移精确接近 ±8 小时（或其他整时区差）时，通常是设备把本地时间当 UTC 写入元数据",
+          "checks": [
+            {
+              "metric": "media.maxOffsetHours",
+              "signal": "绝对值 >= 1h；接近 8h 时高度指向时区错位"
+            }
+          ],
+          "evidence": []
+        },
+        {
+          "id": "h.partial",
+          "name": "部分文件元数据缺失或由第三方写入",
+          "why": "只有部分样本偏移，可能是转码、剪辑或同步工具改写了元数据",
+          "checks": [
+            {
+              "metric": "media.shiftedFiles",
+              "signal": ">0 表示存在偏移样本；结合样本总数判断是否普遍"
+            }
+          ],
+          "evidence": []
+        }
+      ]
     }
   ]
 }
