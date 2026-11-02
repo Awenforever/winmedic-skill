@@ -220,7 +220,7 @@ $script:Tools = @(
     }
 )
 
-$script:WriteTools = @('winmedic_apply', 'winmedic_restore')
+$script:WriteTools = @('winmedic_apply', 'winmedic_restore', 'winmedic_repair')
 
 function Invoke-Tool {
     param([string]$Name, $Arguments)

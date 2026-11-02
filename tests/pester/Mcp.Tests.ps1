@@ -65,6 +65,10 @@ Describe 'MCP 安全边界' {
         $out[0].result.content[0].text | Should -Match 'ids'
     }
 
+    It '只读模式禁用 repair' {
+        $out = Invoke-Mcp -ServerArgs @('-ReadOnly') -Lines2 @('{"jsonrpc":"2.0","id":1,"method":"tools/call","params":{"name":"winmedic_repair","arguments":{"yes":true}}}')
+        $out[0].result.content[0].text | Should -Match 'ReadOnly'
+    }
     It '只读模式禁用 apply' {
         $out = Invoke-Mcp -ServerArgs @('-ReadOnly') -Lines2 @('{"jsonrpc":"2.0","id":1,"method":"tools/call","params":{"name":"winmedic_apply","arguments":{"ids":["R1"],"yes":true}}}')
         $out[0].result.isError | Should -BeTrue
