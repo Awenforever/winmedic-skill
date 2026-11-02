@@ -1182,8 +1182,8 @@ function Invoke-AudioSnapshotCmd {
         Write-Log '当前会话读不到默认音频设备（服务/远程会话）；加 --in-user-session 可在交互式会话执行' -Level ERROR
         return $script:EXIT.PRECONDITION
     }
-    if ($Json) { ($snap | ConvertTo-Json -Depth 6) | ForEach-Object { Write-Host $_ }; return $script:EXIT.OK }
     if ($Out) { $snap | ConvertTo-Json -Depth 6 | Set-Content -LiteralPath $Out -Encoding UTF8 }
+    if ($Json) { ($snap | ConvertTo-Json -Depth 6) | ForEach-Object { Write-Host $_ }; return $script:EXIT.OK }
     Write-Host ('时间      : ' + $snap.ts)
     Write-Host ('会话      : ' + $snap.session)
     Write-Host ('默认设备  : ' + $snap.default.name + ' [' + $snap.default.state + ']')
