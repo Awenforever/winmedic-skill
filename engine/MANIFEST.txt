@@ -16,6 +16,7 @@ lib/SelfTest.ps1
 lib/Summary.ps1
 lib/Tools.ps1
 lib/Trend.ps1
+lib/UserSession.ps1
 lib/Verify.ps1
 mcp/winmedic-mcp.ps1
 probes/apps.ps1

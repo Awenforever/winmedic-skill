@@ -34,7 +34,7 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        suite: ['Action', 'Apps', 'Audio', 'Backup', 'Boot', 'Consistency', 'Diagnose', 'Guardrails', 'Mail', 'Media', 'Repair', 'ProxyLiveness', 'Mcp', 'NetLink', 'Network', 'Origins', 'Plan', 'Printers', 'Profile', 'PurgeConfirm', 'Quarantine', 'Recommendations', 'Recovery', 'Relocation', 'RelocationFacts', 'SkillHost', 'Remote', 'Report', 'RiskGate', 'Safety', 'Security', 'SelfTest', 'Summary', 'Tools', 'Trend', 'Updates', 'Workloads']
+        suite: ['Action', 'Apps', 'Audio', 'Backup', 'Boot', 'Consistency', 'Diagnose', 'Guardrails', 'Mail', 'Media', 'Repair', 'ProxyLiveness', 'UserSession', 'Mcp', 'NetLink', 'Network', 'Origins', 'Plan', 'Printers', 'Profile', 'PurgeConfirm', 'Quarantine', 'Recommendations', 'Recovery', 'Relocation', 'RelocationFacts', 'SkillHost', 'Remote', 'Report', 'RiskGate', 'Safety', 'Security', 'SelfTest', 'Summary', 'Tools', 'Trend', 'Updates', 'Workloads']
     steps:
       - uses: actions/checkout@v4
 

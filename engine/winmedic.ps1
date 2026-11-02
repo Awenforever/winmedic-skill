@@ -15,7 +15,7 @@
 [CmdletBinding()]
 param(
     [Parameter(Position = 0)]
-    [ValidateSet('doctor', 'probe', 'plan', 'apply', 'verify', 'restore', 'journal', 'profile', 'report', 'explain', 'summary', 'diff', 'relocate', 'remote', 'trend', 'diagnose', 'tools', 'selftest', 'repair', 'remote-apply', 'remote-restore', 'remote-probe', 'version', 'help')]
+    [ValidateSet('doctor', 'probe', 'plan', 'apply', 'verify', 'restore', 'journal', 'profile', 'report', 'explain', 'summary', 'diff', 'relocate', 'remote', 'trend', 'diagnose', 'tools', 'selftest', 'repair', 'audio-snapshot', 'remote-apply', 'remote-restore', 'remote-probe', 'version', 'help')]
     [string]$Command = 'help',
     [string]$SubCommand,
     [string]$Set = '',
@@ -50,6 +50,7 @@ param(
     [switch]$Check,
     [switch]$Remove,
     [switch]$Json,
+    [switch]$InUserSession,
     [Parameter(ValueFromRemainingArguments = $true)]
     [string[]]$Rest
 )
@@ -71,6 +72,7 @@ if (-not $script:WinMedicRoot) { $script:WinMedicRoot = (Resolve-Path (Join-Path
 . (Join-Path $PSScriptRoot 'lib\Relocation.ps1')
 . (Join-Path $PSScriptRoot 'lib\Explain.ps1')
 . (Join-Path $PSScriptRoot 'lib\Repair.ps1')
+. (Join-Path $PSScriptRoot 'lib\UserSession.ps1')
 $remoteLibPath = Join-Path $PSScriptRoot 'lib\Remote.ps1'
 $script:RemoteLibOk = $false
 if (Test-Path -LiteralPath $remoteLibPath) {
@@ -108,11 +110,13 @@ function Resolve-RestArguments {
         if ($tok.StartsWith('--')) {
             $key = $tok.Substring(2).ToLowerInvariant()
             # 布尔开关不消费后续 token
-            if (@('yes', 'purge', 'json', 'remove', 'accept-risk', 'acceptrisk', 'accept-irreversible', 'acceptirreversible', 'keep', 'record', 'list', 'check') -contains $key) {
+            if (@('in-user-session', 'inusersession', 'yes', 'purge', 'json', 'remove', 'accept-risk', 'acceptrisk', 'accept-irreversible', 'acceptirreversible', 'keep', 'record', 'list', 'check') -contains $key) {
                 switch ($key) {
                     'yes'                { $script:YesFlag = $true }
                     'purge'              { $script:PurgeFlag = $true }
                     'json'               { $script:JsonFlag = $true }
+                    'in-user-session'    { $script:InUserSessionFlag = $true }
+                    'inusersession'      { $script:InUserSessionFlag = $true }
                     'remove'             { $script:RemoveFlag = $true }
                     'accept-risk'        { $script:AcceptRiskFlag = $true }
                     'acceptrisk'         { $script:AcceptRiskFlag = $true }
@@ -184,6 +188,7 @@ $script:SubArg = $SubCommand
 $script:YesFlag = [bool]$Yes
 $script:PurgeFlag = [bool]$Purge
 $script:JsonFlag = [bool]$Json
+$script:InUserSessionFlag = [bool]$InUserSession
 $script:RemoveFlag = [bool]$Remove
 $script:AcceptRiskFlag = [bool]$AcceptRisk
 $script:AcceptIrrevFlag = [bool]$AcceptIrreversible
@@ -215,6 +220,7 @@ $SubCommand = $script:SubArg
 $Yes = $script:YesFlag
 $Purge = $script:PurgeFlag
 $Json = $script:JsonFlag
+$InUserSession = [bool]$script:InUserSessionFlag
 $Remove = $script:RemoveFlag
 $AcceptRisk = $script:AcceptRiskFlag
 $AcceptIrreversible = $script:AcceptIrrevFlag
@@ -1126,6 +1132,8 @@ function Show-Help {
     Write-Host '    [--from <findings.json>]              指定数据来源（例如远端采集结果）'
     Write-Host '  tools [--json]                          器械台：外部工具可用性与风险级别'
     Write-Host '  repair [--source <目录|zip>] [--yes]    引擎自修复：还原被删除/改坏的文件（默认 dry-run）'
+    Write-Host '  audio-snapshot [--json] [--out f.json]  音频现场快照（默认设备/端点/服务/播放器）'
+    Write-Host '    [--in-user-session] [--timeout 秒]      远程/服务会话下用计划任务在交互式会话执行'
     Write-Host '  selftest [--keep]                       沙箱自检：证明隔离/还原逐字节一致'
     Write-Host '  remote-apply --target <别名> --plan <plan.json> --ids R2 --yes'
     Write-Host '                                          远端执行处置（同一套护栏；计划 origin 必须匹配）'
@@ -1153,6 +1161,40 @@ function Invoke-RepairCmd {
     return $r.code
 }
 
+function Invoke-AudioSnapshotCmd {
+    $snap = Get-AudioSnapshot
+    $hasDefault = ($snap.default -and $snap.default.available)
+    if ((-not $hasDefault) -and $InUserSession) {
+        $tmpDir = Join-Path ([IO.Path]::GetTempPath()) ('winmedic-audio-' + [guid]::NewGuid().ToString('N'))
+        New-Item -ItemType Directory -Force -Path $tmpDir | Out-Null
+        try {
+            $runner = Join-Path $tmpDir 'snapshot.ps1'
+            $jsonFile = Join-Path $tmpDir 'snapshot.json'
+            Set-Content -LiteralPath $runner -Value (New-AudioSnapshotRunner -EngineRoot $script:WinMedicRoot) -Encoding UTF8
+            $userSessionTimeout = [Math]::Min([Math]::Max($TimeoutSec, 5), 30)
+            $r = Invoke-InUserSession -ScriptPath $runner -ScriptArgs @('-Out', ('"' + $jsonFile + '"')) -OutFile $jsonFile -TimeoutSec $userSessionTimeout
+            if (-not $r.ok) { Write-Log ([string]$r.error) -Level ERROR; return $script:EXIT.PRECONDITION }
+            $snap = Get-Content -LiteralPath $jsonFile -Raw -Encoding UTF8 | ConvertFrom-Json
+        } finally {
+            Remove-Item -LiteralPath $tmpDir -Recurse -Force -ErrorAction SilentlyContinue
+        }
+    } elseif (-not $hasDefault) {
+        Write-Log '当前会话读不到默认音频设备（服务/远程会话）；加 --in-user-session 可在交互式会话执行' -Level ERROR
+        return $script:EXIT.PRECONDITION
+    }
+    if ($Json) { ($snap | ConvertTo-Json -Depth 6) | ForEach-Object { Write-Host $_ }; return $script:EXIT.OK }
+    if ($Out) { $snap | ConvertTo-Json -Depth 6 | Set-Content -LiteralPath $Out -Encoding UTF8 }
+    Write-Host ('时间      : ' + $snap.ts)
+    Write-Host ('会话      : ' + $snap.session)
+    Write-Host ('默认设备  : ' + $snap.default.name + ' [' + $snap.default.state + ']')
+    Write-Host ('活跃端点  : ' + $snap.counts.active + '；蓝牙 ' + $snap.counts.bluetoothActive)
+    Write-Host ('蓝牙名    : ' + (@($snap.btActiveNames) -join ', '))
+    Write-Host ('音频服务  : ' + $(if ($snap.services.allRunning) { 'OK' } else { '异常' }) + '；audiodg=' + $snap.services.audiodgPid)
+    Write-Host ('播放器    : ' + ((@($snap.processes) | ForEach-Object { $_.name + ' x' + $_.count }) -join ', '))
+    if ($Out) { Write-Host ('已写入    : ' + $Out) }
+    return $script:EXIT.OK
+}
+
 switch ($Command) {
     'doctor'  { $code = Invoke-Doctor }
     'probe'   { $code = Invoke-Probe }
@@ -1173,6 +1215,7 @@ switch ($Command) {
     'tools'   { $code = Invoke-ToolsCmd }
     'selftest' { $code = Invoke-SelfTestCmd }
     'repair'  { $code = Invoke-RepairCmd }
+    'audio-snapshot' { $code = Invoke-AudioSnapshotCmd }
     'remote-apply' { $code = Invoke-RemoteApplyCmd }
     'remote-restore' { $code = Invoke-RemoteRestoreCmd }
     'remote-probe' { $code = Invoke-RemoteProbeCmd }

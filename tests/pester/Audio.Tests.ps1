@@ -41,3 +41,17 @@ Describe '音频探针' {
         $p.data.Keys | Should -Contain 'audiodgRunning'
     }
 }
+
+Describe '音频现场快照' {
+    It '快照包含默认设备与计数' {
+        $s = Get-AudioSnapshot
+        $s.PSObject.Properties.Name | Should -Contain 'default'
+        $s.counts.Keys | Should -Contain 'bluetoothActive'
+        $s.session | Should -Be 'current'
+    }
+    It '运行器脚本包含引擎路径与快照调用' {
+        $txt = New-AudioSnapshotRunner -EngineRoot 'C:\x\winmedic'
+        $txt | Should -Match 'probes\\audio\.ps1'
+        $txt | Should -Match 'Get-AudioSnapshot'
+    }
+}

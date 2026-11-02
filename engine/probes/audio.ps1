@@ -70,6 +70,90 @@ function Get-AudioBtNameMap {
     return $map
 }
 
+function Get-DefaultRenderEndpoint {
+    <#
+      交互式会话下可用：通过 MMDeviceEnumerator 读默认渲染设备。
+      服务/远程会话拿不到音频端点，返回 $null（调用方标注「无法获取」）。
+    #>
+    $typeName = 'WinMedicAudioDefault'
+    if (-not ([Management.Automation.PSTypeName]$typeName).Type) {
+        $code = @'
+using System;
+using System.Runtime.InteropServices;
+public static class WinMedicAudioDefault {
+    [ComImport, Guid("BCDE0395-E52F-467C-8E3D-C4579291692E")] class MMDeviceEnumeratorComObject { }
+    [ComImport, Guid("A95664D2-9614-4F35-A746-DE8DB63617E6"), InterfaceType(ComInterfaceType.InterfaceIsIUnknown)]
+    interface IMMDeviceEnumerator {
+        int EnumAudioEndpoints(int dataFlow, int stateMask, out IntPtr devices);
+        int GetDefaultAudioEndpoint(int dataFlow, int role, out IMMDevice device);
+    }
+    [ComImport, Guid("D666063F-1587-4E43-81F1-B948E807363F"), InterfaceType(ComInterfaceType.InterfaceIsIUnknown)]
+    interface IMMDevice {
+        int Activate(ref Guid iid, int ctx, IntPtr p, out IntPtr iface);
+        int OpenPropertyStore(int access, out IntPtr props);
+        int GetId([MarshalAs(UnmanagedType.LPWStr)] out string id);
+        int GetState(out int state);
+    }
+    public static string GetDefaultRender() {
+        var en = (IMMDeviceEnumerator)(new MMDeviceEnumeratorComObject());
+        IMMDevice dev;
+        int hr = en.GetDefaultAudioEndpoint(0, 0, out dev);
+        if (hr != 0) { return "ERR|" + hr; }
+        string id; dev.GetId(out id);
+        int state; dev.GetState(out state);
+        return id + "|" + state;
+    }
+}
+'@
+        try { Add-Type -TypeDefinition $code -ErrorAction Stop | Out-Null } catch { return $null }
+    }
+    try {
+        $raw = [WinMedicAudioDefault]::GetDefaultRender()
+        if (-not $raw -or $raw.StartsWith('ERR|')) { return $null }
+        $parts = $raw.Split([char]124)
+        $id = $parts[0]
+        $stateValue = 0
+        if ($parts.Count -gt 1) { [void][int]::TryParse($parts[1], [ref]$stateValue) }
+        $guid = ''
+        if ($id -match '\{([0-9a-fA-F-]{36})\}') { $guid = $Matches[1] }
+        $st = Convert-AudioDeviceState -Value $stateValue
+        return [pscustomobject]@{ id = $id; guid = $guid; stateValue = $stateValue; state = $st.label }
+    } catch { return $null }
+}
+
+function Get-AudioSnapshot {
+    param([string]$SessionLabel = 'current')
+    $ep = Get-AudioEndpointsProbe
+    $svc = Get-AudioServicesProbe
+    $procs = @()
+    foreach ($n in @('video-player', 'msedge', 'chrome', 'vlc', 'steam', 'Spotify')) {
+        $p = @(Get-Process -Name $n -ErrorAction SilentlyContinue)
+        if ($p.Count -gt 0) { $procs += [pscustomobject]@{ name = $n; count = $p.Count; ids = @($p | ForEach-Object { $_.Id }) } }
+    }
+    return [pscustomobject]@{
+        ts = (Get-Date).ToString('o')
+        session = $SessionLabel
+        default = $ep.data.defaultDevice
+        counts = $ep.data.counts
+        activeNames = @($ep.data.activeNames)
+        btActiveNames = @($ep.data.btActiveNames)
+        hfpDevices = @($ep.data.hfpDevices)
+        services = $svc.data
+        processes = @($procs)
+    }
+}
+
+function New-AudioSnapshotRunner {
+    param([string]$EngineRoot)
+    return @(
+        'param([string]$Out)',
+        '$ErrorActionPreference = ''SilentlyContinue''',
+        '. (Join-Path ''' + $EngineRoot + ''' ''probes\audio.ps1'')',
+        '$s = Get-AudioSnapshot -SessionLabel ''interactive''',
+        '$s | ConvertTo-Json -Depth 6 | Set-Content -LiteralPath $Out -Encoding UTF8'
+    ) -join "`r`n"
+}
+
 function Get-AudioEndpointsProbe {
     param()
     $render = Get-AudioEndpointList -Kind Render
@@ -80,6 +164,14 @@ function Get-AudioEndpointsProbe {
     $hfpNotOk = @($hfp | Where-Object { $_.Status -ne 'OK' })
     $virtual = @(Get-PnpDevice -Class MEDIA -ErrorAction SilentlyContinue | Where-Object { $_.FriendlyName -match 'Virtual|VB-Audio|Voicemeeter|Steam Streaming' } | ForEach-Object { [string]$_.FriendlyName })
     $exclusiveAllowed = @($render | Where-Object { $_.exclusiveAllowed -eq 1 }).Count
+    $default = Get-DefaultRenderEndpoint
+    $defaultName = ''
+    $defaultAvailable = $false
+    if ($default) {
+        $defaultAvailable = $true
+        $hit = @($render | Where-Object { $_.guid -match $default.guid }) | Select-Object -First 1
+        if ($hit) { $defaultName = $hit.name }
+    }
     return @{
         id = 'probe.audio-endpoints'; ok = $true;
         data = @{
@@ -89,7 +181,8 @@ function Get-AudioEndpointsProbe {
             btActiveNames = @($btActive | ForEach-Object { $_.name })
             hfpDevices = @($hfp | ForEach-Object { @{ name = [string]$_.FriendlyName; status = [string]$_.Status } })
             virtualDevices = @($virtual)
-            defaultDeviceNote = '默认设备需交互式会话，远程/服务会话下无法获取'
+            defaultDevice = @{ available = $defaultAvailable; guid = $(if ($default) { $default.guid } else { '' }); name = $defaultName; state = $(if ($default) { $default.state } else { 'UNKNOWN' }); id = $(if ($default) { $default.id } else { '' }) }
+            defaultDeviceNote = '默认设备仅在交互式会话可读；服务/远程会话返回 available=false'
         };
         candidates = @()
     }
