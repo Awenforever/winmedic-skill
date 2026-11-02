@@ -1,0 +1,56 @@
+﻿#Requires -Version 5.1
+BeforeAll {
+    $repo = Split-Path -Parent (Split-Path -Parent $PSScriptRoot)
+    . (Join-Path $repo 'engine\lib\Common.ps1')
+    . (Join-Path $repo 'engine\lib\Repair.ps1')
+    function New-RepairFixture {
+        param([string]$Root, [string]$Source)
+        New-Item -ItemType Directory -Force -Path (Join-Path $Root 'engine\lib') | Out-Null
+        New-Item -ItemType Directory -Force -Path (Join-Path $Source 'engine\lib') | Out-Null
+        Set-Content -LiteralPath (Join-Path $Root 'engine\MANIFEST.txt') -Value 'lib/A.ps1' -Encoding UTF8
+        Set-Content -LiteralPath (Join-Path $Source 'engine\MANIFEST.txt') -Value 'lib/A.ps1' -Encoding UTF8
+        Set-Content -LiteralPath (Join-Path $Source 'engine\lib\A.ps1') -Value 'Write-Host A' -Encoding UTF8
+    }
+}
+
+Describe 'repair 计划' {
+    It '缺少文件识别为 missing' {
+        $root = Join-Path $TestDrive 'r1'; $src = Join-Path $TestDrive 's1'
+        New-RepairFixture -Root $root -Source $src
+        $p = Get-RepairPlan -Root $root -SourcePath $src
+        $p.available | Should -BeTrue
+        ($p.todo | Where-Object { $_.rel -eq 'engine/lib/A.ps1' }).status | Should -Be 'missing'
+    }
+    It '内容不一致识别为 corrupt' {
+        $root = Join-Path $TestDrive 'r2'; $src = Join-Path $TestDrive 's2'
+        New-RepairFixture -Root $root -Source $src
+        Set-Content -LiteralPath (Join-Path $root 'engine\lib\A.ps1') -Value 'Write-Host B' -Encoding UTF8
+        $p = Get-RepairPlan -Root $root -SourcePath $src
+        ($p.todo | Where-Object { $_.rel -eq 'engine/lib/A.ps1' }).status | Should -Be 'corrupt'
+    }
+    It '没有来源时 available=false' {
+        $root = Join-Path $TestDrive 'r3'
+        New-Item -ItemType Directory -Force -Path (Join-Path $root 'engine') | Out-Null
+        Set-Content -LiteralPath (Join-Path $root 'engine\MANIFEST.txt') -Value 'lib/A.ps1' -Encoding UTF8
+        $p = Get-RepairPlan -Root $root -SourcePath (Join-Path $TestDrive 'nope')
+        $p.available | Should -BeFalse
+    }
+}
+
+Describe 'repair 执行' {
+    It 'dry-run 不写文件' {
+        $root = Join-Path $TestDrive 'r4'; $src = Join-Path $TestDrive 's4'
+        New-RepairFixture -Root $root -Source $src
+        $r = Invoke-Repair -Root $root -SourcePath $src
+        $r.dryRun | Should -BeTrue
+        Test-Path (Join-Path $root 'engine\lib\A.ps1') | Should -BeFalse
+    }
+    It '--yes 还原并备份' {
+        $root = Join-Path $TestDrive 'r5'; $src = Join-Path $TestDrive 's5'
+        New-RepairFixture -Root $root -Source $src
+        $r = Invoke-Repair -Root $root -SourcePath $src -Yes
+        $r.code | Should -Be 0
+        (Get-Content -LiteralPath (Join-Path $root 'engine\lib\A.ps1') -Raw).Trim() | Should -Be 'Write-Host A'
+        Test-Path -LiteralPath $r.backupDir | Should -BeTrue
+    }
+}

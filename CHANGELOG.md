@@ -5,9 +5,26 @@
 
 ## [Unreleased]
 
+> 版本线与标签：2026-10-23 之前的旧编号线曾使用 v1.1.0–v1.17.0、v3.x。当前 1.x 线复用这些版本号时，标签会重指到本线对应发布提交；旧提交仍保留在历史中。
+
+
+## [1.2.0] - 2026-11-02
+
+### Added — 自修复与网络判据
+- `repair [--source <目录|zip>] [--yes]`：从 git HEAD / dist 发布包 / 指定来源还原被删除或改坏的文件；默认 dry-run，写入前备份到 `state\repair\<时间戳>`
+- MCP 新增 `winmedic_repair`（需 `yes=true`）
+- `probe.proxy-config` 增加**本机回环端口存活检测**：`endpoints` / `deadCount` / `dead`，只连 127.0.0.1，不对外发起请求
+- 指标 `network.deadProxies`
+- playbook `PB-505 remote-access-feasibility`：Tailscale / 子网路由 / Android 限制 / IPv6 的分层判断
+
+### Tests
+- `Repair.Tests`（5）、`ProxyLiveness.Tests`（7）；MCP 工具数 14 → 15
+
+### Docs
+- PB-502 增加「代理端口配置了但没在听」判据
+
 ## [1.1.0] - 2026-11-01
 
-> 标签说明：`v1.1.0` 在 2026-10-23 曾被旧编号线占用（该线后来整体重置为 1.0.x）。本次把它重新指向重置后的 1.1.0 发布提交；旧提交仍保留在历史中，旧线其余标签（v1.2.0–v1.17.0、v3.x）暂未动。
 
 ### Added — 音频域
 - `probe --set audio`：端点状态（解码 ACTIVE/DISABLED/NOTPRESENT/UNPLUGGED）、每应用路由（指向设备 + 应用）、音频/蓝牙服务、HFP 节点、虚拟声卡

@@ -70,7 +70,7 @@ $script:Tools = @(
     },
     [ordered]@{
         name = 'winmedic_probe'
-        description = '只读采集。set 可选 storage/boot/apps/updates/network/security/recovery/printers/backup/mail/intake/all。'
+        description = '只读采集。set 可选 storage/boot/apps/updates/network/security/recovery/printers/backup/mail/workloads/audio/media/relocation/intake/all。'
         inputSchema = [ordered]@{
             type = 'object'
             properties = [ordered]@{ set = [ordered]@{ type = 'string'; description = '探针集，默认 storage' } }
@@ -179,6 +179,18 @@ $script:Tools = @(
         name = 'winmedic_tools'
         description = '器械台：外部工具可用性与风险级别（只检测，不执行）。'
         inputSchema = [ordered]@{ type = 'object'; properties = [ordered]@{}; additionalProperties = $false }
+    },
+    [ordered]@{
+        name = 'winmedic_repair'
+        description = '引擎自修复：还原被安全软件删除或改坏的文件（默认 dry-run，需 yes=true 才写入）。'
+        inputSchema = [ordered]@{
+            type = 'object'
+            properties = [ordered]@{
+                source = [ordered]@{ type = 'string'; description = '可信来源：目录或发布包 zip；缺省用 git HEAD / dist 包' }
+                yes = [ordered]@{ type = 'boolean'; description = '必须为 true 才执行写入' }
+            }
+            additionalProperties = $false
+        }
     },
     [ordered]@{
         name = 'winmedic_journal'
@@ -302,6 +314,13 @@ function Invoke-Tool {
         }
         'winmedic_tools' {
             $r = Invoke-Engine -EngineArgs @('tools')
+            return @{ ok = ($r.code -eq 0); text = $r.text }
+        }
+        'winmedic_repair' {
+            $args2 = @('repair')
+            if ($a.ContainsKey('source') -and $a['source']) { $args2 += @('--source', [string]$a['source']) }
+            if ($a.ContainsKey('yes') -and $a['yes']) { $args2 += @('--yes') }
+            $r = Invoke-Engine -EngineArgs $args2
             return @{ ok = ($r.code -eq 0); text = $r.text }
         }
         'winmedic_journal' {

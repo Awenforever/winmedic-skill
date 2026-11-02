@@ -82,6 +82,54 @@ function Get-DnsConfigProbe {
     return @{ id = 'probe.dns-config'; ok = $true; data = @{ servers = $servers; hostsPath = $hostsPath; hostsEntries = $hostsEntries; llmnrDisabled = ($lm -and $lm.EnableMulticast -eq 0) }; candidates = @() }
 }
 
+function Convert-ProxyEndpoint {
+    <#  纯函数：把代理字符串拆成 host/port 列表。  #>
+    param([string]$Text = '')
+    $out = @()
+    if (-not $Text) { return @() }
+    foreach ($part in ($Text -split '[;,]')) {
+        $p = ([string]$part).Trim()
+        if (-not $p) { continue }
+        $scheme = ''
+        if ($p -match '^([A-Za-z][A-Za-z0-9+.-]*)=(.+)$') { $scheme = $Matches[1].ToLower(); $p = $Matches[2].Trim() }
+        $p = $p -replace '^[A-Za-z][A-Za-z0-9+.-]*://', ''
+        $p = $p.TrimEnd('/')
+        if ($p -match '^\[([0-9a-fA-F:]+)\]:(\d{1,5})$') {
+            $out += [pscustomobject]@{ scheme = $scheme; host = $Matches[1]; port = [int]$Matches[2] }
+        } elseif ($p -match '^([^:\[\]]+):(\d{1,5})$') {
+            $out += [pscustomobject]@{ scheme = $scheme; host = $Matches[1]; port = [int]$Matches[2] }
+        }
+    }
+    return @($out)
+}
+
+function Test-LoopbackTcpPort {
+    param([string]$HostName = '127.0.0.1', [int]$Port = 0, [int]$TimeoutMs = 500)
+    try {
+        $c = New-Object Net.Sockets.TcpClient
+        $iar = $c.BeginConnect($HostName, $Port, $null, $null)
+        $ok = $iar.AsyncWaitHandle.WaitOne($TimeoutMs)
+        if ($ok) { $c.EndConnect($iar) }
+        $c.Close()
+        return [bool]$ok
+    } catch { return $false }
+}
+
+function Get-ProxyLiveness {
+    param([string[]]$Texts = @())
+    $eps = @()
+    foreach ($t in @($Texts)) { $eps += @(Convert-ProxyEndpoint -Text $t) }
+    $eps = @($eps | Sort-Object host, port -Unique)
+    $rows = @()
+    foreach ($e in $eps) {
+        $loop = @('127.0.0.1', 'localhost', '::1') -contains $e.host
+        $alive = $null
+        if ($loop) { $alive = Test-LoopbackTcpPort -HostName $e.host -Port $e.port }
+        $rows += [pscustomobject]@{ scheme = $e.scheme; host = $e.host; port = $e.port; loopback = $loop; alive = $alive }
+    }
+    return @($rows)
+}
+
 function Get-ProxyConfigProbe {
     param()
     $ie = Get-ItemProperty 'HKCU:\Software\Microsoft\Windows\CurrentVersion\Internet Settings' -ErrorAction SilentlyContinue
@@ -95,7 +143,9 @@ function Get-ProxyConfigProbe {
     $envHttps = [string]$env:HTTPS_PROXY
     if (-not $envHttps) { $envHttps = [string]$env:https_proxy }
     $summary = Get-ProxyConflictSummary -WinInet $winInet -WinHttp $winHttpValue -EnvHttps $envHttps
-    return @{ id = 'probe.proxy-config'; ok = $true; data = @{ winInet = $winInet; winHttp = $winHttpValue; envHttps = $envHttps; summary = $summary; bypass = if ($ie) { [string]$ie.ProxyOverride } else { '' } }; candidates = @() }
+    $live = Get-ProxyLiveness -Texts @($winInet, $envHttps)
+    $dead = @($live | Where-Object { $_.alive -eq $false })
+    return @{ id = 'probe.proxy-config'; ok = $true; data = @{ winInet = $winInet; winHttp = $winHttpValue; envHttps = $envHttps; summary = $summary; bypass = if ($ie) { [string]$ie.ProxyOverride } else { '' }; endpoints = @($live); deadCount = $dead.Count; dead = @($dead | ForEach-Object { $_.host + ':' + $_.port }) }; candidates = @() }
 }
 
 function Get-VpnAdaptersProbe {

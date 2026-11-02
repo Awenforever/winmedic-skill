@@ -1,4 +1,4 @@
-# VPN / 代理故障
+﻿# VPN / 代理故障
 
 ## 适用
 「开了代理就上不了网」「VPN 连上了但没网」「git/npm 拉不动」「clash 关了之后全断」。
@@ -43,3 +43,18 @@ npm config get proxy
 ## Step 5: 报告
 
 给出「三层代理当前值 → 不一致点 → 统一后的值 → 验证方式」。
+
+## 补充：代理端口「配置了但没在听」
+
+这是最常见的一类「昨天还好、今天全断」：系统代理仍指向旧端口，代理软件已经换了端口或没启动。
+
+只读判据（引擎 `probe --set network` 的 `probe.proxy-config` 会给出 `deadCount` / `dead`）：
+
+```powershell
+$p = (Get-ItemProperty 'HKCU:\Software\Microsoft\Windows\CurrentVersion\Internet Settings').ProxyServer
+$p
+Get-NetTCPConnection -State Listen | Where-Object { $_.LocalPort -in (($p -split ':')[-1]) }
+```
+
+- 配置里有端口、监听列表里没有 → **配置漂移**，改代理配置或换回正确端口
+- 只测本机回环端口，不对外发起连接；非回环代理标为 `unknown`

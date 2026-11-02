@@ -15,11 +15,12 @@
 [CmdletBinding()]
 param(
     [Parameter(Position = 0)]
-    [ValidateSet('doctor', 'probe', 'plan', 'apply', 'verify', 'restore', 'journal', 'profile', 'report', 'explain', 'summary', 'diff', 'relocate', 'remote', 'trend', 'diagnose', 'tools', 'selftest', 'remote-apply', 'remote-restore', 'remote-probe', 'version', 'help')]
+    [ValidateSet('doctor', 'probe', 'plan', 'apply', 'verify', 'restore', 'journal', 'profile', 'report', 'explain', 'summary', 'diff', 'relocate', 'remote', 'trend', 'diagnose', 'tools', 'selftest', 'repair', 'remote-apply', 'remote-restore', 'remote-probe', 'version', 'help')]
     [string]$Command = 'help',
     [string]$SubCommand,
     [string]$Set = '',
     [string]$From,
+    [string]$Source,
     [string]$PlanPath,
     [string[]]$Ids,
     [string]$Journal,
@@ -69,6 +70,7 @@ if (-not $script:WinMedicRoot) { $script:WinMedicRoot = (Resolve-Path (Join-Path
 . (Join-Path $PSScriptRoot 'lib\Recommendations.ps1')
 . (Join-Path $PSScriptRoot 'lib\Relocation.ps1')
 . (Join-Path $PSScriptRoot 'lib\Explain.ps1')
+. (Join-Path $PSScriptRoot 'lib\Repair.ps1')
 $remoteLibPath = Join-Path $PSScriptRoot 'lib\Remote.ps1'
 $script:RemoteLibOk = $false
 if (Test-Path -LiteralPath $remoteLibPath) {
@@ -1113,6 +1115,7 @@ function Show-Help {
     Write-Host '  diagnose --case dx.cdisk-full           鉴别诊断：只给事实与信号，不给结论'
     Write-Host '    [--from <findings.json>]              指定数据来源（例如远端采集结果）'
     Write-Host '  tools [--json]                          器械台：外部工具可用性与风险级别'
+    Write-Host '  repair [--source <目录|zip>] [--yes]    引擎自修复：还原被删除/改坏的文件（默认 dry-run）'
     Write-Host '  selftest [--keep]                       沙箱自检：证明隔离/还原逐字节一致'
     Write-Host '  remote-apply --target <别名> --plan <plan.json> --ids R2 --yes'
     Write-Host '                                          远端执行处置（同一套护栏；计划 origin 必须匹配）'
@@ -1124,6 +1127,20 @@ function Show-Help {
     Write-Host '  apply ... --purge --accept-irreversible [--confirm-token X] 物理删除（不可回滚，需确认单令牌）'
     Write-Host '  version'
     return $script:EXIT.OK
+}
+
+function Invoke-RepairCmd {
+    $r = Invoke-Repair -Root $script:WinMedicRoot -SourcePath $Source -Yes:$Yes
+    $plan = $r.plan
+    Write-Host ('来源      : ' + $plan.source.kind + ' -> ' + $plan.source.root)
+    Write-Host ('受管文件  : ' + $plan.checked + '，需修复: ' + @($plan.todo).Count)
+    foreach ($it in @($plan.todo)) { Write-Host ('  ' + $it.status.ToUpper().PadRight(8) + ' ' + $it.rel) }
+    if (-not $r.ok) { Write-Log ([string]$plan.reason) -Level ERROR; return $script:EXIT.PRECONDITION }
+    if ($r.dryRun) { Write-Host '未写入（加 --yes 执行修复）'; return $script:EXIT.OK }
+    foreach ($c in @($r.changed | Where-Object { $_ })) { Write-Host ('  已修复   ' + $c) }
+    foreach ($f in @($r.failed | Where-Object { $_ })) { Write-Log ('修复失败: ' + $f) -Level ERROR }
+    if (@($r.changed).Count -gt 0) { Write-Host ('备份目录  : ' + $r.backupDir) }
+    return $r.code
 }
 
 switch ($Command) {
@@ -1145,6 +1162,7 @@ switch ($Command) {
     'diagnose' { $code = Invoke-DiagnoseCmd }
     'tools'   { $code = Invoke-ToolsCmd }
     'selftest' { $code = Invoke-SelfTestCmd }
+    'repair'  { $code = Invoke-RepairCmd }
     'remote-apply' { $code = Invoke-RemoteApplyCmd }
     'remote-restore' { $code = Invoke-RemoteRestoreCmd }
     'remote-probe' { $code = Invoke-RemoteProbeCmd }

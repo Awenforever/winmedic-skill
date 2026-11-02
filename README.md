@@ -95,7 +95,7 @@ powershell -ExecutionPolicy Bypass -File .\uninstall.ps1
 .\engine\mcp\winmedic-mcp.ps1 -ReadOnly    # 只读审查模式
 ```
 
-10 个工具（doctor / probe / summary / plan / apply / verify / restore / journal / explain / profile），
+11 个工具（doctor / probe / summary / plan / apply / verify / restore / journal / explain / profile / repair），
 写工具必须显式 `yes=true`，且完全继承引擎的红线、风险门与 plan 校验。详见 [docs/MCP.md](docs/MCP.md)。
 
 ## 要求

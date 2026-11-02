@@ -8,6 +8,7 @@ lib/Profile.ps1
 lib/Recommendations.ps1
 lib/Relocation.ps1
 lib/Remote.ps1
+lib/Repair.ps1
 lib/Report.ps1
 lib/Safety.ps1
 lib/Scan.ps1

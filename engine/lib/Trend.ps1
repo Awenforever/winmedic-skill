@@ -123,6 +123,7 @@ function Get-TrendSnapshot {
             if ($pc.data.summary.PSObject.Properties.Name -contains 'consistent') { $cons = $pc.data.summary.consistent }
         }
         if ($null -ne $cons) { $m['network.proxyConsistent'] = if ($cons) { 1 } else { 0 } }
+        if ($pc.data.PSObject.Properties.Name -contains 'deadCount') { $m['network.deadProxies'] = [int]$pc.data.deadCount }
     }
 
     $nl = Get-TrendProbe -Findings $Findings -Id 'probe.net-link'

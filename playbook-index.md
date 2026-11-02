@@ -15,6 +15,7 @@
 | PB-702 | [boot-failure-triage](playbooks/boot-failure-triage.md) | 蓝屏进不去系统、卡在转圈、自动修复失败 | recovery |
 | PB-601 | [endpoint-security-check](playbooks/endpoint-security-check.md) | 帮我看看电脑安全吗、是不是中毒了、防护开没开 | security |
 | PB-602 | [bitlocker-recovery-triage](playbooks/bitlocker-recovery-triage.md) | 开机要 BitLocker 恢复密钥、换主板后进不去 | security |
+| PB-505 | [remote-access-feasibility](playbooks/remote-access-feasibility.md) | 手机连不上内网、跨网段访问不了、Tailscale 通但服务不通 | network |
 | PB-704 | [bluetooth-audio-routing](playbooks/bluetooth-audio-routing.md) | 耳机连上但没声音、提示音正常应用无声、暂停后无声 | audio |
 | PB-503 | [network-link-forensics](playbooks/network-link-forensics.md) | 某软件一直转圈、Reconnecting、error sending request | network |
 | PB-501 | [network-diagnostics](playbooks/network-diagnostics.md) | 突然断网、能上微信打不开网页、DNS 解析失败 | network |
