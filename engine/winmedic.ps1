@@ -258,6 +258,9 @@ function Test-EngineIntegrity {
 function Invoke-Doctor {
     $hostInfo = Get-HostProbe
     $d = $hostInfo.data
+    $integ = Get-EngineIntegrity -Root $script:WinMedicRoot
+    $avProcs = @(Get-Process -Name hipstray, HipsMain, usysdiag, 360tray, QQPCTray, MsMpEng -ErrorAction SilentlyContinue | Select-Object -ExpandProperty ProcessName -Unique)
+    if ($d -is [hashtable]) { $d['engineIntegrity'] = $integ; $d['securityProcesses'] = @($avProcs) }
     if ($Json) { Write-JsonResult -Object $hostInfo | Out-Null; return $script:EXIT.OK }
     Write-Log 'WinMedic 环境自检' -Level INFO
     Write-Host ('  主机      : ' + $d.computerName)
@@ -269,6 +272,9 @@ function Invoke-Doctor {
     $sp = Get-DriveSpaceProbe
     if ($sp.ok) {
         Write-Host ('  C: 容量   : ' + [math]::Round($sp.data.total / 1GB, 2) + ' GB，可用 ' + [math]::Round($sp.data.free / 1GB, 2) + ' GB（已用 ' + $sp.data.usedPercent + '%）')
+    if ($integ.ok) { Write-Host ('  引擎文件  : OK（' + $integ.checked + ' 个）') }
+    else { Write-Host ('  引擎文件  : 缺失 ' + @($integ.missing).Count + ' 个 -> 运行 repair --yes') -ForegroundColor Yellow }
+    Write-Host ('  安全软件  : ' + $(if (@($avProcs).Count -gt 0) { (@($avProcs) -join ', ') } else { '未检测到常见安全软件进程' }))
     }
     Write-Log '自检完成' -Level OK
     return $script:EXIT.OK

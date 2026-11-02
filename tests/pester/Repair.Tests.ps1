@@ -37,6 +37,19 @@ Describe 'repair 计划' {
     }
 }
 
+Describe '引擎完整性' {
+    It '缺文件时列出相对路径' {
+        $root = Join-Path $TestDrive 'ri'
+        New-Item -ItemType Directory -Force -Path (Join-Path $root 'engine\lib') | Out-Null
+        Set-Content -LiteralPath (Join-Path $root 'engine\MANIFEST.txt') -Value @('lib/A.ps1','lib/B.ps1') -Encoding UTF8
+        Set-Content -LiteralPath (Join-Path $root 'engine\lib\A.ps1') -Value 'x' -Encoding UTF8
+        $r = Get-EngineIntegrity -Root $root
+        $r.ok | Should -BeFalse
+        $r.checked | Should -Be 2
+        $r.missing | Should -Contain 'engine/lib/B.ps1'
+    }
+}
+
 Describe 'repair 执行' {
     It 'dry-run 不写文件' {
         $root = Join-Path $TestDrive 'r4'; $src = Join-Path $TestDrive 's4'

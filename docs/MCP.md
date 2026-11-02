@@ -1,4 +1,4 @@
-# WinMedic MCP 服务器
+﻿# WinMedic MCP 服务器
 
 > 给不支持「读 SKILL.md + 跑脚本」的宿主（Claude Desktop 等 MCP 客户端）用。
 
@@ -41,7 +41,7 @@ stdout 只输出 JSON-RPC；日志走 stderr。
 | 工具 | 写操作 | 说明 |
 |---|---|---|
 | `winmedic_doctor` | 否 | 环境自检 |
-| `winmedic_probe` | 否 | 只读采集（set 可选 11 个探针集） |
+| `winmedic_probe` | 否 | 只读采集（set 可选 16 个，含 audio / media） |
 | `winmedic_summary` | 否 | 九域摘要 + 建议 |
 | `winmedic_plan` | 否 | 方案 + 证据 + planHash |
 | `winmedic_apply` | **是** | 必须 `yes=true`，且给 `ids` 或 `action` |
@@ -50,6 +50,7 @@ stdout 只输出 JSON-RPC；日志走 stderr。
 | `winmedic_journal` | 否 | 审计批次列表 |
 | `winmedic_explain` | 否 | 动作证据与回滚方式 |
 | `winmedic_profile` | 部分 | 无参数只读；带 `exclude` 才写 |
+| `winmedic_repair` | **是** | 引擎自修复；默认 dry-run，`yes=true` 才写入 |
 
 ## 安全边界
 

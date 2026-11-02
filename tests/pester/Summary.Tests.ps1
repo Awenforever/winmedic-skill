@@ -33,13 +33,13 @@ BeforeAll {
 }
 
 Describe '摘要行' {
-    It '九个领域各一行' {
+    It '领域各一行（11 个）' {
         $lines = Get-SummaryLines -Findings (New-FullFindings)
-        @($lines).Count | Should -Be 9
+        @($lines).Count | Should -Be 11
     }
     It '缺少探针时标为 unknown 而不是报错' {
         $lines = Get-SummaryLines -Findings (New-EmptyFindings)
-        ($lines | Where-Object { $_.verdict -eq 'unknown' }).Count | Should -Be 9
+        ($lines | Where-Object { $_.verdict -eq 'unknown' }).Count | Should -Be 11
     }
     It '磁盘使用率高时为 warn' {
         $f = New-FullFindings

@@ -104,6 +104,25 @@ function Get-SummaryLines {
         $lines += @{ domain = '外设'; text = ('打印机 ' + $pr.count + '；问题 ' + $pr.problemCount); verdict = $pv }
     } else { $lines += @{ domain = '外设'; text = '未采集'; verdict = 'unknown' } }
 
+    $ae = Get-ProbeData -Findings $Findings -ProbeId 'probe.audio-endpoints'
+    $ar = Get-ProbeData -Findings $Findings -ProbeId 'probe.audio-app-routing'
+    $as = Get-ProbeData -Findings $Findings -ProbeId 'probe.audio-services'
+    if ($ae -or $ar -or $as) {
+        $parts = @()
+        $av = 'ok'
+        if ($ae) { $parts += ('活跃端点 ' + $ae.counts.active + '（蓝牙 ' + $ae.counts.bluetoothActive + '）') }
+        if ($ar) { $parts += ('陈旧路由 ' + $ar.staleCount); if ([int]$ar.staleCount -gt 0) { $av = 'warn' } }
+        if ($as) { $parts += ('服务 ' + $(if ($as.allRunning) { 'OK' } else { '异常' })); if (-not $as.allRunning) { $av = 'bad' } }
+        $lines += @{ domain = '音频'; text = ($parts -join '；'); verdict = $av }
+    } else { $lines += @{ domain = '音频'; text = '未采集'; verdict = 'unknown' } }
+
+    $mt = Get-ProbeData -Findings $Findings -ProbeId 'probe.media-timestamps'
+    if ($mt) {
+        $mv = 'ok'
+        if ([int]$mt.shifted -gt 0) { $mv = 'warn' }
+        $lines += @{ domain = '媒体'; text = ('样本 ' + $mt.sampled + '；偏移>1h ' + $mt.shifted + '；最大 ' + $mt.maxAbsOffsetHours + 'h'); verdict = $mv }
+    } else { $lines += @{ domain = '媒体'; text = '未采集'; verdict = 'unknown' } }
+
     return $lines
 }
 

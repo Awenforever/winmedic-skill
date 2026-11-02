@@ -7,6 +7,24 @@
   写操作必须显式 -Yes；被替换的现有文件先备份到 state\repair\<时间戳>\。
 #>
 
+function Get-EngineIntegrity {
+    <#  只做存在性检查：清单里的引擎文件是否还在（被安全软件删除时会缺）。  #>
+    param([string]$Root)
+    $manifest = Join-Path (Join-Path $Root 'engine') 'MANIFEST.txt'
+    $missing = @()
+    $checked = 0
+    if (Test-Path -LiteralPath $manifest) {
+        foreach ($rel in @(Get-Content -LiteralPath $manifest -Encoding UTF8)) {
+            $rel = ([string]$rel).Trim()
+            if (-not $rel) { continue }
+            $checked++
+            $p = Join-Path (Join-Path $Root 'engine') ($rel -replace '/', '\')
+            if (-not (Test-Path -LiteralPath $p)) { $missing += ('engine/' + $rel) }
+        }
+    }
+    return [pscustomobject]@{ ok = ($missing.Count -eq 0); checked = $checked; missing = @($missing) }
+}
+
 function Get-RepairTargets {
     param([string]$Root)
     $list = @()
