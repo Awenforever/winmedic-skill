@@ -37,6 +37,19 @@ Describe 'repair 计划' {
     }
 }
 
+Describe 'repair 来源' {
+    It 'zip 来源可展开并比对' {
+        $root = Join-Path $TestDrive 'rz'; $src = Join-Path $TestDrive 'sz'
+        New-RepairFixture -Root $root -Source $src
+        $zip = Join-Path $TestDrive 'pkg.zip'
+        Compress-Archive -Path (Join-Path $src '*') -DestinationPath $zip -Force
+        $p = Get-RepairPlan -Root $root -SourcePath $zip
+        $p.available | Should -BeTrue
+        $p.source.kind | Should -Be 'zip'
+        ($p.todo | Where-Object { $_.rel -eq 'engine/lib/A.ps1' }).status | Should -Be 'missing'
+    }
+}
+
 Describe '引擎完整性' {
     It '缺文件时列出相对路径' {
         $root = Join-Path $TestDrive 'ri'

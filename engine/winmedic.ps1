@@ -343,6 +343,10 @@ function Invoke-Probe {
         $probes += @((Get-MediaTimestampProbe))
     }
 
+    if ($set -eq 'intake') {
+        $probes += @((Get-MediaTimestampProbe -MaxFiles 20 -TimeBudgetSeconds 10))
+    }
+
     if ($set -eq 'relocation') {
         $probes += @((Get-RelocationProbe -TimeBudgetSeconds 60))
     }

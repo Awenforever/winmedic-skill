@@ -74,7 +74,7 @@ powershell -ExecutionPolicy Bypass -File .\scripts\verify-host.ps1
 powershell -ExecutionPolicy Bypass -File .\scripts\verify-host.ps1 -Json   # 机器可读
 ```
 
-八项检查（全部 PASS 才算出货）：
+九项检查（全部 PASS 才算出货）：
 
 | # | 检查 | 失败意味着 |
 |---|---|---|
@@ -84,10 +84,20 @@ powershell -ExecutionPolicy Bypass -File .\scripts\verify-host.ps1 -Json   # 机
 | 4 | VERSION 与引擎版本一致 | 覆盖不完整（升级残留） |
 | 5 | frontmatter 可被 YAML 解析 | 技能不会出现在宿主目录（病例 0011） |
 | 6 | doctor 通过 | 环境/权限问题 |
-| 7 | MCP 握手 + 中文可读 | MCP 未注册、或编码不一致（病例 0011） |
-| 8 | MCP 已注册到 profile | 配置没写进去 |
+| 7 | 引擎文件完整（MANIFEST） | 被安全软件删除 → 运行 `repair --yes` |
+| 8 | MCP 握手 + 中文可读 | MCP 未注册、或编码不一致（病例 0011） |
+| 9 | MCP 已注册到 profile | 配置没写进去 |
 
-### 第 3 项失败怎么办
+### 第 3 / 7 项失败怎么办
+
+优先让引擎自己修（需要可信来源）：
+
+```powershell
+winmedic.ps1 doctor                       # 看缺了哪些
+winmedic.ps1 repair --source <发布包.zip> --yes
+```
+
+没有来源时再从仓库手工拷：
 
 现象：`Remote.ps1` 缺失或读出来是空。
 

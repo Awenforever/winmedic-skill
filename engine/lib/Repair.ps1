@@ -74,7 +74,16 @@ function Resolve-RepairSource {
             return @{ available = $true; kind = 'zip'; root = $tmp; temp = $tmp }
         }
     }
-    return @{ available = $false; reason = '找不到可信来源（git / dist 发布包 / --source）' }
+    foreach ($dir in @((Join-Path $env:USERPROFILE 'Downloads'), [Environment]::GetFolderPath('Desktop'))) {
+        if (-not $dir -or -not (Test-Path -LiteralPath $dir)) { continue }
+        $zip = Get-ChildItem -LiteralPath $dir -Filter 'winmedic-skill-*.zip' -File -ErrorAction SilentlyContinue | Sort-Object LastWriteTime -Descending | Select-Object -First 1
+        if ($zip) {
+            $tmp = Join-Path ([IO.Path]::GetTempPath()) ('winmedic-repair-' + [guid]::NewGuid().ToString('N'))
+            Expand-Archive -LiteralPath $zip.FullName -DestinationPath $tmp -Force
+            return @{ available = $true; kind = 'zip-download'; root = $tmp; temp = $tmp }
+        }
+    }
+    return @{ available = $false; reason = '找不到可信来源（git / dist 发布包 / 下载目录发布包 / --source）' }
 }
 
 function Get-RepairSourceBytes {

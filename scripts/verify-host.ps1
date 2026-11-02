@@ -66,6 +66,20 @@ if (Test-Path $engine) {
 }
 Add-Check 'doctor 通过' $doctorOk
 
+# 4b 引擎文件完整（MANIFEST 清单）
+$manifest = Join-Path $SkillDir 'engine\MANIFEST.txt'
+$missing = @(); $manifestCount = 0
+if (Test-Path $manifest) {
+    foreach ($rel in @(Get-Content -LiteralPath $manifest -Encoding UTF8)) {
+        $rel = ([string]$rel).Trim()
+        if (-not $rel) { continue }
+        $manifestCount++
+        $p = Join-Path (Join-Path $SkillDir 'engine') ($rel -replace '/', '\')
+        if (-not (Test-Path -LiteralPath $p)) { $missing += $rel }
+    }
+}
+Add-Check '引擎文件完整（MANIFEST）' (($manifestCount -gt 0) -and ($missing.Count -eq 0)) $(if ($missing.Count -eq 0) { $manifestCount.ToString() + ' 个齐全' } else { '缺失 ' + $missing.Count + ': ' + (($missing | Select-Object -First 3) -join ', ') })
+
 # 5 MCP stdio 握手 + 编码
 $mcp = Join-Path $SkillDir 'engine\mcp\winmedic-mcp.ps1'
 $mcpOk = $false; $mcpDetail = ''; $toolCount = 0
