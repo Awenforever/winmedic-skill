@@ -265,6 +265,12 @@
       "domain": "media",
       "cost": "slow",
       "returns": "MediaTimestamps"
+    },
+    {
+      "id": "probe.usb-worm",
+      "domain": "security",
+      "cost": "fast",
+      "returns": "UsbWorm"
     }
   ]
 }

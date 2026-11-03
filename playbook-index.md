@@ -17,6 +17,7 @@
 | PB-602 | [bitlocker-recovery-triage](playbooks/bitlocker-recovery-triage.md) | 开机要 BitLocker 恢复密钥、换主板后进不去 | security |
 | PB-505 | [remote-access-feasibility](playbooks/remote-access-feasibility.md) | 手机连不上内网、跨网段访问不了、Tailscale 通但服务不通 | network |
 | PB-704 | [bluetooth-audio-routing](playbooks/bluetooth-audio-routing.md) | 耳机连上但没声音、提示音正常应用无声、暂停后无声 | audio |
+| PB-603 | [usb-worm-triage](playbooks/usb-worm-triage.md) | U 盘出现快捷方式、文件夹消失、杀软报毒 | security |
 | PB-503 | [network-link-forensics](playbooks/network-link-forensics.md) | 某软件一直转圈、Reconnecting、error sending request | network |
 | PB-501 | [network-diagnostics](playbooks/network-diagnostics.md) | 突然断网、能上微信打不开网页、DNS 解析失败 | network |
 | PB-502 | [vpn-proxy-troubleshooting](playbooks/vpn-proxy-troubleshooting.md) | 开了代理就上不了网、VPN 连上没网、git 拉不动 | network |

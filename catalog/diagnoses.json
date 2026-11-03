@@ -532,6 +532,52 @@
           "evidence": []
         }
       ]
+    },
+    {
+      "id": "dx.usb-worm",
+      "title": "U 盘快捷方式蠕虫：鉴别诊断",
+      "requiredProbes": [
+        "probe.host",
+        "probe.usb-worm"
+      ],
+      "hypotheses": [
+        {
+          "id": "h.shortcut",
+          "name": "根目录存在可疑快捷方式",
+          "why": "指向 cmd/powershell 或参数含 DrvSvc/Mgrsvr，是此类蠕虫的入口",
+          "checks": [
+            {
+              "metric": "usb.suspiciousShortcuts",
+              "signal": ">0 即存在可疑快捷方式"
+            }
+          ],
+          "evidence": []
+        },
+        {
+          "id": "h.hidden-data",
+          "name": "用户数据被移入隐藏目录",
+          "why": "文件夹「消失」通常是被移进单字符隐藏目录",
+          "checks": [
+            {
+              "metric": "usb.hiddenDataItems",
+              "signal": ">0 表示有数据藏在隐藏目录，先还原再清除"
+            }
+          ],
+          "evidence": []
+        },
+        {
+          "id": "h.infected",
+          "name": "至少一支盘判定为感染",
+          "why": "结合快捷方式、载荷名与 autorun 的确定性判级",
+          "checks": [
+            {
+              "metric": "usb.infected",
+              "signal": ">0 表示需要按 PB-603 处置"
+            }
+          ],
+          "evidence": []
+        }
+      ]
     }
   ]
 }

@@ -164,6 +164,14 @@ function Get-TrendSnapshot {
         $m['media.shiftedFiles'] = [int](Get-TrendNumber -Object $mt.data -Name 'shifted')
     }
 
+    $uw = Get-TrendProbe -Findings $Findings -Id 'probe.usb-worm'
+    if ($uw -and $uw.data -and $uw.data.counts) {
+        $m['usb.drives'] = [int]$uw.data.counts.drives
+        $m['usb.infected'] = [int]$uw.data.counts.infected
+        $m['usb.suspiciousShortcuts'] = [int]$uw.data.counts.suspiciousShortcuts
+        $m['usb.hiddenDataItems'] = [int]$uw.data.counts.hiddenDataItems
+    }
+
     $rr = Get-TrendProbe -Findings $Findings -Id 'probe.recovery-readiness'
     if ($rr -and $rr.data) {
         if ($rr.data.PSObject.Properties.Name -contains 'shadowStorageBytes') {

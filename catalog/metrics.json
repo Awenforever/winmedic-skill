@@ -156,6 +156,30 @@
       "unit": "count",
       "source": "trend",
       "note": "本机回环代理端口无监听的个数"
+    },
+    {
+      "name": "usb.drives",
+      "unit": "count",
+      "source": "trend",
+      "note": "可移动盘数量"
+    },
+    {
+      "name": "usb.infected",
+      "unit": "count",
+      "source": "trend",
+      "note": "判定为感染的可移动盘数"
+    },
+    {
+      "name": "usb.suspiciousShortcuts",
+      "unit": "count",
+      "source": "trend",
+      "note": "可疑快捷方式数"
+    },
+    {
+      "name": "usb.hiddenDataItems",
+      "unit": "count",
+      "source": "trend",
+      "note": "隐藏目录中被藏起的项数"
     }
   ],
   "dynamicNamespaces": [

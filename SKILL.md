@@ -22,6 +22,7 @@ version: 1.0.2
 | 蓝牙耳机：提示音正常但应用无声、暂停后无声 | `probe --set audio` → `diagnose --case dx.bt-audio` → 按 PB-704 | 先禁用 HFP / 重装蓝牙驱动 / 反复配对 |
 | 需要音频现场事实（默认设备/端点/播放器） | `audio-snapshot`（远程/服务会话加 `--in-user-session`） | 凭猜测判断默认设备 |
 | 技能文件被安全软件隔离/引擎报「找不到模块」 | `doctor` 看「引擎文件」→ `repair`（dry-run）→ `repair --yes` | 手工从别处拷文件、关闭杀软 |
+| U 盘根目录出现快捷方式 / 文件夹「消失」/ 多出隐藏目录 | `probe --set usb` → `diagnose --case dx.usb-worm` → 按 PB-603 | 双击盘内图标、先删数据 |
 | 文件复制后时间跳到未来、比现在晚 | `probe --set media` → 按病例 0014 判断 | 逐个修改文件时间 |
 
 网络类问题**先证明哪一跳断了**（DNS → 直连 → 代理 → 长连接 → 应用连接抖动），再谈处置。

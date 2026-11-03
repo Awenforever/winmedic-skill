@@ -32,5 +32,6 @@ probes/recovery.ps1
 probes/security.ps1
 probes/storage.ps1
 probes/updates.ps1
+probes/usb.ps1
 probes/workloads.ps1
 winmedic.ps1
