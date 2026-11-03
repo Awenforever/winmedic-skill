@@ -18,12 +18,15 @@ Describe 'U 盘扫描' {
     It '隐藏目录 + 载荷 + autorun 判感染' {
         $root = Join-Path $TestDrive 'usb1'
         New-Item -ItemType Directory -Force -Path $root | Out-Null
-        $hid = Join-Path $root ([string][char]0xFFFF)
-        try { [IO.Directory]::CreateDirectory($hid) | Out-Null; Set-Content -LiteralPath (Join-Path $hid 'data.txt') 'x' } catch { }
+        $hid = Join-Path $root 'x'
+        [IO.Directory]::CreateDirectory($hid) | Out-Null
+        Set-Content -LiteralPath (Join-Path $hid 'data.txt') 'x'
+        [IO.File]::SetAttributes($hid, [IO.FileAttributes]::Hidden)
         Set-Content -LiteralPath (Join-Path $root 'DrvSvc_sample.dat') 'x'
         Set-Content -LiteralPath (Join-Path $root 'autorun.inf') '[autorun]'
         $d = Get-UsbDriveScan -Root $root
         $d.level | Should -Be 'infected'
+        @($d.hiddenDirs).Count | Should -BeGreaterThan 0
         $d.autorun | Should -BeTrue
         @($d.payloads).Count | Should -BeGreaterThan 0
     }

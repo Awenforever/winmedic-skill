@@ -70,7 +70,7 @@ $script:Tools = @(
     },
     [ordered]@{
         name = 'winmedic_probe'
-        description = '只读采集。set 可选 storage/boot/apps/updates/network/security/recovery/printers/backup/mail/workloads/audio/media/relocation/intake/all。'
+        description = '只读采集。set 可选 storage/boot/apps/updates/network/security/recovery/printers/backup/mail/workloads/audio/media/usb/relocation/intake/all。'
         inputSchema = [ordered]@{
             type = 'object'
             properties = [ordered]@{ set = [ordered]@{ type = 'string'; description = '探针集，默认 storage' } }

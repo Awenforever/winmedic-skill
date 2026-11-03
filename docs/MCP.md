@@ -41,7 +41,7 @@ stdout 只输出 JSON-RPC；日志走 stderr。
 | 工具 | 写操作 | 说明 |
 |---|---|---|
 | `winmedic_doctor` | 否 | 环境自检 |
-| `winmedic_probe` | 否 | 只读采集（set 可选 16 个，含 audio / media） |
+| `winmedic_probe` | 否 | 只读采集（set 可选 17 个，含 audio / media / usb） |
 | `winmedic_summary` | 否 | 九域摘要 + 建议 |
 | `winmedic_plan` | 否 | 方案 + 证据 + planHash |
 | `winmedic_apply` | **是** | 必须 `yes=true`，且给 `ids` 或 `action` |
