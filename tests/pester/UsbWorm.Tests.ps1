@@ -30,6 +30,19 @@ Describe 'U 盘扫描' {
         $d.autorun | Should -BeTrue
         @($d.payloads).Count | Should -BeGreaterThan 0
     }
+    It '隐藏的联接（诱饵目录）不被误判' {
+        $root = Join-Path $TestDrive 'usb-j'
+        New-Item -ItemType Directory -Force -Path $root | Out-Null
+        $target = Join-Path $TestDrive 'bait-target'
+        New-Item -ItemType Directory -Force -Path $target | Out-Null
+        Set-Content -LiteralPath (Join-Path $target 'x.dat') 'x'
+        $link = Join-Path $root 'BAITLINK'
+        New-Item -ItemType Junction -Path $link -Target $target -ErrorAction Stop | Out-Null
+        [IO.File]::SetAttributes($link, [IO.FileAttributes]::Hidden)
+        $d = Get-UsbDriveScan -Root $root
+        @($d.hiddenDirs).Count | Should -Be 0
+        $d.level | Should -Be 'clean'
+    }
     It '干净目录判 clean' {
         $root = Join-Path $TestDrive 'usb2'
         New-Item -ItemType Directory -Force -Path $root | Out-Null

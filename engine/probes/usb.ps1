@@ -57,6 +57,8 @@ function Get-UsbDriveScan {
     $hiddenItems = 0
     foreach ($h in $hidden) {
         if ($script:UsbLegitHiddenNames -contains $h.Name) { continue }
+        # 跳过重解析点/联接（火绒 BaitRoot 等勒索诱饵目录不是蠕虫工件）
+        if ($h.LinkType -or $h.Target) { continue }
         $nonPrintable = ($h.Name -match '[^\u0020-\u007E]')
         $shortName = ($h.Name.Length -le 2)
         # 只把「非打印字符」或「超短名」的隐藏目录当蠕虫特征；普通 .git/.vscode 之类不算

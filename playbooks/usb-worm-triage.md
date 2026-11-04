@@ -22,6 +22,14 @@ winmedic.ps1 diagnose --case dx.usb-worm
 6. 主机痕迹三件套：Prefetch（`DRVSVC*`）、Run/RunOnce、服务/计划任务
 7. 找感染源：同一支盘反复中招，说明另一台机器仍在写盘
 
+## 识别安全软件的诱饵目录
+
+根目录出现隐藏、系统属性、删不掉的目录时，先看它是不是联接：
+
+    Get-Item 'F:\ZSTORE995' -Force | Select-Object Name,LinkType,Target,Attributes
+
+若 Target 指向 Huorong\Sysdiag\BaitRoot 之类，是勒索诱饵，不是病毒，不要删。
+
 ## 安全边界
 
 - 不关闭杀软、不改防护策略来「取样」
