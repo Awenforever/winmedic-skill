@@ -180,6 +180,12 @@
       "unit": "count",
       "source": "trend",
       "note": "隐藏目录中被藏起的项数"
+    },
+    {
+      "name": "usb.fakeVolumes",
+      "unit": "count",
+      "source": "trend",
+      "note": "伪装成卷标的目录数（同形字/卷标名），可能仍吞着用户数据"
     }
   ],
   "dynamicNamespaces": [

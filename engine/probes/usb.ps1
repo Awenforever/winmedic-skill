@@ -48,6 +48,43 @@ function Get-UsbSuspiciousLnk {
     }
 }
 
+function Test-UsbFakeVolumeName {
+    param([string]$Name = '')
+    $signals = @()
+    # 拉丁与西里尔/希腊混排 = 同形字伪装（如 Usb Drive 的末尾 e 换成 U+0435）
+    $hasLatin = ($Name -match '[A-Za-z]')
+    $hasCyrGreek = ($Name -match '[\u0370-\u03FF\u0400-\u04FF]')
+    if ($hasLatin -and $hasCyrGreek) { $signals += 'confusable-script' }
+    # 名字本身冒充卷标
+    if ($Name -match '^(?i)(usb\s*dr(iv)?(e)?|unnamed\s*volume|removable\s*disk)$') { $signals += 'volume-label' }
+    if ($Name -match '^(新加卷|可移动磁盘|本地磁盘)$') { $signals += 'volume-label' }
+    return @($signals)
+}
+
+function Get-UsbFakeVolumeScan {
+    param([string]$Root)
+    $res = @()
+    $dirs = @(Get-ChildItem -LiteralPath $Root -Force -ErrorAction SilentlyContinue | Where-Object { $_.PSIsContainer })
+    foreach ($d in $dirs) {
+        if ($script:UsbLegitHiddenNames -contains $d.Name) { continue }
+        if ($d.LinkType -or $d.Target) { continue }
+        $signals = @(Test-UsbFakeVolumeName -Name $d.Name)
+        if ($signals.Count -eq 0) { continue }
+        $inner = @(Get-ChildItem -LiteralPath $d.FullName -Force -ErrorAction SilentlyContinue)
+        $codepoints = (@($d.Name.ToCharArray() | ForEach-Object { ([int]$_).ToString('X4') }) -join ' ')
+        $isSusp = ($signals -contains 'confusable-script')
+        if (-not $isSusp -and ($signals -contains 'volume-label') -and $inner.Count -ge 3) { $isSusp = $true }
+        $res += [pscustomobject]@{
+            name = $d.Name
+            codepoints = $codepoints
+            items = $inner.Count
+            signals = @($signals)
+            suspicious = $isSusp
+        }
+    }
+    return @($res)
+}
+
 function Get-UsbDriveScan {
     param([string]$Root)
     $items = @(Get-ChildItem -LiteralPath $Root -Force -ErrorAction SilentlyContinue)
@@ -69,11 +106,12 @@ function Get-UsbDriveScan {
     }
     $payloads = @($items | Where-Object { -not $_.PSIsContainer -and $_.Name -match '(?i)^DrvSvc|Mgrsvr|\.(scr|pif|vbs|js)$' } | ForEach-Object { $_.Name })
     $autorun = Test-Path -LiteralPath (Join-Path $Root 'autorun.inf')
+    $fakeVolumes = @(Get-UsbFakeVolumeScan -Root $Root)
     $shortcuts = @($lnks | ForEach-Object { Get-UsbSuspiciousLnk -Lnk $_ })
     $suspicious = @($shortcuts | Where-Object { $_.suspicious })
     $level = 'clean'
     if ($suspicious.Count -gt 0 -or $payloads.Count -gt 0 -or @($suspHidden | Where-Object { $_.nonPrintable }).Count -gt 0) { $level = 'infected' }
-    elseif ($suspHidden.Count -gt 0 -or $autorun) { $level = 'suspicious' }
+    elseif ($suspHidden.Count -gt 0 -or $autorun -or @($fakeVolumes | Where-Object { $_.suspicious }).Count -gt 0) { $level = 'suspicious' }
     return [pscustomobject]@{
         root = $Root
         rootCount = $items.Count
@@ -84,6 +122,7 @@ function Get-UsbDriveScan {
         hiddenDataItems = $hiddenItems
         payloads = @($payloads)
         autorun = $autorun
+        fakeVolumes = @($fakeVolumes)
         shortcuts = @($shortcuts)
     }
 }
@@ -119,6 +158,7 @@ function Get-UsbWormProbe {
             hiddenDataItems = $d.hiddenDataItems
             payloads = @($d.payloads)
             autorun = $d.autorun
+            fakeVolumes = @($d.fakeVolumes)
         }
         $drives += $obj
     }
@@ -132,6 +172,7 @@ function Get-UsbWormProbe {
                 suspicious = @($drives | Where-Object { $_.level -eq 'suspicious' }).Count
                 suspiciousShortcuts = (@($drives | ForEach-Object { @($_.suspiciousShortcuts).Count }) | Measure-Object -Sum).Sum
                 hiddenDataItems = (@($drives | ForEach-Object { $_.hiddenDataItems }) | Measure-Object -Sum).Sum
+                fakeVolumes = (@($drives | ForEach-Object { @($_.fakeVolumes | Where-Object { $_.suspicious }).Count }) | Measure-Object -Sum).Sum
             }
             note = '只读检测；处置流程见 PB-603 / 病例 0012'
         }

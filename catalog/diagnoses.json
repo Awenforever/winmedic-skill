@@ -576,6 +576,18 @@
             }
           ],
           "evidence": []
+        },
+        {
+          "id": "h.fake-volume",
+          "name": "根目录存在伪卷目录（吞着用户数据）",
+          "why": "蠕虫会建一个叫 Usb Drivе 之类（同形字或卷标名）的目录，把用户数据挪进去；还原隐藏目录后它仍在",
+          "checks": [
+            {
+              "metric": "usb.fakeVolumes",
+              "signal": ">0 表示需要再解一层：把内容移出后删空壳"
+            }
+          ],
+          "evidence": []
         }
       ]
     }

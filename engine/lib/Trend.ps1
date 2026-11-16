@@ -170,6 +170,7 @@ function Get-TrendSnapshot {
         $m['usb.infected'] = [int]$uw.data.counts.infected
         $m['usb.suspiciousShortcuts'] = [int]$uw.data.counts.suspiciousShortcuts
         $m['usb.hiddenDataItems'] = [int]$uw.data.counts.hiddenDataItems
+        if ($uw.data.counts.PSObject.Properties.Name -contains 'fakeVolumes') { $m['usb.fakeVolumes'] = [int]$uw.data.counts.fakeVolumes }
     }
 
     $rr = Get-TrendProbe -Findings $Findings -Id 'probe.recovery-readiness'

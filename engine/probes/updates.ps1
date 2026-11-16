@@ -40,8 +40,28 @@ function Get-WindowsUpdateProbe {
     param()
     $data = @{}
     $data['pendingReboot'] = (Get-PendingRebootState)
-    $hot = Get-HotFix -ErrorAction SilentlyContinue | Sort-Object InstalledOn -Descending | Select-Object -First 5
-    $data['recentHotfixes'] = @($hot | ForEach-Object { @{ id = $_.HotFixID; installedOn = if ($_.InstalledOn) { $_.InstalledOn.ToString('yyyy-MM-dd') } else { '' } } })
+    # 个别主机上某个补丁的 InstalledOn 无法转成日期，会让 Get-HotFix 整体抛错；探针不能因一条坏数据整体失败
+    $hot = @()
+    $hotErr = ''
+    try {
+        $hot = @(Get-HotFix -ErrorAction Stop | Sort-Object InstalledOn -Descending | Select-Object -First 5)
+    } catch {
+        $hotErr = $_.Exception.Message
+        try {
+            $hot = @(Get-CimInstance -ClassName Win32_QuickFixEngineering -ErrorAction Stop |
+                       Sort-Object InstalledOn -Descending | Select-Object -First 5 |
+                       ForEach-Object { [pscustomobject]@{ HotFixID = $_.HotFixID; InstalledOn = $_.InstalledOn } })
+            if (@($hot).Count -gt 0) { $hotErr = '' }
+        } catch { $hotErr = $hotErr + ' | CIM: ' + $_.Exception.Message }
+    }
+    if ($hotErr) { $data['hotfixError'] = $hotErr }
+    $data['recentHotfixes'] = @($hot | ForEach-Object {
+        $io = $_.InstalledOn
+        $txt = ''
+        if ($io -is [datetime]) { $txt = $io.ToString('yyyy-MM-dd') }
+        elseif ($io) { $txt = [string]$io }
+        @{ id = $_.HotFixID; installedOn = $txt }
+    })
     $svc = @{}
     foreach ($n in 'wuauserv', 'BITS', 'TrustedInstaller', 'DoSvc') {
         $s = Get-Service -Name $n -ErrorAction SilentlyContinue

@@ -8,6 +8,44 @@
 > 版本线与标签：2026-10-23 之前的旧编号线曾使用 v1.1.0–v1.17.0、v3.x。当前 1.x 线复用这些版本号时，标签会重指到本线对应发布提交；旧提交仍保留在历史中。
 
 
+## [1.7.3] - 2026-11-16
+
+### Added
+- `probe --set usb` 新增伪卷目录检测：`fakeVolumes`（`confusable-script` 同形字伪装 / `volume-label` 冒充卷标），并计入指标 `usb.fakeVolumes`
+- `diagnose --case dx.usb-worm` 新增假设 `h.fake-volume`：还原隐藏目录之后，仍可能有伪卷目录吞着数据
+- PB-603 新增两节：「伪卷目录要解第二层」「删不掉的空隐藏目录（U+FFFF）」
+- `UsbWorm.Tests` 新增 3 例：同形字伪卷判可疑、纯拉丁卷标名判可疑、中文目录名不误判
+
+### Fixed
+- `probe --set updates` 不再因单个补丁的 `InstalledOn` 无法解析而整体抛错：降级到 `Win32_QuickFixEngineering`，失败时在 `hotfixError` 里如实标注
+
+### Docs
+- 病例 `0012` 新增第 11 节：第五支样本（伪卷目录、同名目录合并、两个技术坑）
+
+### Notes
+- 同形字判定按「拉丁 + 西里尔/希腊混排」，不按「非 ASCII」，避免误伤中文目录名
+- 空 U+FFFF 目录需用 `[IO.Directory]::Delete`，`Remove-Item` 会报 `ERROR_FILE_NOT_FOUND`
+- 同名目录合并先比哈希：内容相同才可去重，不同必须改名保留并在目录内留合并记录
+
+## [1.3.0] – [1.7.2] - 2026-11-02 ~ 2026-11-04（按 git log 补记）
+
+> 这段时间只升了 `VERSION`，`CHANGELOG` 未同步。以下按提交标题如实补记，未展开细节。
+
+| 版本 | 提交 | 主题 |
+|---|---|---|
+| v1.7.2 | ee3167a | 跳过安全软件诱饵联接；0012 第四支样本 |
+| v1.7.1 | dbbcaea | MCP probe set 说明补 usb；测试不再依赖 U+FFFF 文件名 |
+| v1.7.0 | 094a063 | U 盘快捷方式蠕虫只读检测与处置 playbook |
+| （未发版）| 843cc26 | 0012 追加第三支 U 盘样本 |
+| v1.6.1 | 47fec1f | audio-snapshot `--out` 与 `--json` 同时使用时写文件 |
+| v1.6.0 | 856b67b | audio-snapshot 现场快照与用户会话执行 |
+| v1.5.0 | 1045b83 | MP4 mvhd 自解析与 `dx.media-timestamp` |
+| v1.4.0 | a941e3f | 媒体时间抽样并入 intake；repair 自动找发布包 |
+| （未发版）| 2d6ccc2 | 归档并清理重置前的旧标签 |
+| v1.3.1 | 65a519f | MCP ReadOnly 拦截 `winmedic_repair` |
+| （未发版）| a2a76db | 修正 0013 根因结论，补 0015 与音频限制说明 |
+| v1.3.0 | — | 医生端完整性/杀软检查、summary 补音频与媒体、病例 0015 |
+
 ## [1.2.0] - 2026-11-02
 
 ### Added — 自修复与网络判据
