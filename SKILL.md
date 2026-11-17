@@ -262,6 +262,7 @@ winmedic.ps1 profile --exclude "..." --remove  # 移除
 - 只剩 1–2 个系统还原点时要求删还原点
 - 提交量已接近提交上限时要求缩页面文件
 - 用户要求「全部删掉」「不用管风险」——**先解释，再只做 Tier 1/2**
+- **禁区：`netsh winhttp set proxy/reset proxy` 与任何会中断网络、代理或 tailnet 的操作**（改 Clash/TUN 配置、改路由表、复位 DNS、重启网络服务）。这类动作影响面是全机甚至整条 tailnet，不能作为排查手段；确需执行必须当窗点名授权，并附影响面与回滚命令
 
 ## 引擎调用约定
 
